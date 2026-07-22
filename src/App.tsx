@@ -10,6 +10,7 @@ import { NotFound } from './pages/NotFound';
 import { Settings } from './pages/Settings';
 import { Search } from './pages/Search';
 import { Statistics } from './pages/Statistics';
+import { QuizResultPage } from './pages/QuizResult';
 
 /** Route table. All app pages render inside the persistent AppShell. */
 export function App() {
@@ -20,6 +21,7 @@ export function App() {
           <Route path={Routes.dashboard} element={<Dashboard />} />
           <Route path={Routes.search} element={<Search />} />
           <Route path={Routes.chapter()} element={<Chapter />} />
+          <Route path={Routes.quizResult()} element={<QuizResultPage />} />
           <Route path={Routes.import} element={<Import />} />
           <Route path={Routes.statistics} element={<Statistics />} />
           <Route path={Routes.bookmarks} element={<Bookmarks />} />

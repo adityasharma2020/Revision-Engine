@@ -8,27 +8,25 @@ import { Button } from '../../common/Button';
 import { Icon } from '../../common/Icon';
 import { QuizProgress } from './QuizProgress';
 import { QuizQuestion } from './QuizQuestion';
-import { QuizResults } from './QuizResults';
 import styles from './QuizRunner.module.css';
 
 interface QuizSessionProps {
   chapter: Chapter;
   questions: readonly PrelimsQuestion[];
-  onExit: () => void;
-  onRetry: () => void;
+  onComplete: (resultId: string) => void;
   onActiveChange?: (active: boolean) => void;
   settings: QuizSettings;
 }
 
 /** One live quiz run: active question flow → finished results. */
-export function QuizSession({ chapter, questions, onExit, onRetry, onActiveChange, settings }: QuizSessionProps) {
+export function QuizSession({ chapter, questions, onComplete, onActiveChange, settings }: QuizSessionProps) {
   const { state, current, actions, summary } = useQuizSession(questions, chapter.id, settings);
   const running = state.status === 'active';
   const liveElapsedMs = useElapsed(state.startedAt, running);
   const elapsedMs = state.status === 'paused' && state.pausedAt
     ? Math.max(0, state.pausedAt - state.startedAt)
     : liveElapsedMs;
-  const { recordQuizResult, setQuizResultAnalytics } = useUserData();
+  const { recordQuizResult } = useUserData();
   const resultId = useRef(createId());
   const [fullscreen, setFullscreen] = useState(Boolean(document.fullscreenElement));
   const [focusInterrupted, setFocusInterrupted] = useState(false);
@@ -134,23 +132,11 @@ export function QuizSession({ chapter, questions, onExit, onRetry, onActiveChang
       focusPenaltyTotal,
       adjustedScore: s.correct - focusPenaltyTotal,
     });
-  }, [state.status, state.answers, state.settings, state.focusInterruptions, summary, recordQuizResult, chapter.id, chapter.title, chapter.subject, questions, focusLossCount, focusPenaltyTotal]);
+    onComplete(resultId.current);
+  }, [state.status, state.answers, state.settings, state.focusInterruptions, summary, recordQuizResult, onComplete, chapter.id, chapter.title, chapter.subject, questions, focusLossCount, focusPenaltyTotal]);
 
   if (state.status === 'finished') {
-    return (
-      <QuizResults
-        questions={questions}
-        answers={state.answers}
-        summary={summary()}
-        includedInAnalytics
-        focusLossCount={focusLossCount}
-        focusPenaltyTotal={focusPenaltyTotal}
-        adjustedScore={summary().correct - focusPenaltyTotal}
-        onAnalyticsChange={(included) => setQuizResultAnalytics(resultId.current, included)}
-        onRetry={onRetry}
-        onExit={onExit}
-      />
-    );
+    return <p className={styles.savingResult}>Saving your result…</p>;
   }
 
   const index = state.currentIndex;

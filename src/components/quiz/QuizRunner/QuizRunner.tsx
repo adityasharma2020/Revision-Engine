@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import type { Chapter } from '../../../types';
 import { useUserData } from '../../../context/UserDataContext';
@@ -15,15 +15,13 @@ import { Button } from '../../common/Button';
 import { Icon } from '../../common/Icon';
 import { Routes } from '../../../constants/routes';
 import { humanizeDuration } from '../../../utils/time';
-import type { QuizResult } from '../../../types';
-import { QuizResults } from './QuizResults';
 import styles from './QuizRunner.module.css';
 
 interface QuizRunnerProps {
   chapter: Chapter;
   questions?: Chapter['prelims'];
   onActiveChange?: (active: boolean) => void;
-  onRequestLearning?: () => void;
+  onImmersiveChange?: (immersive: boolean) => void;
 }
 
 /** Entry point for Quiz mode: intro gate → a keyed, restartable session. */
@@ -31,16 +29,15 @@ export function QuizRunner({
   chapter,
   questions = chapter.prelims,
   onActiveChange,
-  onRequestLearning,
+  onImmersiveChange,
 }: QuizRunnerProps) {
-  const { quizResults, setQuizResultAnalytics } = useUserData();
+  const { quizResults } = useUserData();
   const navigate = useNavigate();
   const activeDraft = findActiveQuizDraft();
   const [phase, setPhase] = useState<'intro' | 'running'>(() =>
     hasQuizDraft(chapter.id) ? 'running' : 'intro',
   );
   const [attempt, setAttempt] = useState(0);
-  const [reviewResult, setReviewResult] = useState<QuizResult | null>(null);
   const [settings, setSettings] = useState<QuizSettings>(
     () => activeDraft?.settings ?? STANDARD_QUIZ_SETTINGS,
   );
@@ -55,6 +52,11 @@ export function QuizRunner({
     () => quizResults.filter((result) => result.chapterId === chapter.id),
     [quizResults, chapter.id],
   );
+
+  useEffect(() => {
+    onImmersiveChange?.(phase === 'running');
+    return () => onImmersiveChange?.(false);
+  }, [phase, onImmersiveChange]);
 
   const lastScore = useMemo(() => {
     const last = quizResults.find((r) => r.chapterId === chapter.id);
@@ -87,38 +89,6 @@ export function QuizRunner({
   }
 
   if (phase === 'intro') {
-    if (reviewResult) {
-      const reviewedIds = reviewResult.perQuestion?.length
-        ? new Set(reviewResult.perQuestion.map((question) => question.questionId))
-        : null;
-      return (
-        <QuizResults
-          historical
-          questions={reviewedIds
-            ? chapter.prelims.filter((question) => reviewedIds.has(question.id))
-            : chapter.prelims}
-          answers={reviewResult.answers}
-          summary={{
-            total: reviewResult.totalQuestions,
-            answered: reviewResult.answered,
-            correct: reviewResult.correct,
-            skipped: reviewResult.skipped,
-            accuracy: reviewResult.answered === 0 ? 0 : Math.round((reviewResult.correct / reviewResult.answered) * 100),
-            durationMs: reviewResult.durationMs,
-          }}
-          includedInAnalytics={reviewResult.includedInAnalytics !== false}
-          focusLossCount={reviewResult.focusLossCount}
-          focusPenaltyTotal={reviewResult.focusPenaltyTotal}
-          adjustedScore={reviewResult.adjustedScore}
-          onAnalyticsChange={(included) => {
-            setQuizResultAnalytics(reviewResult.id, included);
-            setReviewResult({ ...reviewResult, includedInAnalytics: included });
-          }}
-          onRetry={() => undefined}
-          onExit={() => setReviewResult(null)}
-        />
-      );
-    }
     return <>
       <QuizIntro
         questionCount={sessionQuestions.length}
@@ -129,7 +99,10 @@ export function QuizRunner({
           setPhase('running');
         }}
       />
-      <AttemptHistory results={chapterHistory} onReview={setReviewResult} />
+      <AttemptHistory
+        results={chapterHistory}
+        onReview={(resultId) => navigate(Routes.quizResult(resultId))}
+      />
     </>;
   }
 
@@ -140,12 +113,7 @@ export function QuizRunner({
       questions={sessionQuestions}
       settings={settings}
       onActiveChange={onActiveChange}
-      onExit={() => {
-        onActiveChange?.(false);
-        setPhase('intro');
-        onRequestLearning?.();
-      }}
-      onRetry={() => setAttempt((a) => a + 1)}
+      onComplete={(resultId) => navigate(Routes.quizResult(resultId), { replace: true })}
     />
   );
 }
@@ -155,7 +123,7 @@ function AttemptHistory({
   onReview,
 }: {
   results: ReturnType<typeof useUserData>['quizResults'];
-  onReview: (result: QuizResult) => void;
+  onReview: (resultId: string) => void;
 }) {
   return (
     <section className={styles.history} aria-labelledby="quiz-history-title">
@@ -179,7 +147,7 @@ function AttemptHistory({
               : Math.round((result.correct / result.answered) * 100);
             return (
               <li key={result.id}>
-                <button type="button" className={styles.historyItem} onClick={() => onReview(result)}>
+                <button type="button" className={styles.historyItem} onClick={() => onReview(result.id)}>
                 <span className={styles.attemptNumber}>#{results.length - index}</span>
                 <div className={styles.attemptMain}>
                   <strong>{result.correct}/{result.totalQuestions} correct</strong>

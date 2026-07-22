@@ -1,0 +1,89 @@
+import { Link, useNavigate, useParams } from 'react-router-dom';
+import { AsyncBoundary, EmptyState, Icon } from '../../components/common';
+import { Page } from '../../components/layout';
+import { QuizResults } from '../../components/quiz/QuizRunner/QuizResults';
+import { Routes } from '../../constants/routes';
+import { useUserData } from '../../context/UserDataContext';
+import { useChapter } from '../../hooks/useChapters';
+import type { QuizResult } from '../../types';
+import styles from './QuizResult.module.css';
+
+export function QuizResultPage() {
+  const { resultId = '' } = useParams();
+  const { ready, quizResults } = useUserData();
+  const result = quizResults.find((item) => item.id === resultId);
+
+  return (
+    <Page narrow>
+      {!ready ? (
+        <p className={styles.loading}>Loading saved result…</p>
+      ) : result ? (
+        <LoadedResult result={result} />
+      ) : (
+        <EmptyState
+          icon="clock"
+          title="Result not found"
+          description="This private result is not available on the current account or device."
+          action={<Link className={styles.action} to={Routes.dashboard}>Go to library</Link>}
+        />
+      )}
+    </Page>
+  );
+}
+
+function LoadedResult({ result }: { result: QuizResult }) {
+  const chapterState = useChapter(result.chapterId);
+  const navigate = useNavigate();
+  const { setQuizResultAnalytics } = useUserData();
+
+  return (
+    <>
+      <Link to={Routes.chapter(result.chapterId)} className={styles.back}>
+        <Icon name="arrowLeft" size={16} />
+        Quiz history
+      </Link>
+      <header className={styles.header}>
+        <span>Saved result</span>
+        <h1>{result.chapterTitle ?? 'Quiz attempt'}</h1>
+        <p>{new Intl.DateTimeFormat(undefined, {
+          dateStyle: 'long',
+          timeStyle: 'short',
+        }).format(result.takenAt)}</p>
+      </header>
+      <AsyncBoundary state={chapterState} loadingLabel="Loading result details…">
+        {(chapter) => {
+          const reviewedIds = result.perQuestion?.length
+            ? new Set(result.perQuestion.map((question) => question.questionId))
+            : null;
+          const questions = reviewedIds
+            ? chapter.prelims.filter((question) => reviewedIds.has(question.id))
+            : chapter.prelims;
+          return (
+            <QuizResults
+              historical
+              questions={questions}
+              answers={result.answers}
+              summary={{
+                total: result.totalQuestions,
+                answered: result.answered,
+                correct: result.correct,
+                skipped: result.skipped,
+                accuracy: result.answered === 0
+                  ? 0
+                  : Math.round((result.correct / result.answered) * 100),
+                durationMs: result.durationMs,
+              }}
+              includedInAnalytics={result.includedInAnalytics !== false}
+              focusLossCount={result.focusLossCount}
+              focusPenaltyTotal={result.focusPenaltyTotal}
+              adjustedScore={result.adjustedScore}
+              onAnalyticsChange={(included) => setQuizResultAnalytics(result.id, included)}
+              onRetry={() => navigate(Routes.chapter(result.chapterId))}
+              onExit={() => navigate(Routes.chapter(result.chapterId))}
+            />
+          );
+        }}
+      </AsyncBoundary>
+    </>
+  );
+}

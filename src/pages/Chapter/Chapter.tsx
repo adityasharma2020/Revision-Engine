@@ -40,6 +40,7 @@ function ChapterView({ chapter }: { chapter: ChapterModel }) {
     : chapter.prelims.length > 0 ? 'prelims' : 'mains');
   const [origin, setOrigin] = useState<OriginFilter>('all');
   const [quizActive, setQuizActive] = useState(false);
+  const [quizImmersive, setQuizImmersive] = useState(false);
   const [leaveQuizOpen, setLeaveQuizOpen] = useState(false);
   const filteredPrelims = filterByOrigin(chapter.prelims, origin);
   const filteredMains = filterByOrigin(chapter.mains, origin);
@@ -49,6 +50,7 @@ function ChapterView({ chapter }: { chapter: ChapterModel }) {
       .map((question) => questionOriginKind(question.origin)),
   );
   const quizDraftPresent = hasQuizDraft(chapter.id);
+  const hideStudyChrome = quizDraftPresent || quizImmersive;
 
   const changeMode = (next: Mode) => {
     if (next === 'learning' && mode === 'quiz' && (quizActive || hasQuizDraft(chapter.id))) {
@@ -60,17 +62,17 @@ function ChapterView({ chapter }: { chapter: ChapterModel }) {
 
   return (
     <>
-      {!quizDraftPresent && (
+      {!hideStudyChrome && (
         <Link to={Routes.dashboard} className={styles.back}>
           <Icon name="arrowLeft" size={16} />
           Library
         </Link>
       )}
-      {!quizDraftPresent && <header className={styles.header}>
+      {!hideStudyChrome && <header className={styles.header}>
         <div className={styles.headTop}>
           <Badge hue={hue}>{label}</Badge>
           <span className={styles.chapterNo}>Chapter {chapter.chapterNumber}</span>
-          {!quizDraftPresent && (
+          {!hideStudyChrome && (
             <Link to={`${Routes.search}?chapter=${encodeURIComponent(chapter.id)}`} className={styles.chapterSearch}>
               <Icon name="search" size={15} /> Search chapter
             </Link>
@@ -83,7 +85,7 @@ function ChapterView({ chapter }: { chapter: ChapterModel }) {
         {chapter.source && <p className={styles.source}>Source · {chapter.source}</p>}
       </header>}
 
-      {!quizDraftPresent && <div className={styles.modeRow}>
+      {!hideStudyChrome && <div className={styles.modeRow}>
         <button
           type="button"
           className={mode === 'learning' ? styles.modeActive : styles.modeOption}
@@ -105,7 +107,7 @@ function ChapterView({ chapter }: { chapter: ChapterModel }) {
         </button>
       </div>}
 
-      {!quizDraftPresent && availableOrigins.size > 0 && (
+      {!hideStudyChrome && availableOrigins.size > 0 && (
         <div className={styles.originFilter} aria-label="Filter questions by origin">
           <span className={styles.filterLabel}>Question source</span>
           <div className={styles.filterOptions}>
@@ -134,7 +136,7 @@ function ChapterView({ chapter }: { chapter: ChapterModel }) {
           chapter={chapter}
           questions={filteredPrelims}
           onActiveChange={setQuizActive}
-          onRequestLearning={() => setMode('learning')}
+          onImmersiveChange={setQuizImmersive}
         />
       ) : (
         <LearningView

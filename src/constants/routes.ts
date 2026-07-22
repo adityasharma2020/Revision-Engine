@@ -4,6 +4,7 @@ export const Routes = {
   search: '/search',
   chapter: (chapterId: string = ':chapterId') => `/chapter/${chapterId}`,
   quiz: (chapterId: string = ':chapterId') => `/chapter/${chapterId}/revise`,
+  quizResult: (resultId: string = ':resultId') => `/results/${resultId}`,
   statistics: '/statistics',
   bookmarks: '/bookmarks',
   import: '/import',
