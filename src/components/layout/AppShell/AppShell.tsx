@@ -4,7 +4,7 @@ import { Routes } from '../../../constants/routes';
 import { Sidebar } from '../Sidebar';
 import styles from './AppShell.module.css';
 import { cx } from '../../../utils/cx';
-import { findActiveQuizDraft } from '../../../hooks/useQuizSession';
+import { abandonQuizDraft, findActiveQuizDraft } from '../../../hooks/useQuizSession';
 import { Button } from '../../common/Button';
 import { Icon } from '../../common/Icon';
 
@@ -27,6 +27,7 @@ export function AppShell() {
     },
   );
   const [navigationBlocked, setNavigationBlocked] = useState(false);
+  const [blockedDestination, setBlockedDestination] = useState<string | null>(null);
 
   useEffect(() => {
     const update = (event: Event) => {
@@ -76,6 +77,7 @@ export function AppShell() {
         if (!link) return;
         event.preventDefault();
         event.stopPropagation();
+        setBlockedDestination(link.getAttribute('href'));
         setNavigationBlocked(true);
       }}
     >
@@ -98,8 +100,27 @@ export function AppShell() {
           >
             <span className={styles.guardIcon}><Icon name="clock" size={20} /></span>
             <h2 id="quiz-navigation-title">Quiz in progress</h2>
-            <p>Submit the active timed quiz before navigating elsewhere. This prevents overlapping attempts and inaccurate timing.</p>
-            <Button variant="primary" onClick={() => setNavigationBlocked(false)}>Continue quiz</Button>
+            <p>
+              Submit the active timed quiz before navigating elsewhere. This
+              prevents overlapping attempts and inaccurate timing.
+            </p>
+            <div className={styles.guardActions}>
+              <Button variant="primary" onClick={() => setNavigationBlocked(false)}>Continue quiz</Button>
+              {findActiveQuizDraft()?.settings.allowQuit && activeQuizChapter && (
+                <Button
+                  variant="secondary"
+                  onClick={() => {
+                    abandonQuizDraft(activeQuizChapter);
+                    setNavigationBlocked(false);
+                    setActiveQuizChapter(null);
+                    setQuizNavigationLocked(false);
+                    if (blockedDestination) navigate(blockedDestination);
+                  }}
+                >
+                  Quit quiz and leave
+                </Button>
+              )}
+            </div>
           </section>
         </div>
       )}

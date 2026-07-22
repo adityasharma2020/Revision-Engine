@@ -50,6 +50,7 @@ export interface QuizResult {
     readonly allowPause: boolean;
     readonly lockNavigation: boolean;
     readonly trackFocusLoss: boolean;
+    readonly allowQuit: boolean;
     readonly focusPenaltyEnabled: boolean;
     readonly focusLossGrace: number;
     readonly focusPenaltyPerLoss: number;

@@ -18,6 +18,7 @@ const sameSettings = (left: QuizSettings, right: QuizSettings) =>
   left.allowPause === right.allowPause &&
   left.lockNavigation === right.lockNavigation &&
   left.trackFocusLoss === right.trackFocusLoss &&
+  left.allowQuit === right.allowQuit &&
   left.focusPenaltyEnabled === right.focusPenaltyEnabled &&
   left.focusLossGrace === right.focusLossGrace &&
   left.focusPenaltyPerLoss === right.focusPenaltyPerLoss;
@@ -30,7 +31,7 @@ export function QuizIntro({ questionCount, lastScore, onStart }: QuizIntroProps)
       ? 'standard'
       : 'custom';
 
-  const toggle = (key: 'allowPause' | 'lockNavigation' | 'trackFocusLoss' | 'focusPenaltyEnabled') =>
+  const toggle = (key: 'allowPause' | 'allowQuit' | 'lockNavigation' | 'trackFocusLoss' | 'focusPenaltyEnabled') =>
     setSettings((current) => ({ ...current, [key]: !current[key] }));
 
   const start = () => {
@@ -74,6 +75,7 @@ export function QuizIntro({ questionCount, lastScore, onStart }: QuizIntroProps)
       <div className={styles.quizToggles}>
         <ToggleRow label="Allow timer pause" description="Freeze the timer and question controls while paused." checked={settings.allowPause} onChange={() => toggle('allowPause')} />
         <ToggleRow label="Lock internal navigation" description="Prevent opening Library, Search, Settings, or Learning while running." checked={settings.lockNavigation} onChange={() => toggle('lockNavigation')} />
+        <ToggleRow label="Allow quitting an unfinished quiz" description="Show a quit option in navigation warnings. Quitting discards the draft and does not save a result." checked={settings.allowQuit} onChange={() => toggle('allowQuit')} />
         <ToggleRow label="Track focus changes" description="Start fullscreen, deter common exit shortcuts, and record tab or app switching." checked={settings.trackFocusLoss} onChange={() => toggle('trackFocusLoss')} />
       </div>
 

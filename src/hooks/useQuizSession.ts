@@ -17,6 +17,7 @@ export interface QuizSettings {
   allowPause: boolean;
   lockNavigation: boolean;
   trackFocusLoss: boolean;
+  allowQuit: boolean;
   focusPenaltyEnabled: boolean;
   focusLossGrace: number;
   focusPenaltyPerLoss: number;
@@ -26,6 +27,7 @@ export const STANDARD_QUIZ_SETTINGS: QuizSettings = {
   allowPause: true,
   lockNavigation: true,
   trackFocusLoss: false,
+  allowQuit: false,
   focusPenaltyEnabled: false,
   focusLossGrace: 3,
   focusPenaltyPerLoss: 0.25,
@@ -35,6 +37,7 @@ export const STRICT_QUIZ_SETTINGS: QuizSettings = {
   allowPause: false,
   lockNavigation: true,
   trackFocusLoss: true,
+  allowQuit: false,
   focusPenaltyEnabled: false,
   focusLossGrace: 3,
   focusPenaltyPerLoss: 0.25,
@@ -108,6 +111,14 @@ export function announceQuizLock(chapterId: string | null, locked = false): void
   window.dispatchEvent(
     new CustomEvent('revision-engine:quiz-lock', { detail: { chapterId, locked } }),
   );
+}
+
+export function abandonQuizDraft(chapterId: string): void {
+  try {
+    sessionStorage.removeItem(quizDraftKey(chapterId));
+  } finally {
+    announceQuizLock(null, false);
+  }
 }
 
 function settingsFromDraft(state?: QuizSessionState & { policy?: 'standard' | 'strict' }): QuizSettings {
