@@ -196,6 +196,14 @@ export function Import() {
         </p>
       </section>
 
+      <div className={styles.importCaution} role="note">
+        <Badge tone="warning">Advanced import</Badge>
+        <p>
+          Continue only if you understand the JSON you are importing. Review its questions,
+          answers, sources, and permissions before saving it to your library.
+        </p>
+      </div>
+
       <div className={styles.dropzone}>
         <input
           ref={fileInput}

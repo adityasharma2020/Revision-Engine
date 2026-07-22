@@ -33,6 +33,15 @@ function HomeContent({ chapters }: { chapters: readonly ChapterSummary[] }) {
       .sort((a, b) => (activity.get(b.id) ?? 0) - (activity.get(a.id) ?? 0))
       .slice(0, 3);
   }, [chapters, progress, quizResults]);
+  const today = useMemo(() => {
+    const start = new Date();
+    start.setHours(0, 0, 0, 0);
+    const results = quizResults.filter((result) => result.takenAt >= start.getTime());
+    return {
+      quizzes: results.length,
+      questions: results.reduce((total, result) => total + result.totalQuestions, 0),
+    };
+  }, [quizResults]);
   const continueChapter = recent[0] ?? chapters[0];
   return (
     <>
@@ -40,7 +49,16 @@ function HomeContent({ chapters }: { chapters: readonly ChapterSummary[] }) {
         <div>
           <span className={styles.eyebrow}>Revision dashboard</span>
           <h1>What will you revise today?</h1>
-          <p>Continue where you stopped, test yourself, or add new study material.</p>
+          <p>Continue where you stopped, test yourself, or explore your library.</p>
+        </div>
+        <div className={styles.todaySummary}>
+          <span>Today</span>
+          <strong>{today.quizzes > 0 ? `${today.questions} questions` : 'A fresh start'}</strong>
+          <small>
+            {today.quizzes > 0
+              ? `${today.quizzes} ${today.quizzes === 1 ? 'quiz' : 'quizzes'} completed`
+              : 'Complete a quiz to begin today’s progress.'}
+          </small>
         </div>
       </section>
 
@@ -58,7 +76,6 @@ function HomeContent({ chapters }: { chapters: readonly ChapterSummary[] }) {
 
       <section className={styles.actions} aria-label="Quick actions">
         <Action to={Routes.library} icon="book" title="Open library" text="Browse every subject and chapter." />
-        <Action to={Routes.import} icon="plus" title="Import your own" text="Create a chapter from your material." />
         <Action to={continueChapter ? Routes.chapter(continueChapter.id) : Routes.library} icon="clock" title="Take a quiz" text="Start a timed attempt with saved results." />
       </section>
 
@@ -79,7 +96,7 @@ function HomeContent({ chapters }: { chapters: readonly ChapterSummary[] }) {
 
 function Action({ to, icon, title, text }: {
   to: string;
-  icon: 'book' | 'plus' | 'clock' | 'search';
+  icon: 'book' | 'clock' | 'search';
   title: string;
   text: string;
 }) {

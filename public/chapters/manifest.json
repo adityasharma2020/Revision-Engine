@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-07-22T05:46:30.336Z",
+  "generatedAt": "2026-07-22T11:50:08.216Z",
   "chapters": [
     {
       "id": "history-mughals-ch01",
@@ -17,6 +17,23 @@
       "file": "history_ch01.json",
       "prelimsCount": 15,
       "mainsCount": 3
+    },
+    {
+      "id": "history-mughal-decline-ch02",
+      "subject": "History",
+      "title": "Decline of the Mughal Empire (1707 onwards)",
+      "chapterNumber": 2,
+      "source": "Chapter 2 — Companion (PYQs to FYQs)",
+      "description": "Aurangzeb's wars and religious policies, the Mansabdari and Jagirdari crises, court factionalism after 1707, the Treaty of Bhopal 1738, Nadir Shah's invasion and the Battle of Karnal 1739, and the fragmented polity of mid-18th century India.",
+      "tags": [
+        "medieval-india",
+        "mughal-decline",
+        "aurangzeb",
+        "18th-century"
+      ],
+      "file": "history-mughal-decline-ch02.json",
+      "prelimsCount": 16,
+      "mainsCount": 4
     }
   ]
 }

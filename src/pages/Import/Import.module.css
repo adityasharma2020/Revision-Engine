@@ -72,6 +72,30 @@
   color: var(--text-tertiary);
 }
 
+.importCaution {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-3);
+  margin-bottom: var(--space-3);
+  padding: var(--space-3) var(--space-4);
+  font-size: var(--text-sm);
+  line-height: var(--leading-normal);
+  color: var(--text-secondary);
+  background-color: var(--warning-subtle);
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius-md);
+}
+
+.importCaution > span {
+  flex-shrink: 0;
+}
+
+@media (max-width: 520px) {
+  .importCaution {
+    flex-direction: column;
+  }
+}
+
 .dropzone {
   margin-bottom: var(--space-5);
 }

@@ -1,0 +1,705 @@
+{
+  "id": "history-mughal-decline-ch02",
+  "subject": "History",
+  "title": "Decline of the Mughal Empire (1707 onwards)",
+  "chapterNumber": 2,
+  "source": "Chapter 2 — Companion (PYQs to FYQs)",
+  "description": "Aurangzeb's wars and religious policies, the Mansabdari and Jagirdari crises, court factionalism after 1707, the Treaty of Bhopal 1738, Nadir Shah's invasion and the Battle of Karnal 1739, and the fragmented polity of mid-18th century India.",
+  "tags": [
+    "medieval-india",
+    "mughal-decline",
+    "aurangzeb",
+    "18th-century"
+  ],
+  "prelims": [
+    {
+      "id": "pre-001",
+      "statement": "Assertion (A): Shah Alam II spent the initial years as an Emperor far away from his capital.\nReason (R): There was always a lurking danger of foreign invasion from the North-West frontier.",
+      "questionType": "assertion-reason",
+      "assertion": "Shah Alam II spent the initial years as an Emperor far away from his capital.",
+      "reason": "There was always a lurking danger of foreign invasion from the North-West frontier.",
+      "ask": "Choose the correct option.",
+      "options": [
+        {
+          "id": "a",
+          "text": "Both A and R are individually true and R is the correct explanation of A"
+        },
+        {
+          "id": "b",
+          "text": "Both A and R are individually true, but R is not the correct explanation of A"
+        },
+        {
+          "id": "c",
+          "text": "A is true, but R is false"
+        },
+        {
+          "id": "d",
+          "text": "A is false, but R is true"
+        }
+      ],
+      "answer": "c",
+      "explanation": "Why (c) is correct: Assertion A is true — Shah Alam II60-06 did spend the initial years of his reign far from Delhi. But Reason R is false — the cause was fear of his own Wazir, Imad-ul-Mulk, not fear of foreign invasion from the North-West frontier. An emperor afraid to sit in his own capital because of his own minister is the emblem of Mughal decline. You will find this in 'What did India look like by the mid-18th century?' (◆ Takeaway).\nWhy the other options are wrong:\n1. (a) wrong — R is false; the threat was internal (Wazir), not external (frontier).\n2. (b) wrong — R is false (same reason).\n3. (d) wrong — A is true; Shah Alam II60-06 did keep away from Delhi for years.",
+      "difficulty": "medium",
+      "tags": [
+        "shah-alam-ii",
+        "later-mughals"
+      ],
+      "source": "Prelims 2003",
+      "origin": "PYQ_Pre.1",
+      "year": 2003
+    },
+    {
+      "id": "pre-002",
+      "statement": "The chapter analyses State power as a five-component equation. Which of the following correctly represents this equation?",
+      "questionType": "standard",
+      "options": [
+        {
+          "id": "a",
+          "text": "Power = Political + Economic + Military + Religious + Diplomatic"
+        },
+        {
+          "id": "b",
+          "text": "Power = Political + Economic + Military + Social + Technological"
+        },
+        {
+          "id": "c",
+          "text": "Power = Political + Administrative + Military + Social + Cultural"
+        },
+        {
+          "id": "d",
+          "text": "Power = Political + Economic + Military + Religious + Technological"
+        }
+      ],
+      "answer": "b",
+      "explanation": "✓ — 'Framework — how to analyse the decline': chapter introduces State power as a five-component equation: Power = Political + Economic + Military + Social + Technological. The Mughal decline is a simultaneous weakening across all five.",
+      "difficulty": "easy",
+      "tags": [
+        "framework",
+        "state-power"
+      ],
+      "origin": "FYQ_Pre_1"
+    },
+    {
+      "id": "pre-003",
+      "statement": "Consider the following statements regarding Aurangzeb5807's Deccan annexations:\n1. Bijapur was annexed in 1686; the Adil Shahi dynasty had ruled there from 1489.\n2. Golconda was annexed in 1687; the Qutb Shahi dynasty had ruled there from 1518.\n3. Both Bijapur and Golconda were successor kingdoms of the Bahmani Sultanate (1347–1527).\nWhich of the statements given above is/are correct?",
+      "questionType": "statements",
+      "lead": "Consider the following statements regarding Aurangzeb5807's Deccan annexations:",
+      "statements": [
+        "Bijapur was annexed in 1686; the Adil Shahi dynasty had ruled there from 1489.",
+        "Golconda was annexed in 1687; the Qutb Shahi dynasty had ruled there from 1518.",
+        "Both Bijapur and Golconda were successor kingdoms of the Bahmani Sultanate (1347–1527)."
+      ],
+      "ask": "Which of the statements given above is/are correct?",
+      "options": [
+        {
+          "id": "a",
+          "text": "1 and 2 only"
+        },
+        {
+          "id": "b",
+          "text": "2 and 3 only"
+        },
+        {
+          "id": "c",
+          "text": "1 and 3 only"
+        },
+        {
+          "id": "d",
+          "text": "1, 2 and 3"
+        }
+      ],
+      "answer": "d",
+      "explanation": "Statement 1 ✓ — Bijapur (1686; Adil Shahi 1489–1686).\nStatement 2 ✓ — Golconda (1687; Qutb Shahi 1518–1687).\nStatement 3 ✓ — both were successor kingdoms of the Bahmani Sultanate (1347–1527).",
+      "difficulty": "medium",
+      "tags": [
+        "deccan",
+        "bijapur",
+        "golconda",
+        "bahmani"
+      ],
+      "origin": "FYQ_Pre_2"
+    },
+    {
+      "id": "pre-004",
+      "statement": "With reference to the three-way fight in the Deccan, consider the following statements:\n1. The contest pitted the Mughals, the two Deccan kingdoms (Bijapur + Golconda), & the Marathas against each other.\n2. The Marathas never accepted Mughal authority.\n3. By the 1750s the Marathas had reversed Aurangzeb5807's Deccan gains.\nWhich of the statements given above is/are correct?",
+      "questionType": "statements",
+      "lead": "With reference to the three-way fight in the Deccan, consider the following statements:",
+      "statements": [
+        "The contest pitted the Mughals, the two Deccan kingdoms (Bijapur + Golconda), & the Marathas against each other.",
+        "The Marathas never accepted Mughal authority.",
+        "By the 1750s the Marathas had reversed Aurangzeb5807's Deccan gains."
+      ],
+      "ask": "Which of the statements given above is/are correct?",
+      "options": [
+        {
+          "id": "a",
+          "text": "1 and 2 only"
+        },
+        {
+          "id": "b",
+          "text": "2 and 3 only"
+        },
+        {
+          "id": "c",
+          "text": "1 and 3 only"
+        },
+        {
+          "id": "d",
+          "text": "1, 2 and 3"
+        }
+      ],
+      "answer": "d",
+      "explanation": "Statement 1 ✓ — ground reality was a three-way fight — Mughals, the two Deccan kingdoms, & the Marathas.\nStatement 2 ✓ — the Marathas never accepted Mughal authority.\nStatement 3 ✓ — by 1705 Marathas were winning decisively; by the 1750s they had reversed Aurangzeb5807's Deccan gains.",
+      "difficulty": "medium",
+      "tags": [
+        "deccan",
+        "marathas"
+      ],
+      "origin": "FYQ_Pre_3"
+    },
+    {
+      "id": "pre-005",
+      "statement": "Arrange the following milestones in the history of Jizya in India in correct chronological order:\n1. Akbar5605 abolished Jizya as part of his Sulh-i-Kul policy.\n2. Aurangzeb5807 re-introduced Jizya.\n3. Qutb-ud-din Aibak first introduced Jizya in India.\n4. Farukhsiyar1319 re-introduced Jizya after Zulfiqar Khan abolished it.\nSelect the correct answer using the code given below:",
+      "questionType": "sequence",
+      "lead": "Arrange the following milestones in the history of Jizya in India in correct chronological order:",
+      "statements": [
+        "Akbar5605 abolished Jizya as part of his Sulh-i-Kul policy.",
+        "Aurangzeb5807 re-introduced Jizya.",
+        "Qutb-ud-din Aibak first introduced Jizya in India.",
+        "Farukhsiyar1319 re-introduced Jizya after Zulfiqar Khan abolished it."
+      ],
+      "ask": "Select the correct answer using the code given below:",
+      "options": [
+        {
+          "id": "a",
+          "text": "3 — 1 — 2 — 4"
+        },
+        {
+          "id": "b",
+          "text": "3 — 2 — 1 — 4"
+        },
+        {
+          "id": "c",
+          "text": "1 — 3 — 2 — 4"
+        },
+        {
+          "id": "d",
+          "text": "3 — 1 — 4 — 2"
+        }
+      ],
+      "answer": "a",
+      "explanation": "1. Qutb-ud-din Aibak (1206–10) first introduced Jizya in India.\n2. Akbar5605 abolished it in 1564 as part of his Sulh-i-Kul policy.\n3. Aurangzeb5807 reversed Akbar5605 in 1679 (re-introduced Jizya).\n4. Farukhsiyar1319 re-introduced it in 1717 (after Zulfiqar Khan, Wazir of Jahandar Shah1213, had abolished it again in 1712).",
+      "difficulty": "medium",
+      "tags": [
+        "jizya",
+        "chronology"
+      ],
+      "origin": "FYQ_Pre_4"
+    },
+    {
+      "id": "pre-006",
+      "statement": "With reference to the Kashi Vishwanath temple at Varanasi, consider the following statements:\n1. The temple was demolished by Aurangzeb5807 in 1669 & replaced on the same site by the Gyanvapi Mosque.\n2. The demolition order is documented in Aurangzeb5807's own court record, the Maasir-i-Alamgiri.\n3. Ahilyabai Holkar of Indore rebuilt the temple in 1780 near the original site.\nWhich of the statements given above is/are correct?",
+      "questionType": "statements",
+      "lead": "With reference to the Kashi Vishwanath temple at Varanasi, consider the following statements:",
+      "statements": [
+        "The temple was demolished by Aurangzeb5807 in 1669 & replaced on the same site by the Gyanvapi Mosque.",
+        "The demolition order is documented in Aurangzeb5807's own court record, the Maasir-i-Alamgiri.",
+        "Ahilyabai Holkar of Indore rebuilt the temple in 1780 near the original site."
+      ],
+      "ask": "Which of the statements given above is/are correct?",
+      "options": [
+        {
+          "id": "a",
+          "text": "1 and 2 only"
+        },
+        {
+          "id": "b",
+          "text": "2 and 3 only"
+        },
+        {
+          "id": "c",
+          "text": "1 and 3 only"
+        },
+        {
+          "id": "d",
+          "text": "1, 2 and 3"
+        }
+      ],
+      "answer": "d",
+      "explanation": "Statement 1 ✓ — Kashi Vishwanath temple at Varanasi, demolished 1669, replaced on the same site by the Gyanvapi Mosque.\nStatement 2 ✓ — Aurangzeb5807's own court record, the Maasir-i-Alamgiri, documents the order.\nStatement 3 ✓ — Ahilyabai Holkar of Indore rebuilt it in 1780 near the original site.",
+      "difficulty": "medium",
+      "tags": [
+        "religious-policy",
+        "kashi-vishwanath"
+      ],
+      "origin": "FYQ_Pre_5"
+    },
+    {
+      "id": "pre-007",
+      "statement": "Which one of the following best explains why Aurangzeb5807's executions of Guru Tegh Bahadur (1675) & Sambhaji (1689) backfired?",
+      "questionType": "standard",
+      "options": [
+        {
+          "id": "a",
+          "text": "Both leaders escaped before execution and rallied resistance from exile."
+        },
+        {
+          "id": "b",
+          "text": "The executions did not suppress resistance — they created martyrs, hardening anti-Mughal sentiment among Sikhs and Marathas."
+        },
+        {
+          "id": "c",
+          "text": "The Mughal nobility refused to support further executions."
+        },
+        {
+          "id": "d",
+          "text": "Both executions were carried out covertly and their political impact was minimal."
+        }
+      ],
+      "answer": "b",
+      "explanation": "✓ — 'How did Aurangzeb58-07's religious policies erode the social foundations of the empire?' (Why did executions backfire — Guru Tegh Bahadur (1675), Chhatrapati Sambhaji (1689)): both Guru Tegh Bahadur (1675) & Sambhaji (1689) were offered convert-or-die; both refused. The executions did not suppress resistance — they created martyrs, hardening anti-Mughal sentiment among Sikhs and Marathas.\n(a) ✗ — Both were captured and executed; neither escaped.\n(c) ✗ — Mughal nobility was not the constraint.\n(d) ✗ — both executions were public and politically consequential.",
+      "difficulty": "easy",
+      "tags": [
+        "religious-policy",
+        "guru-tegh-bahadur",
+        "sambhaji"
+      ],
+      "origin": "FYQ_Pre_6"
+    },
+    {
+      "id": "pre-008",
+      "statement": "Which one of the following statements about the Mansabdari system is correct?",
+      "questionType": "standard",
+      "options": [
+        {
+          "id": "a",
+          "text": "It ran on personal loyalty to the empire as an institution rather than to the emperor as an individual."
+        },
+        {
+          "id": "b",
+          "text": "It ran on personal loyalty to the emperor as an individual, not to the empire as an institution."
+        },
+        {
+          "id": "c",
+          "text": "Mansabdars swore loyalty to a council of ministers rather than to the emperor directly."
+        },
+        {
+          "id": "d",
+          "text": "Mansabs and Jagirs were granted on the basis of bloodline rather than service."
+        }
+      ],
+      "answer": "b",
+      "explanation": "✓ — 'Why did the Mansabdari system — the empire's own backbone — turn against it?': the Mansabdari system ran on personal loyalty to the emperor as an individual, not to the empire as an institution. A give-and-take: emperor grants Mansabs and Jagirs; nobles return military service and administrative loyalty. A strong emperor could make this work; a weak emperor could not.",
+      "difficulty": "easy",
+      "tags": [
+        "mansabdari"
+      ],
+      "origin": "FYQ_Pre_7"
+    },
+    {
+      "id": "pre-009",
+      "statement": "Consider the following statements regarding Mughal military backwardness in the 18th century:\n1. European powers succeeded with smaller numbers using innovations such as file firing, grapeshot artillery, & the bayonet on the Brown Bess musket.\n2. Haider Ali6182 (Mysore) reorganised his forces on the European model and remained formidable.\n3. Under the Later Mughals, court politics — not merit — determined military appointments.\nWhich of the statements given above is/are correct?",
+      "questionType": "statements",
+      "lead": "Consider the following statements regarding Mughal military backwardness in the 18th century:",
+      "statements": [
+        "European powers succeeded with smaller numbers using innovations such as file firing, grapeshot artillery, & the bayonet on the Brown Bess musket.",
+        "Haider Ali6182 (Mysore) reorganised his forces on the European model and remained formidable.",
+        "Under the Later Mughals, court politics — not merit — determined military appointments."
+      ],
+      "ask": "Which of the statements given above is/are correct?",
+      "options": [
+        {
+          "id": "a",
+          "text": "1 and 2 only"
+        },
+        {
+          "id": "b",
+          "text": "2 and 3 only"
+        },
+        {
+          "id": "c",
+          "text": "1 and 3 only"
+        },
+        {
+          "id": "d",
+          "text": "1, 2 and 3"
+        }
+      ],
+      "answer": "d",
+      "explanation": "Statement 1 ✓ — European powers succeeded with smaller numbers via better command, tighter discipline, & tactical innovations — file firing, grapeshot artillery, & the bayonet on the Brown Bess musket.\nStatement 2 ✓ — Haider Ali6182 (Mysore) reorganised on the European model and remained formidable; the Mughals, paralysed by factionalism, reformed nothing.\nStatement 3 ✓ — under the Later Mughals, court politics — not merit — determined military appointments.",
+      "difficulty": "medium",
+      "tags": [
+        "military-decline",
+        "haider-ali"
+      ],
+      "origin": "FYQ_Pre_8"
+    },
+    {
+      "id": "pre-010",
+      "statement": "In the context of the Later Mughal army, what does the Sawar fraud refer to?",
+      "questionType": "standard",
+      "options": [
+        {
+          "id": "a",
+          "text": "Mansabdars maintained more cavalry than their Sawar rank required, claiming bonuses."
+        },
+        {
+          "id": "b",
+          "text": "Mansabdars maintained far fewer cavalry than their Sawar rank required, pocketing the difference."
+        },
+        {
+          "id": "c",
+          "text": "Mansabdars sold their Sawar ranks to the highest bidder among the regional nawabs."
+        },
+        {
+          "id": "d",
+          "text": "Mansabdars substituted infantry for cavalry while still drawing Sawar-rank salaries."
+        }
+      ],
+      "answer": "b",
+      "explanation": "✓ — 'Why did the Mughal military weakened?': under weak supervision Mansabdars maintained far fewer cavalry than their Sawar rank required, pocketing the difference. Aurangzeb5807's war drain and the Jagirdari crisis compounded this.\n(a) ✗ — chapter describes the opposite (under-, not over-, maintenance).\n(c) ✗ — chapter describes Sawar-rank fraud, not rank-sale to nawabs.\n(d) ✗ — chapter describes cavalry-count fraud, not cavalry-infantry substitution.",
+      "difficulty": "medium",
+      "tags": [
+        "sawar-fraud",
+        "military-decline",
+        "mansabdari"
+      ],
+      "origin": "FYQ_Pre_9"
+    },
+    {
+      "id": "pre-011",
+      "statement": "Match the following Mughal-court factional groups with their identifying description:\n1. Irani — A. Sunni Turkish-Uzbek — Mughal stock (e.g. Nizam-ul-Mulk24-48)\n2. Turani — B. Shia Persian (e.g. Zulfiqar Khan)\n3. Hindustani — C. Converted Indian Muslims (e.g. the Sayyid Brothers)\n4. Deccani — D. Nobles absorbed from Bijapur 1686 & Golconda 1687",
+      "questionType": "match-pairs",
+      "lead": "Match the following Mughal-court factional groups with their identifying description:",
+      "pairLeftLabel": "Group",
+      "pairRightLabel": "Description",
+      "pairs": [
+        {
+          "left": "Irani",
+          "right": "Sunni Turkish-Uzbek — Mughal stock (e.g. Nizam-ul-Mulk24-48)"
+        },
+        {
+          "left": "Turani",
+          "right": "Shia Persian (e.g. Zulfiqar Khan)"
+        },
+        {
+          "left": "Hindustani",
+          "right": "Converted Indian Muslims (e.g. the Sayyid Brothers)"
+        },
+        {
+          "left": "Deccani",
+          "right": "Nobles absorbed from Bijapur 1686 & Golconda 1687"
+        }
+      ],
+      "options": [
+        {
+          "id": "a",
+          "text": "1-A, 2-B, 3-C, 4-D"
+        },
+        {
+          "id": "b",
+          "text": "1-B, 2-A, 3-C, 4-D"
+        },
+        {
+          "id": "c",
+          "text": "1-B, 2-C, 3-A, 4-D"
+        },
+        {
+          "id": "d",
+          "text": "1-A, 2-C, 3-B, 4-D"
+        }
+      ],
+      "answer": "b",
+      "explanation": "Group 1 (Irani) — Shia Persian (e.g. Zulfiqar Khan).\nGroup 2 (Turani) — Sunni Turkish-Uzbek — Mughal stock (e.g. Nizam-ul-Mulk).\nGroup 3 (Hindustani) — converted Indian Muslims (e.g. the Sayyid Brothers).\nGroup 4 (Deccani) — nobles absorbed from Bijapur 1686 & Golconda 1687.",
+      "difficulty": "medium",
+      "tags": [
+        "factionalism",
+        "court-groups"
+      ],
+      "origin": "FYQ_Pre_10"
+    },
+    {
+      "id": "pre-012",
+      "statement": "With reference to the Jagirdari crisis, consider the following statements:\n1. After annexing Bijapur (1686) & Golconda (1687), Aurangzeb5807 declared most of their lands Khalisa to fund the Maratha war.\n2. Distribution of Jagirs was deeply unequal — 5% of Mansabdars controlled 61% of Jagir revenue.\n3. The Ijaradari system (revenue-farming) stripped collection rights from Zamindars, alienating the traditional stabilising force of the countryside.\nWhich of the statements given above is/are correct?",
+      "questionType": "statements",
+      "lead": "With reference to the Jagirdari crisis, consider the following statements:",
+      "statements": [
+        "After annexing Bijapur (1686) & Golconda (1687), Aurangzeb5807 declared most of their lands Khalisa to fund the Maratha war.",
+        "Distribution of Jagirs was deeply unequal — 5% of Mansabdars controlled 61% of Jagir revenue.",
+        "The Ijaradari system (revenue-farming) stripped collection rights from Zamindars, alienating the traditional stabilising force of the countryside."
+      ],
+      "ask": "Which of the statements given above is/are correct?",
+      "options": [
+        {
+          "id": "a",
+          "text": "1 and 2 only"
+        },
+        {
+          "id": "b",
+          "text": "2 and 3 only"
+        },
+        {
+          "id": "c",
+          "text": "1 and 3 only"
+        },
+        {
+          "id": "d",
+          "text": "1, 2 and 3"
+        }
+      ],
+      "answer": "d",
+      "explanation": "Statement 1 ✓ — after annexing Bijapur (1686) & Golconda (1687), their nobles were absorbed as Mansabdars — but Aurangzeb5807 declared most of their lands Khalisa to fund the Maratha war.\nStatement 2 ✓ — distribution was deeply unequal: 5% of Mansabdars controlled 61% of Jagir revenue.\nStatement 3 ✓ — extraction became more ruthless through the Ijaradari system (revenue-farming), which stripped collection rights from Zamindars, alienating the traditional stabilising force of the countryside.",
+      "difficulty": "hard",
+      "tags": [
+        "jagirdari-crisis",
+        "ijaradari",
+        "khalisa"
+      ],
+      "origin": "FYQ_Pre_11"
+    },
+    {
+      "id": "pre-013",
+      "statement": "Consider the following pairs about the factionalism-proof sequence after 1707:\nWhich of the pairs given above are correctly matched?",
+      "questionType": "pair-evaluation",
+      "lead": "Consider the following pairs about the factionalism-proof sequence after 1707:",
+      "ask": "Which of the pairs given above are correctly matched?",
+      "options": [
+        {
+          "id": "a",
+          "text": "1 and 2 only"
+        },
+        {
+          "id": "b",
+          "text": "2 and 3 only"
+        },
+        {
+          "id": "c",
+          "text": "1 and 3 only"
+        },
+        {
+          "id": "d",
+          "text": "1, 2 and 3"
+        }
+      ],
+      "answer": "d",
+      "explanation": "Pair 1 ✓ — 'Royal vs Royal — how Jahandar Shah12-13 rose & fell': Jahandar Shah1213 backed by Zulfiqar Khan (Irani group); Farukhsiyar1319 backed by Sayyid Brothers (Hindustani group), removed and executed Jahandar Shah1213.\nPair 2 ✓ — 'Royal vs Noble — when an emperor refused to be a puppet': Farukhsiyar1319 refused Sayyid puppetry; Sayyids allied with Marathas under Peshwa Balaji Vishwanath, killed Farukhsiyar1319 & installed Muhammad Shah1948.\nPair 3 ✓ — 'Noble vs Noble — how the Turani group checked the Sayyids': Nizam-ul-Mulk (Turani group) allied with Irani group, defeated the Sayyids; served as Wazir 1722–24, then left Delhi to set up as Governor of Hyderabad from 1724–48 (Nizam2448).",
+      "difficulty": "medium",
+      "tags": [
+        "factionalism",
+        "later-mughals"
+      ],
+      "origin": "FYQ_Pre_12"
+    },
+    {
+      "id": "pre-014",
+      "statement": "With reference to the Treaty of Bhopal (1738), consider the following statements:\n1. The treaty followed the Marathas' 1738 defeat of a large Mughal army commanded by Nizam2448.\n2. The Marathas received legal recognition of control over all lands between the Chambal and Narmada.\n3. The Marathas also received legal recognition of control over the Subah of Malwa.\nWhich of the statements given above is/are correct?",
+      "questionType": "statements",
+      "lead": "With reference to the Treaty of Bhopal (1738), consider the following statements:",
+      "statements": [
+        "The treaty followed the Marathas' 1738 defeat of a large Mughal army commanded by Nizam2448.",
+        "The Marathas received legal recognition of control over all lands between the Chambal and Narmada.",
+        "The Marathas also received legal recognition of control over the Subah of Malwa."
+      ],
+      "ask": "Which of the statements given above is/are correct?",
+      "options": [
+        {
+          "id": "a",
+          "text": "1 and 2 only"
+        },
+        {
+          "id": "b",
+          "text": "2 and 3 only"
+        },
+        {
+          "id": "c",
+          "text": "1 and 3 only"
+        },
+        {
+          "id": "d",
+          "text": "1, 2 and 3"
+        }
+      ],
+      "answer": "d",
+      "explanation": "Statement 1 ✓ — in 1738 the Marathas defeated a large Mughal army commanded by Nizam2448; the aftermath was formalised in the Treaty of Bhopal (1738).\nStatement 2 ✓ — Marathas received legal recognition of control over all lands between the Chambal and Narmada.\nStatement 3 ✓ — & the Subah of Malwa.",
+      "difficulty": "medium",
+      "tags": [
+        "treaty-of-bhopal",
+        "marathas",
+        "malwa"
+      ],
+      "origin": "FYQ_Pre_13"
+    },
+    {
+      "id": "pre-015",
+      "statement": "Consider the following statements regarding Nadir Shah's invasion & the Battle of Karnal (1739):\n1. Sadat Khan, Nawab of Awadh (Sadat22-39) switched sides because the prestigious post of Mir Bakshi had gone to Nizam24-48 (after the original Mir Bakshi died at Karnal) instead of him.\n2. After his victory, Nadir Shah ruled as emperor of Delhi for 60 days.\n3. Nadir Shah extracted wealth estimated at ~100 crore rupees of the time and took the Peacock Throne with the Kohinoor diamond.\nWhich of the statements given above is/are correct?",
+      "questionType": "statements",
+      "lead": "Consider the following statements regarding Nadir Shah's invasion & the Battle of Karnal (1739):",
+      "statements": [
+        "Sadat Khan, Nawab of Awadh (Sadat22-39) switched sides because the prestigious post of Mir Bakshi had gone to Nizam24-48 (after the original Mir Bakshi died at Karnal) instead of him.",
+        "After his victory, Nadir Shah ruled as emperor of Delhi for 60 days.",
+        "Nadir Shah extracted wealth estimated at ~100 crore rupees of the time and took the Peacock Throne with the Kohinoor diamond."
+      ],
+      "ask": "Which of the statements given above is/are correct?",
+      "options": [
+        {
+          "id": "a",
+          "text": "1 and 2 only"
+        },
+        {
+          "id": "b",
+          "text": "2 and 3 only"
+        },
+        {
+          "id": "c",
+          "text": "1 and 3 only"
+        },
+        {
+          "id": "d",
+          "text": "1, 2 and 3"
+        }
+      ],
+      "answer": "d",
+      "explanation": "Statement 1 ✓ — Sadat Khan, Nawab of Awadh (1722–39; Sadat22-39) switched sides post-Karnal (after he had been taken prisoner at the Battle and the existing Mir Bakshi had died fighting) because the prestigious post of Mir Bakshi had then gone to Nizam24-48 instead of him; Sadat22-39 went on to convince Nadir Shah to attack Delhi for bigger plunder.\nStatement 2 ✓ — Nadir Shah ruled as emperor of Delhi for 60 days.\nStatement 3 ✓ — Nadir Shah extracted wealth estimated at ~100 crore rupees of the time (×250–300 for present value) & took irreplaceable assets — most famously the Peacock Throne with the Kohinoor diamond.",
+      "difficulty": "hard",
+      "tags": [
+        "nadir-shah",
+        "battle-of-karnal",
+        "sadat-khan"
+      ],
+      "origin": "FYQ_Pre_14"
+    },
+    {
+      "id": "pre-016",
+      "statement": "With reference to mid-18th century India, consider the following statements:\n1. By 1752 the Mughal emperor came under Maratha protection — the protector had become the protected.\n2. In 1754 the Marathas installed Alamgir II5459 (1754–59) as their puppet emperor.\n3. The Mughal emperor's actual authority by this point extended little beyond a small area around Delhi and Agra, while symbolic sovereignty was retained until 1858.\nWhich of the statements given above is/are correct?",
+      "questionType": "statements",
+      "lead": "With reference to mid-18th century India, consider the following statements:",
+      "statements": [
+        "By 1752 the Mughal emperor came under Maratha protection — the protector had become the protected.",
+        "In 1754 the Marathas installed Alamgir II5459 (1754–59) as their puppet emperor.",
+        "The Mughal emperor's actual authority by this point extended little beyond a small area around Delhi and Agra, while symbolic sovereignty was retained until 1858."
+      ],
+      "ask": "Which of the statements given above is/are correct?",
+      "options": [
+        {
+          "id": "a",
+          "text": "1 and 2 only"
+        },
+        {
+          "id": "b",
+          "text": "2 and 3 only"
+        },
+        {
+          "id": "c",
+          "text": "1 and 3 only"
+        },
+        {
+          "id": "d",
+          "text": "1, 2 and 3"
+        }
+      ],
+      "answer": "d",
+      "explanation": "Statement 1 ✓ — by 1752, the Mughal emperor came under Maratha protection — The protector had become the protected.\nStatement 2 ✓ — in 1754 the Marathas installed Alamgir II5459 (1754–59) as their puppet emperor.\nStatement 3 ✓ — the Mughal emperor continued to sit in Delhi, technically retaining symbolic sovereignty until 1858, but his actual authority extended little beyond a small area around Delhi and Agra.",
+      "difficulty": "medium",
+      "tags": [
+        "alamgir-ii",
+        "marathas",
+        "mid-18th-century"
+      ],
+      "origin": "FYQ_Pre_15"
+    }
+  ],
+  "mains": [
+    {
+      "id": "main-001",
+      "question": "\"Clarify how mid-eighteenth-century India was beset with the spectre of a fragmented polity.\"",
+      "modelAnswer": "Suggested intro (~25 words): Mid-eighteenth-century India was indeed beset by the spectre of a fragmented polity — the Mughal Empire had collapsed at the centre and many separate regional powers had filled the space.\n\nSuggested conclusion (~20 words): The fragmented polity that haunted mid-eighteenth-century India was already a settled reality — what remained was not one India but many.",
+      "keyPoints": [
+        "Mughal collapse — the cause (this chapter is the primary anchor): - Simultaneous weakening across the State-power components. - Aurangzeb58-07's Deccan wars. - Mansabdari break + Jagirdari crisis. - Treaty of Bhopal 1738 + Nadir Shah's Battle of Karnal 1739. - 1752 emperor under Maratha protection + 1754 Alamgir II54-59 installed by Marathas.",
+        "Successor States — Bengal, Awadh, Hyderabad (see Chapter 3, Successor States).",
+        "Maratha Confederacy (see Chapter 4, Rise of Marathas).",
+        "Jats + Afghans — three rebel states (see Chapter 5 — 'The Jat Kingdom (1695-1763)' + 'Farrukhabad (est. 1714)' + 'Rohilkhand (est. 1737–40)').",
+        "Sikh State (see Chapter 6 — 'How did Banda Bahadur08-15 establish the first Sikh State — and why did it collapse?' + 'What kept the Sikh State alive after Banda Bahadur08-15's defeat?' + 'How did Ranjit Singh01-39 unify the Misls and build a powerful Sikh State?' + 'What were the terms of the 1809 Treaty of Amritsar with the EIC?').",
+        "Mysore + Travancore + Rajputs (see Chapter 7 — 'Akbar56-05 and Rajputs' through 'What made Tipu82-99 a different kind of ruler — and why did he still lose?')."
+      ],
+      "explanation": "Demand of the question: Show how India was a fragmented polity by the mid-eighteenth century. The verb \"clarify\" means make the case clearly with evidence. The phrase \"spectre of a fragmented polity\" tells you the question accepts the premise as a recognised condition; your job is to show how. This chapter (Mughal decline) supplies the cause half — combine with regional-powers chapters for the evidence half. Guiding themes (pick 4–5 for a 150-word answer).",
+      "wordLimit": 150,
+      "marks": 10,
+      "difficulty": "medium",
+      "tags": [
+        "fragmented-polity",
+        "mughal-decline",
+        "regional-powers"
+      ],
+      "origin": "PYQ_M.1",
+      "year": 2017
+    },
+    {
+      "id": "main-002",
+      "question": "\"The third battle of Panipat was fought in 1761. Why were so many empire-shaking battles fought at Panipat?\"",
+      "modelAnswer": "Suggested intro (~25 words): Many empire-shaking battles were fought at Panipat because Panipat was India's natural Delhi gateway from the northwest — and whoever won there won the throne, as the third battle of Panipat in 1761 again confirmed.\n\nSuggested conclusion (~20 words): The empire-shaking battles fought at Panipat — 1526, 1556, 1761 — happened because controlling Panipat meant controlling the Delhi throne.",
+      "keyPoints": [
+        "Geography — Delhi gateway — Khyber Pass → Panipat–Karnal–Kurukshetra–Thanesar belt → Yamuna-Ganga doab (see Chapter 4, Marathas; see Chapter 5, Afghans).",
+        "1st Panipat 1526 — Babur26-30 vs Ibrahim Lodi → birth of Mughal Empire (see Chapter 1, Mughal Background).",
+        "2nd Panipat 1556 — Akbar56-05 vs Hemu → consolidation of Mughal rule (see Chapter 1, Mughal Background).",
+        "3rd Panipat 1761 — Abdali vs Marathas → peak-and-break of Maratha imperial expansion (see Chapter 4 — Marathas; see Chapter 5, 'Shahu19-49's Release — was Mughal \"Pacifist Policy\" really pacifist?' for Afghan-side coalition).",
+        "Sikh-side resistance to Afghan invasions (see Chapter 6 — 'How did Ranjit Singh01-39 unify the Misls and build a powerful Sikh State?')."
+      ],
+      "explanation": "Demand of the question: Explain why this one place — Panipat — kept becoming the site of empire-deciding battles. You must cover the geography (terrain) and the historical pattern (1526, 1556, 1761). The verb \"why\" calls for causal explanation. Guiding themes (pick 4–5 for a 150-word answer).",
+      "wordLimit": 150,
+      "marks": 10,
+      "difficulty": "medium",
+      "tags": [
+        "panipat",
+        "geography",
+        "battles"
+      ],
+      "origin": "PYQ_M.2",
+      "year": 2014
+    },
+    {
+      "id": "main-003",
+      "question": "Trace the link between Aurangzeb's policies and the early-eighteenth-century weakening of Mughal central authority.",
+      "modelAnswer": "Conclusion: Aurangzeb's policies did not collapse the Empire by themselves, but they fatally weakened the four institutional pillars Akbar built. The 1707 succession of weak rulers met an Empire already structurally hollow.",
+      "keyPoints": [
+        "Deccan wars (1681–1707) — Aurangzeb's 26-year campaign exhausted the Mughal treasury, drained the army, and stretched the bureaucracy thin (see 'Why did Aurangzeb58-07's wars sow the seeds of decline?').",
+        "Religious policies — Jizya re-imposition (1679), destruction of select temples (Kashi Vishwanath 1669), and the executions of Guru Tegh Bahadur (1675) & Sambhaji (1689) hardened Sikh and Maratha resistance (see 'How did Aurangzeb58-07's religious policies erode the social foundations of the empire?').",
+        "Mansabdari decay — personal loyalty to Aurangzeb did not transfer to his weaker successors; the Sawar-fraud and chronic salary arrears destroyed army morale (see 'Why did the Mansabdari system — the empire's own backbone — turn against it?' and 'Why did the Mughal military weakened?').",
+        "Jagirdari crisis — too many Mansabdars chasing too few productive Jagirs after the Deccan annexations; the result was a fight for revenue rather than service to the State (see 'What was the Jagirdari crisis, & why did it hit so hard?').",
+        "Conclusion: Aurangzeb's policies did not collapse the Empire by themselves, but they fatally weakened the four institutional pillars Akbar built (see 'Proof of decline — what did factionalism look like in practice?'). The 1707 succession of weak rulers met an Empire already structurally hollow."
+      ],
+      "explanation": "Demand: Identify Aurangzeb's specific policies (Deccan wars, Jizya, temple destruction, executions) and weigh how each contributed to the weakening of central Mughal authority after 1707.",
+      "wordLimit": 250,
+      "marks": 15,
+      "difficulty": "medium",
+      "tags": [
+        "aurangzeb",
+        "mughal-decline",
+        "jagirdari-crisis",
+        "mansabdari"
+      ],
+      "origin": "FYQ_M.1"
+    },
+    {
+      "id": "main-004",
+      "question": "Discuss the role of Nadir Shah's invasion (1739) & the Battle of Karnal in accelerating Mughal decline.",
+      "modelAnswer": "Conclusion: Karnal 1739 was the moment when the Mughal Empire transitioned from a weakening centre to a hollow shell. Within a generation the British East India Company would step into the vacuum left behind.",
+      "keyPoints": [
+        "Context — by 1739 the Mughal centre was already fragile after three decades of weak post-Aurangzeb succession + the Treaty of Bhopal 1738 (see 'Proof of decline — how the Marathas exposed the military collapse').",
+        "The Battle of Karnal (Feb 1739) — Nadir Shah of Persia defeated Mughal Emperor Muhammad Shah in less than three hours; the Mughal army was technologically and organisationally obsolete (see 'What did Nadir Shah's invasion reveal — the five-pillar blow').",
+        "The sack of Delhi (March 1739) — Nadir Shah looted the Peacock Throne, Kohinoor diamond, and an estimated 700 million rupees from Delhi; the Mughal court's prestige collapsed visibly across India.",
+        "Strategic consequences — Mughal authority over Punjab and Afghan territories west of the Indus was permanently lost (formalised by Nadir Shah's treaty), and regional powers (Marathas, Hyderabad, Awadh) saw the centre's weakness clearly (see 'What did Nadir Shah's invasion reveal — the five-pillar blow').",
+        "Conclusion: Karnal 1739 was the moment when the Mughal Empire transitioned from a weakening centre to a hollow shell. Within a generation the British East India Company would step into the vacuum left behind."
+      ],
+      "explanation": "Demand: Examine how the 1739 invasion converted the Mughal Empire from a weakening centre to a hollow shell.",
+      "wordLimit": 150,
+      "marks": 10,
+      "difficulty": "medium",
+      "tags": [
+        "nadir-shah",
+        "battle-of-karnal",
+        "mughal-decline"
+      ],
+      "origin": "FYQ_M.2"
+    }
+  ]
+}
