@@ -38,7 +38,7 @@ export const STRICT_QUIZ_SETTINGS: QuizSettings = {
   lockNavigation: true,
   trackFocusLoss: true,
   allowQuit: false,
-  focusPenaltyEnabled: false,
+  focusPenaltyEnabled: true,
   focusLossGrace: 3,
   focusPenaltyPerLoss: 0.25,
 };
