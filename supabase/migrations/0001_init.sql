@@ -92,3 +92,19 @@ create trigger user_state_set_updated_at
   for each row execute function public.set_updated_at();
 
 create index if not exists user_state_user_idx on public.user_state (user_id);
+
+-- ---- Grants ----------------------------------------------------------------
+-- The signed-in ("authenticated") role needs table privileges; Row Level
+-- Security above still restricts each request to that user's own rows. Some
+-- projects don't auto-grant on new tables, which surfaces as HTTP 403, so we
+-- grant explicitly and idempotently.
+grant usage on schema public to anon, authenticated;
+grant all privileges on public.profiles to anon, authenticated;
+grant all privileges on public.user_state to anon, authenticated;
+
+-- Backfill a profile row for any users who signed in before this ran.
+insert into public.profiles (id, email, display_name)
+select id, email,
+       coalesce(raw_user_meta_data ->> 'full_name', raw_user_meta_data ->> 'name')
+from auth.users
+on conflict (id) do nothing;

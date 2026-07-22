@@ -62,6 +62,11 @@ export function StorageProvider({ children }: { children: ReactNode }) {
         .then(() => {
           if (!cancelled) setActive({ service: new StorageService(store), store });
         })
+        .catch((err) => {
+          // Sync failing (e.g. tables/grants not set up yet, or offline) must
+          // never break the app — local storage remains fully functional.
+          console.warn('[storage] cloud sync unavailable, using local only:', err);
+        })
         .finally(() => {
           if (!cancelled) setSyncing(false);
         });
@@ -80,7 +85,10 @@ export function StorageProvider({ children }: { children: ReactNode }) {
       setOnline(true);
       const store = active.store;
       if (!store) return;
-      store.sync().then(() => setActive((a) => ({ ...a, service: new StorageService(store) })));
+      store
+        .sync()
+        .then(() => setActive((a) => ({ ...a, service: new StorageService(store) })))
+        .catch((err) => console.warn('[storage] reconnect sync failed:', err));
     };
     const handleOffline = () => setOnline(false);
     window.addEventListener('online', handleOnline);
