@@ -5,9 +5,9 @@ import {
   useMemo,
   useState,
   type ReactNode,
-} from 'react';
-import type { Session, User } from '@supabase/supabase-js';
-import { getSupabase } from '../services/supabase/client';
+} from "react";
+import type { Session, User } from "@supabase/supabase-js";
+import { getSupabase } from "../services/supabase/client";
 
 export interface AuthUser {
   id: string;
@@ -16,14 +16,16 @@ export interface AuthUser {
   avatarUrl: string | null;
 }
 
-export type AuthStatus = 'loading' | 'guest' | 'authenticated';
+export type AuthStatus = "loading" | "guest" | "authenticated";
 
 interface AuthValue {
   status: AuthStatus;
   user: AuthUser | null;
   supabaseConfigured: boolean;
   signInWithGoogle: () => Promise<void>;
-  signInWithEmail: (email: string) => Promise<{ sent: boolean; error?: string }>;
+  signInWithEmail: (
+    email: string
+  ) => Promise<{ sent: boolean; error?: string }>;
   signOut: () => Promise<void>;
 }
 
@@ -39,14 +41,13 @@ function mapUser(user: User): AuthUser {
   };
 }
 
-function redirectUrl(): string {
-  return `${window.location.origin}${import.meta.env.BASE_URL}`;
+function redirectUrl() {
+  return window.location.origin;
 }
-
 export function AuthProvider({ children }: { children: ReactNode }) {
   const supabase = getSupabase();
   const [status, setStatus] = useState<AuthStatus>(
-    supabase ? 'loading' : 'guest',
+    supabase ? "loading" : "guest"
   );
   const [user, setUser] = useState<AuthUser | null>(null);
 
@@ -58,16 +59,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       if (!active) return;
       if (session?.user) {
         setUser(mapUser(session.user));
-        setStatus('authenticated');
+        setStatus("authenticated");
       } else {
         setUser(null);
-        setStatus('guest');
+        setStatus("guest");
       }
     };
 
     supabase.auth.getSession().then(({ data }) => apply(data.session));
     const { data: sub } = supabase.auth.onAuthStateChange((_event, session) =>
-      apply(session),
+      apply(session)
     );
 
     return () => {
@@ -84,12 +85,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       async signInWithGoogle() {
         if (!supabase) return;
         await supabase.auth.signInWithOAuth({
-          provider: 'google',
+          provider: "google",
           options: { redirectTo: redirectUrl() },
         });
       },
       async signInWithEmail(email: string) {
-        if (!supabase) return { sent: false, error: 'Sign-in is not configured.' };
+        if (!supabase)
+          return { sent: false, error: "Sign-in is not configured." };
         const { error } = await supabase.auth.signInWithOtp({
           email,
           options: { emailRedirectTo: redirectUrl() },
@@ -101,7 +103,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         await supabase.auth.signOut();
       },
     }),
-    [status, user, supabase],
+    [status, user, supabase]
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
@@ -109,6 +111,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
 export function useAuth(): AuthValue {
   const ctx = useContext(AuthContext);
-  if (!ctx) throw new Error('useAuth must be used within an <AuthProvider>');
+  if (!ctx) throw new Error("useAuth must be used within an <AuthProvider>");
   return ctx;
 }
