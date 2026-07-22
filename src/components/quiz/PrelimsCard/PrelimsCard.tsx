@@ -7,6 +7,7 @@ import { Icon } from '../../common/Icon';
 import { cx } from '../../../utils/cx';
 import { formatQuestionOrigin } from '../../../utils/questionOrigin';
 import styles from './PrelimsCard.module.css';
+import { QuestionStem } from '../QuestionStem';
 
 interface PrelimsCardProps {
   question: PrelimsQuestion;
@@ -71,7 +72,7 @@ export function PrelimsCard({
     <article id={elementId} className={styles.card}>
       <div className={styles.head}>
         <span className={styles.index}>{index}</span>
-        <p className={styles.statement}>{question.statement}</p>
+        <QuestionStem question={question} className={styles.statement} />
       </div>
 
       <ul className={styles.options}>

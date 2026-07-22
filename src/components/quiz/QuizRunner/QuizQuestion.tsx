@@ -3,6 +3,7 @@ import { cx } from '../../../utils/cx';
 import { Badge } from '../../common/Badge';
 import { formatQuestionOrigin } from '../../../utils/questionOrigin';
 import styles from './QuizRunner.module.css';
+import { QuestionStem } from '../QuestionStem';
 
 interface QuizQuestionProps {
   question: PrelimsQuestion;
@@ -22,7 +23,7 @@ export function QuizQuestion({ question, selected, onSelect, disabled = false }:
           </Badge>
         </div>
       )}
-      <p className={styles.questionStatement}>{question.statement}</p>
+      <QuestionStem question={question} className={styles.questionStatement} />
       <ul className={styles.questionOptions}>
         {question.options.map((option) => (
           <li key={option.id}>

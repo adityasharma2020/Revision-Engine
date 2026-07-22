@@ -4,6 +4,7 @@ import type {
   MainsQuestion,
   PrelimsQuestion,
   QuestionOption,
+  QuestionPair,
 } from '../../types';
 import { ChapterParseError } from './errors';
 import {
@@ -18,12 +19,31 @@ import {
 } from './guards';
 
 const DIFFICULTIES = ['easy', 'medium', 'hard'] as const satisfies readonly Difficulty[];
+const PRELIMS_TYPES = [
+  'standard',
+  'statements',
+  'how-many',
+  'match-pairs',
+  'pair-evaluation',
+  'assertion-reason',
+  'sequence',
+  'map-based',
+  'passage-based',
+] as const;
 
 function parseOption(raw: unknown, path: string): QuestionOption {
   const obj = requireObject(raw, path);
   return {
     id: requireString(obj.id, `${path}.id`),
     text: requireString(obj.text, `${path}.text`),
+  };
+}
+
+function parsePair(raw: unknown, path: string): QuestionPair {
+  const obj = requireObject(raw, path);
+  return {
+    left: requireString(obj.left, `${path}.left`),
+    right: requireString(obj.right, `${path}.right`),
   };
 }
 
@@ -36,6 +56,11 @@ function parsePrelims(raw: unknown, path: string): PrelimsQuestion {
     throw new ChapterParseError('A prelims question needs at least 2 options', `${path}.options`);
   }
   const answer = requireString(obj.answer, `${path}.answer`);
+  const pairs = obj.pairs === undefined
+    ? undefined
+    : requireArray(obj.pairs, `${path}.pairs`).map((pair, index) =>
+        parsePair(pair, `${path}.pairs[${index}]`),
+      );
   if (!options.some((o) => o.id === answer)) {
     throw new ChapterParseError(
       `answer "${answer}" does not match any option id`,
@@ -45,6 +70,15 @@ function parsePrelims(raw: unknown, path: string): PrelimsQuestion {
   return {
     id: requireString(obj.id, `${path}.id`),
     statement: requireString(obj.statement, `${path}.statement`),
+    lead: optionalString(obj.lead, `${path}.lead`),
+    statements: optionalStringArray(obj.statements, `${path}.statements`),
+    ask: optionalString(obj.ask, `${path}.ask`),
+    questionType: optionalEnum(obj.questionType, PRELIMS_TYPES, `${path}.questionType`),
+    pairs,
+    pairLeftLabel: optionalString(obj.pairLeftLabel, `${path}.pairLeftLabel`),
+    pairRightLabel: optionalString(obj.pairRightLabel, `${path}.pairRightLabel`),
+    assertion: optionalString(obj.assertion, `${path}.assertion`),
+    reason: optionalString(obj.reason, `${path}.reason`),
     options,
     answer,
     explanation: optionalString(obj.explanation, `${path}.explanation`),

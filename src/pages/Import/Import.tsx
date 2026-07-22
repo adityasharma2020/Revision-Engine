@@ -37,6 +37,15 @@ Important content rules:
 - Return raw JSON only: no Markdown fences, introduction, comments, or trailing commas.
 - Use a unique kebab-case chapter id and unique question ids across both arrays.
 - Every prelims answer must exactly match one of that question's option ids.
+- Keep "statement" as the complete question text for search and accessibility.
+- Set "questionType" to exactly one of: "standard", "statements", "how-many", "match-pairs", "pair-evaluation", "assertion-reason", "sequence", "map-based", or "passage-based".
+- Use "standard" for a direct question. Use "map-based" for map/location identification and "passage-based" for questions tied to a supplied passage; these need no special fields unless the source itself has structure.
+- For "statements" and "how-many", provide "lead", "statements" (without number prefixes), and "ask".
+- For "sequence", use the same list fields but preserve the source order. Do not solve or reorder the events.
+- For "match-pairs", provide "lead", "pairs" as [{ "left": "List I item", "right": "List II item" }], optional "pairLeftLabel" and "pairRightLabel" headings, and "ask". Preserve source row order; do not perform the matching.
+- For questions asking which displayed pairs are correctly matched, use "pair-evaluation" with the same pair fields.
+- For "assertion-reason", provide "lead" when present, "assertion", "reason", and "ask".
+- Omit fields belonging to other question types. Never force prose into a list or infer structure absent from the source.
 - Allowed difficulty values are "easy", "medium", or "hard".
 - If a field is unknown, omit optional fields instead of guessing.
 
@@ -53,6 +62,10 @@ Required structure:
     {
       "id": "pre-001",
       "statement": "Complete multiple-choice question",
+      "questionType": "statements",
+      "lead": "Optional introduction for a statement-based question",
+      "statements": ["First numbered statement", "Second numbered statement"],
+      "ask": "Which of the statements given above is/are correct?",
       "options": [
         { "id": "a", "text": "Option A" },
         { "id": "b", "text": "Option B" }
@@ -82,6 +95,12 @@ Required structure:
     }
   ]
 }
+
+Question-format examples (use only the fields for the selected type):
+- Match the following: "questionType": "match-pairs", "lead": "Match List I with List II:", "pairLeftLabel": "List I — Site", "pairRightLabel": "List II — State", "pairs": [{ "left": "Item 1", "right": "Item A" }], "ask": "Select the correct answer using the code below."
+- Correctly matched pairs: "questionType": "pair-evaluation", "lead": "Consider the following pairs:", "pairLeftLabel": "Term", "pairRightLabel": "Description", "pairs": [{ "left": "Term as supplied", "right": "Description as supplied" }], "ask": "How many pairs given above are correctly matched?"
+- Assertion and reason: "questionType": "assertion-reason", "assertion": "Assertion text", "reason": "Reason text", "ask": "Choose the correct option."
+- Chronology/order: "questionType": "sequence", "lead": "Arrange the following in chronological order:", "statements": ["Event one", "Event two"], "ask": "Select the correct sequence."
 
 Keep "prelims" and "mains" as arrays even when either is empty. Validate the final JSON and its answer-option matches before responding.
 

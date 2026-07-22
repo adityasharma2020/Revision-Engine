@@ -10,6 +10,21 @@
  */
 
 export type Difficulty = 'easy' | 'medium' | 'hard';
+export type PrelimsQuestionType =
+  | 'standard'
+  | 'statements'
+  | 'how-many'
+  | 'match-pairs'
+  | 'pair-evaluation'
+  | 'assertion-reason'
+  | 'sequence'
+  | 'map-based'
+  | 'passage-based';
+
+export interface QuestionPair {
+  readonly left: string;
+  readonly right: string;
+}
 
 /**
  * Subject is intentionally a plain string, not a closed union: adding a new
@@ -28,6 +43,17 @@ export interface QuestionOption {
 export interface PrelimsQuestion {
   readonly id: string;
   readonly statement: string;
+  /** Optional structured presentation for numbered/statement-based questions. */
+  readonly lead?: string;
+  readonly statements?: readonly string[];
+  readonly ask?: string;
+  readonly questionType?: PrelimsQuestionType;
+  /** Rows shown under two labelled columns for matching/pair questions. */
+  readonly pairs?: readonly QuestionPair[];
+  readonly pairLeftLabel?: string;
+  readonly pairRightLabel?: string;
+  readonly assertion?: string;
+  readonly reason?: string;
   readonly options: readonly QuestionOption[];
   /** Id of the correct QuestionOption. */
   readonly answer: string;
