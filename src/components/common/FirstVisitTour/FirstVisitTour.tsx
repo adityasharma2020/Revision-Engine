@@ -68,7 +68,7 @@ export function FirstVisitTour() {
   return (
     <div className={styles.backdrop}>
       <section className={styles.dialog} role="dialog" aria-modal="true" aria-labelledby="welcome-tour-title">
-        <header><div className={styles.identity}><span className={styles.brand}><Icon name="sparkle" size={20} /></span><span><strong>Revision Engine</strong><small>Quick product tour</small></span></div><button type="button" onClick={finish}>Skip</button></header>
+        <header><div className={styles.identity}><span className={styles.brand}><Icon name="sparkle" size={20} /></span><span><strong>Revision Engine</strong><small>Quick product tour</small><small className={styles.credit}>Made with <Icon name="heart" size={11} /> by Aditya Sharma.</small></span></div><button type="button" onClick={finish}>Skip</button></header>
         <div className={styles.copy}><span className={styles.eyebrow}>{current.eyebrow}</span><h2 id="welcome-tour-title">{current.title}</h2><p>{current.text}</p></div>
         <div className={styles.features}>{current.features.map((feature) => (
           <article key={feature.title}><span><Icon name={feature.icon} size={19} /></span><div><strong>{feature.title}</strong><small>{feature.text}</small></div></article>

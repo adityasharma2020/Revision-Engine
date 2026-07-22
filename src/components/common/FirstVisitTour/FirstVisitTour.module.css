@@ -5,6 +5,8 @@
 .identity > span:last-child { display: flex; flex-direction: column; gap: 1px; }
 .identity strong { font-size: var(--text-sm); }
 .identity small { color: var(--text-tertiary); font-size: var(--text-xs); }
+.identity .credit { display: flex; align-items: center; gap: 3px; font-size: 10px; }
+.credit svg { color: var(--danger); }
 .brand { display: grid; width: 42px; height: 42px; place-items: center; color: var(--accent); background: var(--accent-subtle); border-radius: var(--radius-lg); }
 .dialog > header button { padding: var(--space-2); color: var(--text-tertiary); font-size: var(--text-xs); }
 .dialog > header button:hover { color: var(--text-primary); }
