@@ -81,9 +81,9 @@ function collectAttempts(
     }
     for (const pq of r.perQuestion) {
       attempts.push({
-        chapterId: r.chapterId,
+        chapterId: pq.chapterId ?? r.chapterId,
         questionId: pq.questionId,
-        subject: subjectOf(meta, r.chapterId, r.subject),
+        subject: subjectOf(meta, pq.chapterId ?? r.chapterId, r.subject),
         difficulty: pq.difficulty,
         origin: pq.origin,
         correct: pq.correct,
@@ -267,11 +267,14 @@ export interface ChapterStat {
   chapterId: string;
   title: string;
   subject: string;
+  shown: number;
   attempts: number;
   correct: number;
   accuracy: number;
   avgTimeMs: number;
   coverage: number; // 0–100
+  uniqueQuestions: number;
+  totalQuestions: number;
   lastStudiedAt: number;
 }
 
@@ -297,6 +300,7 @@ export function chapterAnalytics(
       chapterId,
       title: meta[chapterId]?.title ?? chapterId,
       subject: meta[chapterId]?.subject ?? list[0]?.subject ?? 'Other',
+      shown: list.length,
       attempts: graded.length,
       correct,
       accuracy: graded.length === 0 ? 0 : Math.round((correct / graded.length) * 100),
@@ -305,6 +309,8 @@ export function chapterAnalytics(
           ? 0
           : Math.round(timed.reduce((s, a) => s + a.timeMs, 0) / timed.length),
       coverage: total === 0 ? 0 : Math.min(100, Math.round((unique / total) * 100)),
+      uniqueQuestions: unique,
+      totalQuestions: total,
       lastStudiedAt: Math.max(...list.map((a) => a.at)),
     });
   }

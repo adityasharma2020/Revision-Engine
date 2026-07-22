@@ -11,27 +11,42 @@ import { QuizQuestion } from './QuizQuestion';
 import styles from './QuizRunner.module.css';
 
 interface QuizSessionProps {
+  sessionId: string;
   chapter: Chapter;
   questions: readonly PrelimsQuestion[];
-  onComplete: (resultId: string) => void;
+  onComplete: (resultId: string, score: { correct: number; total: number; answered: number; skipped: number }) => void;
   onActiveChange?: (active: boolean) => void;
   settings: QuizSettings;
   questionSet: QuizQuestionSet;
+  /** Original chapter by question id for cross-chapter generated quizzes. */
+  questionChapterIds?: Readonly<Record<string, string>>;
+  questionRevisionMeta?: Readonly<Record<string, { attempts: number; accuracy: number | null; level: number; reason: string }>>;
+  studyQuote?: { quote: string; author: string; topics: readonly string[] };
+  purpose?: 'daily-revision';
+  dailyDateKey?: string;
 }
 
 /** One live quiz run: active question flow → finished results. */
-export function QuizSession({ chapter, questions, onComplete, onActiveChange, settings, questionSet }: QuizSessionProps) {
-  const { state, current, actions, summary } = useQuizSession(questions, chapter.id, settings, questionSet);
+export function QuizSession({ sessionId, chapter, questions, onComplete, onActiveChange, settings, questionSet, questionChapterIds, questionRevisionMeta, studyQuote, purpose, dailyDateKey }: QuizSessionProps) {
+  const quizId = sessionId;
+  const { state, current, actions, summary } = useQuizSession(questions, quizId, settings, questionSet);
   const running = state.status === 'active';
   const liveElapsedMs = useElapsed(state.startedAt, running);
   const elapsedMs = state.status === 'paused' && state.pausedAt
     ? Math.max(0, state.pausedAt - state.startedAt)
     : liveElapsedMs;
+  const timeLimitMs = state.settings.timeLimitEnabled
+    ? Math.max(1, Math.round(state.settings.secondsPerQuestion * state.total * 1000))
+    : null;
+  const remainingMs = timeLimitMs === null ? undefined : Math.max(0, timeLimitMs - elapsedMs);
+  const timerUrgent = remainingMs !== undefined
+    && remainingMs <= Math.min(60_000, timeLimitMs! * 0.1);
   const { recordQuizResult } = useUserData();
   const resultId = useRef(createId());
   const [fullscreen, setFullscreen] = useState(Boolean(document.fullscreenElement));
   const [focusInterrupted, setFocusInterrupted] = useState(false);
   const [submitOpen, setSubmitOpen] = useState(false);
+  const timedOut = useRef(false);
   const interruptionOpen = useRef(false);
   const paused = state.status === 'paused';
   const focusLossCount = state.focusInterruptions.length;
@@ -43,10 +58,10 @@ export function QuizSession({ chapter, questions, onComplete, onActiveChange, se
   useEffect(() => {
     onActiveChange?.(state.status === 'active');
     announceQuizLock(
-      state.status === 'finished' ? null : chapter.id,
+      state.status === 'finished' ? null : quizId,
       state.status === 'active' && state.settings.lockNavigation,
     );
-  }, [state.status, state.settings.lockNavigation, onActiveChange, chapter.id]);
+  }, [state.status, state.settings.lockNavigation, onActiveChange, quizId]);
 
   useEffect(() => {
     if (!state.settings.trackFocusLoss || state.status !== 'active') return;
@@ -77,6 +92,19 @@ export function QuizSession({ chapter, questions, onComplete, onActiveChange, se
       window.removeEventListener('keydown', guardShortcuts, true);
     };
   }, [state.settings.trackFocusLoss, state.status, actions]);
+
+  useEffect(() => {
+    if (
+      state.status !== 'active'
+      || !state.settings.timeLimitEnabled
+      || !state.settings.autoSubmitOnTimeEnd
+      || remainingMs === undefined
+      || remainingMs > 0
+    ) return;
+    timedOut.current = true;
+    setSubmitOpen(false);
+    actions.finish();
+  }, [actions, remainingMs, state.settings.autoSubmitOnTimeEnd, state.settings.timeLimitEnabled, state.status]);
 
   useEffect(() => {
     const update = () => setFullscreen(Boolean(document.fullscreenElement));
@@ -120,12 +148,16 @@ export function QuizSession({ chapter, questions, onComplete, onActiveChange, se
   const times = useRef<Record<string, number>>({});
   const segStart = useRef(Date.now());
   const activeQid = useRef<string | undefined>(questions[0]?.id);
+  const segmentStatus = useRef(state.status);
   useEffect(() => {
     const now = Date.now();
     const qid = activeQid.current;
-    if (qid) times.current[qid] = (times.current[qid] ?? 0) + (now - segStart.current);
+    if (qid && segmentStatus.current === 'active') {
+      times.current[qid] = (times.current[qid] ?? 0) + (now - segStart.current);
+    }
     segStart.current = now;
     activeQid.current = current?.id;
+    segmentStatus.current = state.status;
   }, [state.currentIndex, state.status, current]);
 
   // Persist the finished session exactly once.
@@ -138,6 +170,9 @@ export function QuizSession({ chapter, questions, onComplete, onActiveChange, se
       const selected = state.answers[q.id] ?? null;
       return {
         questionId: q.id,
+        chapterId: questionChapterIds?.[q.id] ?? chapter.id,
+        questionStatement: q.statement,
+        tags: q.tags,
         selectedOption: selected,
         correct: selected != null ? selected === q.answer : null,
         timeMs: times.current[q.id] ?? 0,
@@ -147,6 +182,7 @@ export function QuizSession({ chapter, questions, onComplete, onActiveChange, se
     });
     recordQuizResult({
       id: resultId.current,
+      quizId,
       chapterId: chapter.id,
       chapterTitle: chapter.title,
       subject: chapter.subject,
@@ -154,9 +190,10 @@ export function QuizSession({ chapter, questions, onComplete, onActiveChange, se
       answered: s.answered,
       correct: s.correct,
       skipped: s.skipped,
-      durationMs: s.durationMs,
+      durationMs: timedOut.current && timeLimitMs !== null ? timeLimitMs : s.durationMs,
       takenAt: Date.now(),
       answers: state.answers,
+      questions,
       perQuestion,
       questionSet,
       includedInAnalytics: true,
@@ -165,9 +202,23 @@ export function QuizSession({ chapter, questions, onComplete, onActiveChange, se
       focusInterruptions: state.focusInterruptions,
       focusPenaltyTotal,
       adjustedScore: s.correct - focusPenaltyTotal,
+      timedOut: timedOut.current,
+      purpose,
+      dailyDateKey,
     });
-    onComplete(resultId.current);
-  }, [state.status, state.answers, state.settings, state.focusInterruptions, summary, recordQuizResult, onComplete, chapter.id, chapter.title, chapter.subject, questions, questionSet, focusLossCount, focusPenaltyTotal]);
+    const finishNavigation = async () => {
+      if (document.fullscreenElement) {
+        try {
+          await document.exitFullscreen();
+        } catch {
+          // Navigation must still complete if the browser has already ended
+          // fullscreen or rejects the exit request.
+        }
+      }
+      onComplete(resultId.current, { correct: s.correct, total: s.total, answered: s.answered, skipped: s.skipped });
+    };
+    void finishNavigation();
+  }, [state.status, state.answers, state.settings, state.focusInterruptions, summary, recordQuizResult, onComplete, quizId, chapter.id, chapter.title, chapter.subject, questions, questionSet, questionChapterIds, focusLossCount, focusPenaltyTotal, timeLimitMs, purpose, dailyDateKey]);
 
   if (state.status === 'finished') {
     return <p className={styles.savingResult}>Saving your result…</p>;
@@ -200,6 +251,8 @@ export function QuizSession({ chapter, questions, onComplete, onActiveChange, se
           total={state.total}
           answered={answeredCount}
           elapsedMs={elapsedMs}
+          remainingMs={remainingMs}
+          urgent={timerUrgent}
         />
         <div className={styles.sessionActions}>
           {state.settings.allowPause && (
@@ -225,6 +278,14 @@ export function QuizSession({ chapter, questions, onComplete, onActiveChange, se
           <Button variant="secondary" size="sm" onClick={submit} disabled={paused}>Submit quiz</Button>
         </div>
       </div>
+
+      {studyQuote && (
+        <aside className={styles.studyQuote} aria-label="Today’s UPSC quote">
+          <Icon name="book" size={17} />
+          <blockquote>“{studyQuote.quote}” <cite>— {studyQuote.author}</cite></blockquote>
+          {studyQuote.topics.length > 0 && <span>{studyQuote.topics.slice(0, 2).join(' · ')}</span>}
+        </aside>
+      )}
 
       {paused && (
         <div className={styles.pausedBanner} role="status">
@@ -316,8 +377,9 @@ export function QuizSession({ chapter, questions, onComplete, onActiveChange, se
       </nav>
 
       <QuizQuestion
-        chapterId={chapter.id}
+        chapterId={questionChapterIds?.[current.id] ?? chapter.id}
         question={current}
+        revisionMeta={questionRevisionMeta?.[current.id]}
         selected={state.answers[current.id] ?? null}
         onSelect={(optionId) => actions.answer(current.id, optionId)}
         disabled={paused}

@@ -10,7 +10,7 @@ import { subjectStyle } from '../../constants/subjects';
 import { useChapter } from '../../hooks/useChapters';
 import type { Chapter as ChapterModel, MainsQuestion, PrelimsQuestion } from '../../types';
 import { questionOriginKind, type QuestionOriginKind } from '../../utils/questionOrigin';
-import { hasQuizDraft } from '../../hooks/useQuizSession';
+import { useRevisionPreferences } from '../../hooks/useRevisionPreferences';
 import styles from './Chapter.module.css';
 
 type Mode = 'learning' | 'quiz';
@@ -31,6 +31,7 @@ export function Chapter() {
 }
 
 function ChapterView({ chapter }: { chapter: ChapterModel }) {
+  const { preferences, toggleChapter } = useRevisionPreferences();
   const [searchParams] = useSearchParams();
   const location = useLocation();
   const { hue, label } = subjectStyle(chapter.subject);
@@ -43,7 +44,6 @@ function ChapterView({ chapter }: { chapter: ChapterModel }) {
   const [mode, setMode] = useState<Mode>(() => {
     if (requestedTab || hasQuestionTarget) return 'learning';
     if (requestedMode === 'quiz') return 'quiz';
-    if (hasQuizDraft(chapter.id)) return 'quiz';
     return 'quiz';
   });
   const [tab, setTab] = useState<TabId>(requestedTab === 'mains' || requestedTab === 'prelims'
@@ -69,8 +69,8 @@ function ChapterView({ chapter }: { chapter: ChapterModel }) {
       .filter((question) => question.origin)
       .map((question) => questionOriginKind(question.origin)),
   );
-  const quizDraftPresent = hasQuizDraft(chapter.id);
-  const hideStudyChrome = mode === 'quiz' && (quizDraftPresent || quizImmersive);
+  const hideStudyChrome = mode === 'quiz' && quizImmersive;
+  const includedInRevision = preferences.includedChapterIds.includes(chapter.id);
 
   useEffect(() => {
     if (!hasQuestionTarget) return;
@@ -82,11 +82,11 @@ function ChapterView({ chapter }: { chapter: ChapterModel }) {
   }, [hasQuestionTarget, location.hash, requestedTab]);
 
   useEffect(() => {
-    if (requestedMode === 'quiz' && hasQuizDraft(chapter.id)) setMode('quiz');
+    if (requestedMode === 'quiz') setMode('quiz');
   }, [chapter.id, requestedMode]);
 
   const changeMode = (next: Mode) => {
-    if (next === 'learning' && mode === 'quiz' && (quizActive || hasQuizDraft(chapter.id))) {
+    if (next === 'learning' && mode === 'quiz' && quizActive) {
       setLeaveQuizOpen(true);
       return;
     }
@@ -105,6 +105,15 @@ function ChapterView({ chapter }: { chapter: ChapterModel }) {
         <div className={styles.headTop}>
           <Badge hue={hue}>{label}</Badge>
           <span className={styles.chapterNo}>Chapter {chapter.chapterNumber}</span>
+          <button
+            type="button"
+            className={includedInRevision ? styles.revisionIncluded : styles.revisionAdd}
+            aria-pressed={includedInRevision}
+            onClick={() => toggleChapter(chapter.id)}
+          >
+            <Icon name={includedInRevision ? 'check' : 'plus'} size={14} />
+            {includedInRevision ? 'In daily revision' : 'Mark studied'}
+          </button>
           {!hideStudyChrome && (
             <Link
               to={Routes.search}
@@ -134,7 +143,6 @@ function ChapterView({ chapter }: { chapter: ChapterModel }) {
         >
           <span className={styles.modeIcon}><Icon name="clock" size={18} /></span>
           <span><strong>Take a quiz</strong><small>Timed attempt with results saved to history.</small></span>
-          {quizDraftPresent && <em>{quizActive ? 'In progress' : 'Paused · resume'}</em>}
         </button>
         <button
           type="button"

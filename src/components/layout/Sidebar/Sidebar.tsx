@@ -1,4 +1,5 @@
-import { Link, NavLink } from 'react-router-dom';
+import { useEffect, useState } from 'react';
+import { Link, NavLink, useLocation } from 'react-router-dom';
 import { APP_NAME, APP_VERSION } from '../../../constants/app';
 import { PRIMARY_NAV } from '../../../constants/navigation';
 import { Routes } from '../../../constants/routes';
@@ -18,7 +19,14 @@ interface SidebarProps {
 
 export function Sidebar({ collapsed, collapseLocked = false, searchOpen = false, onToggle }: SidebarProps) {
   const { status, user } = useAuth();
+  const location = useLocation();
+  const [moreOpen, setMoreOpen] = useState(false);
   const signedIn = status === 'authenticated' && user;
+  const mobilePrimary = new Set<string>([Routes.dashboard, Routes.revision, Routes.library, Routes.search]);
+  const moreItems = PRIMARY_NAV.filter((item) => !mobilePrimary.has(item.to));
+  const moreActive = moreItems.some((item) => location.pathname === item.to);
+
+  useEffect(() => setMoreOpen(false), [location.pathname]);
 
   return (
     <aside className={cx(styles.sidebar, collapsed && styles.collapsedSidebar)}>
@@ -50,14 +58,41 @@ export function Sidebar({ collapsed, collapseLocked = false, searchOpen = false,
             title={item.to === Routes.search ? 'Search (⌘⇧P or Ctrl⇧P)' : item.label}
             className={({ isActive }) => cx(
               styles.link,
+              !mobilePrimary.has(item.to) && styles.mobileSecondary,
               (isActive || (item.to === Routes.search && searchOpen)) && styles.active,
             )}
           >
             <Icon name={item.icon} size={18} />
-            <span>{item.label}</span>
+            <span className={styles.desktopLabel}>{item.label}</span>
+            <span className={styles.mobileLabel}>{item.mobileLabel ?? item.label}</span>
           </NavLink>
         ))}
+        <button
+          type="button"
+          className={cx(styles.link, styles.moreButton, (moreOpen || moreActive) && styles.active)}
+          onClick={() => setMoreOpen((open) => !open)}
+          aria-expanded={moreOpen}
+          aria-controls="mobile-more-menu"
+        >
+          <Icon name="settings" size={18} />
+          <span className={styles.mobileLabel}>More</span>
+        </button>
       </nav>
+
+      {moreOpen && (
+        <>
+          <button type="button" className={styles.moreBackdrop} aria-label="Close more navigation" onClick={() => setMoreOpen(false)} />
+          <section id="mobile-more-menu" className={styles.moreSheet} aria-label="More pages">
+            <div className={styles.moreHandle} />
+            <div className={styles.moreHead}><strong>More</strong><button type="button" onClick={() => setMoreOpen(false)} aria-label="Close"><Icon name="close" size={19} /></button></div>
+            <div className={styles.moreGrid}>{moreItems.map((item) => (
+              <NavLink key={item.to} to={item.to} className={({ isActive }) => cx(styles.moreItem, isActive && styles.moreItemActive)}>
+                <span><Icon name={item.icon} size={20} /></span><strong>{item.label}</strong><Icon name="chevronRight" size={16} />
+              </NavLink>
+            ))}</div>
+          </section>
+        </>
+      )}
 
       <div className={styles.footer}>
         <Link to={Routes.settings} className={styles.account}>

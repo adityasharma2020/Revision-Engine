@@ -15,6 +15,7 @@ import type {
   ProgressMap,
   QuestionAnnotation,
   QuestionAttempt,
+  QuestionAttemptList,
   QuestionType,
   QuizResult,
   QuizResultList,
@@ -30,6 +31,7 @@ interface UserDataValue {
   annotations: AnnotationMap;
   progress: ProgressMap;
   quizResults: QuizResultList;
+  questionAttemptLog: QuestionAttemptList;
   userChapters: Chapter[];
 
   getAnnotation: (chapterId: string, questionId: string) => QuestionAnnotation | undefined;
@@ -41,6 +43,7 @@ interface UserDataValue {
   recordAttempt: (attempt: QuestionAttempt) => void;
   recordQuizResult: (result: QuizResult) => void;
   setQuizResultAnalytics: (resultId: string, included: boolean) => void;
+  deleteQuizResult: (resultId: string) => void;
 
   addUserChapter: (chapter: Chapter) => void;
   removeUserChapter: (chapterId: string) => void;
@@ -59,6 +62,7 @@ export function UserDataProvider({ children }: { children: ReactNode }) {
   const [annotations, setAnnotations] = useState<AnnotationMap>({});
   const [progress, setProgress] = useState<ProgressMap>({});
   const [quizResults, setQuizResults] = useState<QuizResultList>([]);
+  const [questionAttemptLog, setQuestionAttemptLog] = useState<QuestionAttemptList>([]);
   const [userChapters, setUserChapters] = useState<Chapter[]>([]);
 
   // Keep latest refs so persistence helpers never read stale closures.
@@ -71,12 +75,14 @@ export function UserDataProvider({ children }: { children: ReactNode }) {
       storage.loadAnnotations(),
       storage.loadProgress(),
       storage.loadQuizResults(),
+      storage.loadQuestionAttemptLog(),
       storage.loadUserChapters(),
-    ]).then(([a, p, q, uc]) => {
+    ]).then(([a, p, q, attemptLog, uc]) => {
       if (!active) return;
       setAnnotations(a);
       setProgress(p);
       setQuizResults(q);
+      setQuestionAttemptLog(attemptLog);
       setUserChapters(uc);
       setReady(true);
     });
@@ -149,6 +155,11 @@ export function UserDataProvider({ children }: { children: ReactNode }) {
 
   const recordAttempt = useCallback(
     (attempt: QuestionAttempt) => {
+      setQuestionAttemptLog((previous) => {
+        const next = [...previous, attempt];
+        void storage.saveQuestionAttemptLog(next);
+        return next;
+      });
       setProgress((prev) => {
         const chapter = prev[attempt.chapterId] ?? {
           chapterId: attempt.chapterId,
@@ -194,6 +205,16 @@ export function UserDataProvider({ children }: { children: ReactNode }) {
     [storage],
   );
 
+  const deleteQuizResult = useCallback((resultId: string) => {
+    setQuizResults((prev) => {
+      const next = prev.map((result) => result.id === resultId
+        ? { ...result, isDeleted: 1 as const, deletedAt: Date.now(), includedInAnalytics: false }
+        : result);
+      void storage.saveQuizResults(next);
+      return next;
+    });
+  }, [storage]);
+
   const addUserChapter = useCallback(
     (chapter: Chapter) => {
       setUserChapters((prev) => {
@@ -221,7 +242,8 @@ export function UserDataProvider({ children }: { children: ReactNode }) {
       ready,
       annotations,
       progress,
-      quizResults,
+      quizResults: quizResults.filter((result) => result.isDeleted !== 1),
+      questionAttemptLog,
       userChapters,
       getAnnotation,
       toggleBookmark,
@@ -231,6 +253,7 @@ export function UserDataProvider({ children }: { children: ReactNode }) {
       recordAttempt,
       recordQuizResult,
       setQuizResultAnalytics,
+      deleteQuizResult,
       addUserChapter,
       removeUserChapter,
     }),
@@ -239,6 +262,7 @@ export function UserDataProvider({ children }: { children: ReactNode }) {
       annotations,
       progress,
       quizResults,
+      questionAttemptLog,
       userChapters,
       getAnnotation,
       toggleBookmark,
@@ -248,6 +272,7 @@ export function UserDataProvider({ children }: { children: ReactNode }) {
       recordAttempt,
       recordQuizResult,
       setQuizResultAnalytics,
+      deleteQuizResult,
       addUserChapter,
       removeUserChapter,
     ],

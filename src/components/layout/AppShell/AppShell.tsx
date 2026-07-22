@@ -40,8 +40,8 @@ export function AppShell() {
     () => localStorage.getItem(SIDEBAR_KEY) === 'true',
   );
   const [fullscreen, setFullscreen] = useState(Boolean(document.fullscreenElement));
-  const [activeQuizChapter, setActiveQuizChapter] = useState(
-    () => findActiveQuizDraft()?.chapterId ?? null,
+  const [activeQuizId, setActiveQuizId] = useState(
+    () => findActiveQuizDraft()?.quizId ?? null,
   );
   const [quizNavigationLocked, setQuizNavigationLocked] = useState(
     () => {
@@ -55,10 +55,10 @@ export function AppShell() {
 
   useEffect(() => {
     const update = (event: Event) => {
-      const detail = (event as CustomEvent<{ chapterId: string | null; locked: boolean }>).detail;
-      setActiveQuizChapter(detail.chapterId);
+      const detail = (event as CustomEvent<{ quizId: string | null; locked: boolean }>).detail;
+      setActiveQuizId(detail.quizId);
       setQuizNavigationLocked(detail.locked);
-      if (!detail.chapterId) setNavigationBlocked(false);
+      if (!detail.quizId) setNavigationBlocked(false);
     };
     window.addEventListener('revision-engine:quiz-lock', update);
     return () => window.removeEventListener('revision-engine:quiz-lock', update);
@@ -86,7 +86,7 @@ export function AppShell() {
   }, []);
 
   useEffect(() => {
-    if (!activeQuizChapter || !quizNavigationLocked) return;
+    if (!activeQuizId || !quizNavigationLocked) return;
 
     armQuizHistoryGuard();
 
@@ -105,7 +105,7 @@ export function AppShell() {
     };
     window.addEventListener('popstate', guardBrowserHistory, { capture: true });
     return () => window.removeEventListener('popstate', guardBrowserHistory, { capture: true });
-  }, [activeQuizChapter, quizNavigationLocked]);
+  }, [activeQuizId, quizNavigationLocked]);
 
   const setCollapsed = (collapsed: boolean) => {
     setUserCollapsed(collapsed);
@@ -130,11 +130,11 @@ export function AppShell() {
 
   const resumeActiveQuiz = () => {
     const draft = findActiveQuizDraft();
-    const chapterId = draft?.chapterId ?? activeQuizChapter;
+    const quizId = draft?.quizId ?? activeQuizId;
     setNavigationBlocked(false);
     setBlockedDestination(null);
-    if (chapterId) {
-      navigate(Routes.quiz(chapterId), { replace: true });
+    if (quizId) {
+      navigate(Routes.activeQuiz(quizId), { replace: true });
       window.setTimeout(armQuizHistoryGuard, 0);
     }
   };
@@ -153,7 +153,7 @@ export function AppShell() {
       if (!commandSearch && !slashSearch) return;
 
       event.preventDefault();
-      if (activeQuizChapter && quizNavigationLocked) {
+      if (activeQuizId && quizNavigationLocked) {
         setBlockedDestination(Routes.search);
         setNavigationBlocked(true);
         return;
@@ -162,7 +162,7 @@ export function AppShell() {
     };
     window.addEventListener('keydown', openSearch);
     return () => window.removeEventListener('keydown', openSearch);
-  }, [activeQuizChapter, navigate, quizNavigationLocked]);
+  }, [activeQuizId, navigate, quizNavigationLocked]);
 
   return (
     <div
@@ -176,7 +176,7 @@ export function AppShell() {
         if (searchLink) {
           event.preventDefault();
           event.stopPropagation();
-          if (activeQuizChapter && quizNavigationLocked) {
+          if (activeQuizId && quizNavigationLocked) {
             setBlockedDestination(href);
             setNavigationBlocked(true);
           } else {
@@ -184,7 +184,7 @@ export function AppShell() {
           }
           return;
         }
-        if (!activeQuizChapter || !quizNavigationLocked) return;
+        if (!activeQuizId || !quizNavigationLocked) return;
         event.preventDefault();
         event.stopPropagation();
         setBlockedDestination(href);
@@ -242,13 +242,13 @@ export function AppShell() {
             </p>
             <div className={styles.guardActions}>
               <Button variant="primary" onClick={resumeActiveQuiz}>Continue quiz</Button>
-              {findActiveQuizDraft()?.settings.allowQuit && activeQuizChapter && (
+              {findActiveQuizDraft()?.settings.allowQuit && activeQuizId && (
                 <Button
                   variant="secondary"
                   onClick={() => {
-                    abandonQuizDraft(activeQuizChapter);
+                    abandonQuizDraft(activeQuizId);
                     setNavigationBlocked(false);
-                    setActiveQuizChapter(null);
+                    setActiveQuizId(null);
                     setQuizNavigationLocked(false);
                     if (blockedDestination) navigate(blockedDestination);
                   }}

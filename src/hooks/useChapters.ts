@@ -30,7 +30,7 @@ export function useLibrary(): AsyncState<ChapterSummary[]> {
 }
 
 /** Load a single chapter by id — user uploads resolve instantly, else static. */
-export function useChapter(id: string): AsyncState<Chapter> {
+export function useChapter(id: string, snapshot?: Chapter): AsyncState<Chapter> {
   const { chapters } = useServices();
   const { userChapters } = useUserData();
   const userChapter = useMemo(
@@ -39,7 +39,8 @@ export function useChapter(id: string): AsyncState<Chapter> {
   );
 
   return useAsync<Chapter>(async () => {
+    if (snapshot) return snapshot;
     if (userChapter) return userChapter;
     return chapters.loadChapter(id);
-  }, [id, userChapter, chapters]);
+  }, [id, snapshot, userChapter, chapters]);
 }

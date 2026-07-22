@@ -7,6 +7,7 @@ import { useAuth } from "../../context/AuthContext";
 import { createLocalStorageService } from "../../services/storage";
 import { APP_NAME, APP_VERSION } from "../../constants/app";
 import styles from "./Settings.module.css";
+import { useRevisionPreferences } from "../../hooks/useRevisionPreferences";
 
 export function Settings() {
   const { storage, cloudAvailable, online, syncing, syncNow } = useStorage();
@@ -14,6 +15,7 @@ export function Settings() {
   const [cleared, setCleared] = useState(false);
   const [resetOpen, setResetOpen] = useState(false);
   const [syncMessage, setSyncMessage] = useState<string | null>(null);
+  const { preferences: revisionPreferences, update: updateRevisionPreferences } = useRevisionPreferences();
 
   const clearDeviceOnly = async () => {
     if (cloudAvailable) await signOut();
@@ -73,6 +75,31 @@ export function Settings() {
               </Button>
             </div>
           )}
+        </div>
+      </section>
+
+      <section className={styles.group}>
+        <div className={styles.stack}>
+          <div className={styles.rowText}>
+            <h3 className={styles.rowTitle}>Daily revision</h3>
+            <p className={styles.rowDesc}>Set the maximum queue size and how much unseen material can be introduced.</p>
+          </div>
+          <div className={styles.revisionFields}>
+            <label>
+              <span>Daily question capacity</span>
+              <select value={revisionPreferences.dailyQuestionLimit} onChange={(event) => updateRevisionPreferences({ ...revisionPreferences, dailyQuestionLimit: Number(event.target.value) })}>
+                {[5, 10, 15, 20, 25, 30, 40, 50, 75, 100].map((value) => <option key={value} value={value}>{value} questions</option>)}
+              </select>
+              <small>This is a maximum. If fewer questions are due, the queue stays smaller.</small>
+            </label>
+            <label>
+              <span>Maximum unseen questions</span>
+              <select value={revisionPreferences.newQuestionPercent} onChange={(event) => updateRevisionPreferences({ ...revisionPreferences, newQuestionPercent: Number(event.target.value) })}>
+                {[0, 10, 20, 25, 30, 40, 50].map((value) => <option key={value} value={value}>{value}% of queue</option>)}
+              </select>
+              <small>Due revision always takes priority over unseen questions.</small>
+            </label>
+          </div>
         </div>
       </section>
 

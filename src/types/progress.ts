@@ -12,6 +12,9 @@ import type { Difficulty, QuestionType } from './domain';
 export interface QuestionAttempt {
   readonly chapterId: string;
   readonly questionId: string;
+  /** Content snapshot retained for historical analytics. */
+  readonly questionText?: string;
+  readonly questionTags?: readonly string[];
   readonly type: QuestionType;
   /** Option id the user selected (prelims only). */
   readonly selectedOption?: string;
@@ -28,6 +31,9 @@ export interface QuestionAttempt {
   /** Epoch milliseconds. */
   readonly attemptedAt: number;
 }
+
+/** Append-only interaction history used for durable question-level analytics. */
+export type QuestionAttemptList = QuestionAttempt[];
 
 export type Confidence = 'again' | 'hard' | 'good' | 'easy';
 

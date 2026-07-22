@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useReducer } from 'react';
-import type { PrelimsQuestion, QuizAnswerMap, QuizQuestionSet } from '../types';
+import type { PrelimsQuestion, QuizAnswerMap, QuizQuestionSet, QuizSettings } from '../types';
+export type { QuizSettings } from '../types';
 
 export interface QuizSessionState {
   status: 'active' | 'paused' | 'finished';
@@ -13,24 +14,17 @@ export interface QuizSessionState {
   focusInterruptions: number[];
 }
 
-export interface QuizSettings {
-  allowPause: boolean;
-  lockNavigation: boolean;
-  trackFocusLoss: boolean;
-  allowQuit: boolean;
-  focusPenaltyEnabled: boolean;
-  focusLossGrace: number;
-  focusPenaltyPerLoss: number;
-}
-
 export const STANDARD_QUIZ_SETTINGS: QuizSettings = {
   allowPause: true,
-  lockNavigation: true,
+  lockNavigation: false,
   trackFocusLoss: false,
-  allowQuit: false,
+  allowQuit: true,
   focusPenaltyEnabled: false,
   focusLossGrace: 3,
   focusPenaltyPerLoss: 0.25,
+  timeLimitEnabled: true,
+  secondsPerQuestion: 72,
+  autoSubmitOnTimeEnd: true,
 };
 
 export const STRICT_QUIZ_SETTINGS: QuizSettings = {
@@ -41,7 +35,18 @@ export const STRICT_QUIZ_SETTINGS: QuizSettings = {
   focusPenaltyEnabled: true,
   focusLossGrace: 3,
   focusPenaltyPerLoss: 0.25,
+  timeLimitEnabled: true,
+  secondsPerQuestion: 72,
+  autoSubmitOnTimeEnd: true,
 };
+
+export function loadLastQuizSettings(fallback: QuizSettings = STANDARD_QUIZ_SETTINGS): QuizSettings {
+  return { ...fallback };
+}
+
+export function saveLastQuizSettings(_settings: QuizSettings): void {
+  // Session choices intentionally apply only to the quiz being launched.
+}
 
 type QuizAction =
   | { type: 'answer'; questionId: string; optionId: string }
@@ -76,21 +81,22 @@ interface StoredQuizDraft {
   state: QuizSessionState;
 }
 
-export function quizDraftKey(chapterId: string): string {
-  return `revision-engine:quiz-draft:${chapterId}`;
+export function quizDraftKey(quizId: string): string {
+  return `revision-engine:quiz-draft:${quizId}`;
 }
 
 const QUIZ_DRAFT_PREFIX = 'revision-engine:quiz-draft:';
+const QUIZ_DEFINITION_PREFIX = 'revision-engine:quiz-definition:';
 
 export function findActiveQuizDraft(): {
-  chapterId: string;
+  quizId: string;
   status: 'active' | 'paused';
   settings: QuizSettings;
   questionIds: readonly string[];
   questionSet?: QuizQuestionSet;
 } | null {
   let latest: ({
-    chapterId: string;
+    quizId: string;
     status: 'active' | 'paused';
     settings: QuizSettings;
     questionIds: readonly string[];
@@ -101,11 +107,17 @@ export function findActiveQuizDraft(): {
       const key = sessionStorage.key(index);
       if (key?.startsWith(QUIZ_DRAFT_PREFIX)) {
         try {
+          const quizId = key.slice(QUIZ_DRAFT_PREFIX.length);
+          if (!sessionStorage.getItem(`${QUIZ_DEFINITION_PREFIX}${quizId}`)) {
+            sessionStorage.removeItem(key);
+            index -= 1;
+            continue;
+          }
           const raw = sessionStorage.getItem(key);
           const draft = raw ? JSON.parse(raw) as StoredQuizDraft : null;
           if (!draft || !['active', 'paused'].includes(draft.state.status)) continue;
           const candidate = {
-            chapterId: key.slice(QUIZ_DRAFT_PREFIX.length),
+            quizId,
             status: draft.state.status as 'active' | 'paused',
             settings: settingsFromDraft(draft.state),
             questionIds: draft.questionIds ?? [],
@@ -126,15 +138,15 @@ export function findActiveQuizDraft(): {
   return draft;
 }
 
-export function announceQuizLock(chapterId: string | null, locked = false): void {
+export function announceQuizLock(quizId: string | null, locked = false): void {
   window.dispatchEvent(
-    new CustomEvent('revision-engine:quiz-lock', { detail: { chapterId, locked } }),
+    new CustomEvent('revision-engine:quiz-lock', { detail: { quizId, locked } }),
   );
 }
 
-export function abandonQuizDraft(chapterId: string): void {
+export function abandonQuizDraft(quizId: string): void {
   try {
-    sessionStorage.removeItem(quizDraftKey(chapterId));
+    sessionStorage.removeItem(quizDraftKey(quizId));
   } finally {
     announceQuizLock(null, false);
   }
@@ -172,9 +184,9 @@ function restoreDraft(key: string, questions: readonly PrelimsQuestion[], settin
   }
 }
 
-export function hasQuizDraft(chapterId: string): boolean {
+export function hasQuizDraft(quizId: string): boolean {
   try {
-    const raw = sessionStorage.getItem(quizDraftKey(chapterId));
+    const raw = sessionStorage.getItem(quizDraftKey(quizId));
     if (!raw) return false;
     const draft = JSON.parse(raw) as StoredQuizDraft;
     return draft.state.status === 'active' || draft.state.status === 'paused';

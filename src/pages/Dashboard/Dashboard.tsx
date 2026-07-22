@@ -1,5 +1,5 @@
-import { useMemo } from 'react';
-import { Link } from 'react-router-dom';
+import { useMemo, useState } from 'react';
+import { Link, useNavigate } from 'react-router-dom';
 import { AsyncBoundary, Icon } from '../../components/common';
 import { ChapterCard } from '../../components/dashboard/ChapterCard';
 import { Page } from '../../components/layout';
@@ -8,6 +8,15 @@ import { useUserData } from '../../context/UserDataContext';
 import { useLibrary } from '../../hooks/useChapters';
 import type { ChapterSummary } from '../../types';
 import styles from './Dashboard.module.css';
+import { useRevisionPreferences } from '../../hooks/useRevisionPreferences';
+import { useDailyRevisionAssignment } from '../../hooks/useDailyRevisionAssignment';
+import { humanizeDuration } from '../../utils/time';
+import { getQuizPerformance } from '../../utils/quizPerformance';
+import { useSavedQuizSettings } from '../../hooks/useSavedQuizSettings';
+import { quizDraftKey } from '../../hooks/useQuizSession';
+import { saveQuizDefinition } from '../../services/quiz';
+import type { QuizSettings } from '../../types';
+import { QuizLaunchDialog } from '../../components/quiz/QuizLaunchDialog';
 
 export function Dashboard() {
   const state = useLibrary();
@@ -22,6 +31,15 @@ export function Dashboard() {
 
 function HomeContent({ chapters }: { chapters: readonly ChapterSummary[] }) {
   const { progress, quizResults } = useUserData();
+  const navigate = useNavigate();
+  const { preferences } = useRevisionPreferences();
+  const { assignment, save: saveAssignment } = useDailyRevisionAssignment();
+  const { settings: defaultQuizSettings } = useSavedQuizSettings();
+  const [preflightOpen, setPreflightOpen] = useState(false);
+  const [quickSettings, setQuickSettings] = useState<QuizSettings>(defaultQuizSettings);
+  const examDays = preferences.examDate
+    ? Math.ceil((new Date(`${preferences.examDate}T23:59:59`).getTime() - Date.now()) / 86_400_000)
+    : null;
   const recent = useMemo(() => {
     const activity = new Map<string, number>();
     Object.values(progress).forEach((item) => activity.set(item.chapterId, item.lastVisitedAt));
@@ -40,16 +58,65 @@ function HomeContent({ chapters }: { chapters: readonly ChapterSummary[] }) {
     return {
       quizzes: results.length,
       questions: results.reduce((total, result) => total + result.totalQuestions, 0),
+      answered: results.reduce((total, result) => total + result.answered, 0),
+      correct: results.reduce((total, result) => total + result.correct, 0),
+      timeMs: results.reduce((total, result) => total + result.durationMs, 0),
     };
   }, [quizResults]);
+  const todayPerformance = today.questions > 0 ? getQuizPerformance(today.correct, today.questions) : null;
+  const revisionPerformance = assignment?.status === 'completed' && assignment.score
+    ? getQuizPerformance(assignment.score.correct, assignment.score.total)
+    : null;
+  const dashboardHeadline = todayPerformance
+    ? `${todayPerformance.emoji} ${todayPerformance.label}`
+    : 'Ready for today’s study';
+  const dashboardDetail = today.questions > 0
+    ? `${today.correct} correct answers across ${today.questions} questions · ${todayPerformance?.accuracy ?? 0}% overall accuracy · ${humanizeDuration(today.timeMs)} studied.`
+    : `${preferences.includedChapterIds.length} studied chapters · ${preferences.dailyQuestionLimit}-question Daily Revision target${examDays !== null && examDays >= 0 ? ` · ${examDays} days to ${preferences.examName || 'your exam'}` : ''}.`;
   const continueChapter = recent[0] ?? chapters[0];
+  const activeDraftExists = assignment?.status === 'active'
+    ? sessionStorage.getItem(quizDraftKey(assignment.definition.id)) !== null
+    : false;
+  const openPreflight = () => {
+    if (assignment?.status === 'completed') {
+      navigate(Routes.revision);
+      return;
+    }
+    setQuickSettings(assignment?.status === 'active' ? assignment.definition.settings : { ...defaultQuizSettings });
+    setPreflightOpen(true);
+  };
+  const beginDailyRevision = () => {
+    if (assignment?.status === 'active') {
+      const definition = { ...assignment.definition, settings: quickSettings };
+      saveQuizDefinition(definition);
+      saveAssignment({ ...assignment, definition });
+      if (!activeDraftExists) {
+        navigate(Routes.quizSession(definition.id));
+      } else {
+        const key = quizDraftKey(definition.id);
+        try {
+          const raw = sessionStorage.getItem(key);
+          if (raw) {
+            const draft = JSON.parse(raw) as { state?: { settings?: QuizSettings } };
+            if (draft.state) sessionStorage.setItem(key, JSON.stringify({ ...draft, state: { ...draft.state, settings: quickSettings } }));
+          }
+        } catch {
+          // A damaged draft is handled by the quiz session recovery path.
+        }
+        navigate(Routes.quizSession(definition.id));
+      }
+    } else {
+      navigate(`${Routes.revision}?autostart=1`);
+    }
+    setPreflightOpen(false);
+  };
   return (
     <>
-      <section className={styles.hero}>
+      <section className={`${styles.hero} ${todayPerformance ? styles[`performance_${todayPerformance.tone}`] : ''}`}>
         <div>
-          <span className={styles.eyebrow}>Revision dashboard</span>
-          <h1>What will you revise today?</h1>
-          <p>Continue where you stopped, test yourself, or explore your library.</p>
+          <span className={styles.eyebrow}>{new Intl.DateTimeFormat(undefined, { weekday: 'long', day: 'numeric', month: 'long' }).format(new Date())}</span>
+          <h1>{dashboardHeadline}</h1>
+          <p>{dashboardDetail}</p>
         </div>
         <div className={styles.todaySummary}>
           <span>Today</span>
@@ -62,19 +129,29 @@ function HomeContent({ chapters }: { chapters: readonly ChapterSummary[] }) {
         </div>
       </section>
 
-      {continueChapter && (
-        <Link to={Routes.chapter(continueChapter.id)} className={styles.continueCard}>
-          <span className={styles.continueIcon}><Icon name="target" size={22} /></span>
-          <div>
-            <small>{recent.length > 0 ? 'Continue studying' : 'Start your revision'}</small>
-            <strong>{continueChapter.title}</strong>
-            <span>{continueChapter.subject} · Chapter {continueChapter.chapterNumber}</span>
-          </div>
-          <Icon name="chevronRight" size={20} />
-        </Link>
-      )}
+      <button type="button" onClick={openPreflight} className={`${styles.revisionHero} ${revisionPerformance ? styles[`revision_${revisionPerformance.tone}`] : ''}`}>
+        <span className={styles.revisionMark}><Icon name="target" size={25} /></span>
+        <div className={styles.revisionMain}>
+          <small>{assignment?.status === 'completed' ? '✅ Daily Revision · Completed today' : assignment?.status === 'active' ? '⏳ Daily Revision · Pending today' : 'Daily Revision · Your highest-priority study'}</small>
+          <strong>{assignment?.status === 'completed' && revisionPerformance ? `${revisionPerformance.emoji} ${revisionPerformance.label}` : assignment?.status === 'completed' ? 'Today’s revision is complete' : assignment?.status === 'active' ? 'Finish what you started' : 'Review what matters today'}</strong>
+          <span>{assignment?.status === 'completed' && assignment.score ? `${assignment.score.correct} correct out of ${assignment.score.total} questions · ${revisionPerformance?.accuracy ?? 0}% accuracy` : assignment?.status === 'active' ? `${assignment.definition.questions.length}-question quiz saved · resume where you left off` : `${preferences.includedChapterIds.length} studied chapters · ${preferences.dailyQuestionLimit}-question saved target`}</span>
+        </div>
+        {examDays !== null && examDays >= 0 && <div className={styles.countdown}><strong>{examDays}</strong><span>days to<br />{preferences.examName || 'your exam'}</span></div>}
+        <span className={styles.revisionCta}>{assignment?.status === 'completed' ? 'View result' : assignment?.status === 'active' ? 'Continue' : 'Start now'} <Icon name="chevronRight" size={17} /></span>
+      </button>
 
-      <section className={styles.actions} aria-label="Quick actions">
+      <section className={styles.supportActions} aria-label="Study shortcuts">
+        {continueChapter && (
+          <Link to={Routes.chapter(continueChapter.id)} className={styles.continueCard}>
+            <span className={styles.continueIcon}><Icon name="target" size={19} /></span>
+            <div>
+              <small>{recent.length > 0 ? 'Continue studying' : 'Start studying'}</small>
+              <strong>{continueChapter.title}</strong>
+              <span>{continueChapter.subject} · Chapter {continueChapter.chapterNumber}</span>
+            </div>
+            <Icon name="chevronRight" size={16} />
+          </Link>
+        )}
         <Action to={Routes.library} icon="book" title="Open library" text="Browse every subject and chapter." />
         <Action to={continueChapter ? Routes.chapter(continueChapter.id) : Routes.library} icon="clock" title="Take a quiz" text="Start a timed attempt with saved results." />
       </section>
@@ -90,13 +167,26 @@ function HomeContent({ chapters }: { chapters: readonly ChapterSummary[] }) {
           </div>
         </section>
       )}
+      {preflightOpen && (
+        <QuizLaunchDialog
+          title="Start Daily Revision"
+          description={activeDraftExists ? 'This session already has saved progress, so its original settings are protected.' : 'Confirm the essential session settings. Your scheduling rules stay unchanged.'}
+          settings={quickSettings}
+          questionCount={assignment?.status === 'active' ? assignment.definition.questions.length : preferences.dailyQuestionLimit}
+          settingsLocked={false}
+          confirmLabel={activeDraftExists ? 'Resume saved quiz' : assignment?.status === 'active' ? 'Open saved quiz' : 'Build and start'}
+          onSettingsChange={setQuickSettings}
+          onCancel={() => setPreflightOpen(false)}
+          onConfirm={beginDailyRevision}
+        />
+      )}
     </>
   );
 }
 
 function Action({ to, icon, title, text }: {
   to: string;
-  icon: 'book' | 'clock' | 'search';
+  icon: 'book' | 'clock' | 'search' | 'target';
   title: string;
   text: string;
 }) {

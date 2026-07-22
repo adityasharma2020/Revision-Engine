@@ -13,6 +13,8 @@ import { Search } from './pages/Search';
 import { QuizResultPage } from './pages/QuizResult';
 import { SharedQuizResultPage } from './pages/SharedQuizResult';
 import { Library } from './pages/Library';
+import { DailyRevision } from './pages/DailyRevision';
+import { QuizSessionPage } from './pages/QuizSession';
 
 const Statistics = lazy(() =>
   import('./pages/Statistics').then((module) => ({ default: module.Statistics })),
@@ -26,6 +28,8 @@ export function App() {
         <Route element={<AppShell />}>
           <Route path={Routes.dashboard} element={<Dashboard />} />
           <Route path={Routes.library} element={<Library />} />
+          <Route path={Routes.revision} element={<DailyRevision />} />
+          <Route path={Routes.quizSession()} element={<QuizSessionPage />} />
           <Route path={Routes.search} element={<Search />} />
           <Route path={Routes.chapter()} element={<Chapter />} />
           <Route path={Routes.quizResult()} element={<QuizResultPage />} />

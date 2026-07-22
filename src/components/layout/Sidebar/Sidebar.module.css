@@ -2,9 +2,10 @@
   display: flex;
   flex-direction: column;
   width: var(--sidebar-width);
-  height: 100vh;
-  position: sticky;
-  top: 0;
+  position: fixed;
+  inset: 0 auto 0 0;
+  z-index: var(--z-sticky);
+  height: 100dvh;
   padding: var(--space-5) var(--space-3);
   background-color: var(--bg-sunken);
   border-right: 1px solid var(--border);
@@ -97,6 +98,8 @@
   background-color: var(--surface-hover);
   color: var(--text-primary);
 }
+.mobileLabel { display: none; }
+.moreButton { display: none; }
 
 .active {
   background-color: var(--surface);
@@ -160,40 +163,8 @@
   color: var(--text-tertiary);
 }
 
-/* Compact rail for tablets, leaving the content area comfortably wide. */
-@media (max-width: 1024px) and (min-width: 721px) {
-  .sidebar {
-    width: 80px;
-    padding-inline: var(--space-3);
-  }
-
-  .brand {
-    justify-content: center;
-    padding-inline: 0;
-  }
-
-  .brandName,
-  .link span,
-  .footer {
-    display: none;
-  }
-
-  .link {
-    justify-content: center;
-    height: 44px;
-    padding: 0;
-  }
-
-  .version {
-    margin-top: auto;
-    padding-bottom: var(--space-2);
-  }
-
-  .collapseToggle { display: none; }
-}
-
 /* On phones the primary navigation becomes a reachable bottom bar. */
-@media (max-width: 720px) {
+@media (max-width: 900px) {
   .sidebar {
     position: fixed;
     inset: auto 0 0;
@@ -210,7 +181,8 @@
 
   .collapseToggle { display: none; }
 
-  .collapsedSidebar .link span { display: inline; }
+  .link .desktopLabel { display: none; }
+  .link .mobileLabel { display: inline; }
 
   .brand,
   .footer,
@@ -220,7 +192,7 @@
 
   .nav {
     display: grid;
-    grid-template-columns: repeat(7, minmax(0, 1fr));
+    grid-template-columns: repeat(5, minmax(0, 1fr));
     gap: var(--space-1);
     height: 100%;
   }
@@ -231,11 +203,11 @@
     gap: 2px;
     height: 52px;
     min-width: 0;
-    padding: var(--space-1) 2px;
+    padding: var(--space-1) 1px;
     font-size: 0.625rem;
   }
 
-  .link span {
+  .link .mobileLabel {
     max-width: 100%;
     overflow: hidden;
     text-overflow: ellipsis;
@@ -247,4 +219,23 @@
     background-color: var(--accent-subtle);
     box-shadow: none;
   }
+  .mobileSecondary { display: none; }
+  .moreButton { display: flex; }
+  .moreBackdrop { position: fixed; inset: 0; z-index: calc(var(--z-modal) - 1); display: block; background: var(--overlay); backdrop-filter: blur(3px); }
+  .moreSheet { position: fixed; z-index: var(--z-modal); right: 0; bottom: calc(68px + env(safe-area-inset-bottom)); left: 0; padding: var(--space-2) var(--space-4) var(--space-5); background: var(--surface-elevated); border-top: 1px solid var(--border-strong); border-radius: var(--radius-xl) var(--radius-xl) 0 0; box-shadow: var(--shadow-lg); }
+  .moreHandle { width: 38px; height: 4px; margin: 0 auto var(--space-3); background: var(--border-strong); border-radius: var(--radius-full); }
+  .moreHead { display: flex; align-items: center; justify-content: space-between; margin-bottom: var(--space-3); }
+  .moreHead strong { font-size: var(--text-lg); }
+  .moreHead button { display: grid; width: 34px; height: 34px; place-items: center; color: var(--text-secondary); background: var(--bg-sunken); border-radius: var(--radius-full); }
+  .moreGrid { display: grid; grid-template-columns: 1fr 1fr; gap: var(--space-2); }
+  .moreItem { display: grid; grid-template-columns: 38px minmax(0, 1fr) auto; align-items: center; gap: var(--space-2); min-height: 62px; padding: var(--space-3); color: var(--text-primary); background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-lg); }
+  .moreItem > span { display: grid; width: 38px; height: 38px; place-items: center; color: var(--accent); background: var(--accent-subtle); border-radius: var(--radius-md); }
+  .moreItem strong { font-size: var(--text-sm); }
+  .moreItemActive { border-color: var(--accent); background: var(--accent-subtle); }
+}
+
+@media (max-width: 390px) {
+  .link { font-size: 0.5625rem; }
+  .link svg { width: 17px; height: 17px; }
+  .moreGrid { grid-template-columns: 1fr; }
 }

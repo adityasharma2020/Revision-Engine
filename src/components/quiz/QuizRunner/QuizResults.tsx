@@ -5,6 +5,7 @@ import { Button } from '../../common/Button';
 import { humanizeDuration } from '../../../utils/time';
 import { PrelimsCard } from '../PrelimsCard';
 import type { QuestionAttemptStats } from '../../../utils/questionStats';
+import { getQuizPerformance } from '../../../utils/quizPerformance';
 import styles from './QuizRunner.module.css';
 
 interface QuizResultsProps {
@@ -50,6 +51,7 @@ export function QuizResults({
 }: QuizResultsProps) {
   const [reviewFilter, setReviewFilter] = useState<ReviewFilter>('all');
   const [included, setIncluded] = useState(includedInAnalytics);
+  const performance = getQuizPerformance(summary.correct, summary.total);
   const visibleQuestions = questions.filter((question) => {
     const selected = answers[question.id] ?? null;
     if (reviewFilter === 'skipped') return selected === null;
@@ -58,7 +60,7 @@ export function QuizResults({
     return true;
   });
   const stats = [
-    { label: 'Correct', value: `${summary.correct}/${summary.total}` },
+    { label: 'Correct answers', value: `${summary.correct} of ${summary.total}` },
     { label: 'Accuracy', value: `${summary.accuracy}%` },
     { label: 'Skipped', value: String(summary.skipped) },
     { label: 'Time', value: humanizeDuration(summary.durationMs) },
@@ -81,7 +83,10 @@ export function QuizResults({
           <span className={styles.scoreCaption}>accuracy</span>
         </div>
         <div className={styles.scoreMeta}>
-          <h2 className={styles.scoreTitle}>{historical ? 'Saved quiz result' : 'Quiz complete'}</h2>
+          <h2 className={styles.scoreTitle}>{performance.emoji} {performance.label}</h2>
+          <p className={styles.scoreExplanation}>
+            You answered {summary.correct} correctly out of {summary.total} questions. {historical ? 'This is your saved quiz result.' : performance.message}
+          </p>
           <div className={styles.statGrid}>
             {stats.map((s) => (
               <div key={s.label} className={styles.stat}>

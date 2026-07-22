@@ -99,6 +99,11 @@
 .syncPanel span { font-size: var(--text-xs); color: var(--text-secondary); }
 .syncPanel small { margin-top: var(--space-1); font-size: var(--text-xs); color: var(--accent); }
 .syncPanel button { flex-shrink: 0; }
+.revisionFields { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--space-3); }
+.revisionFields label { display: flex; flex-direction: column; gap: var(--space-2); padding: var(--space-4); background: var(--bg-sunken); border: 1px solid var(--border); border-radius: var(--radius-md); }
+.revisionFields label > span { font-size: var(--text-sm); font-weight: var(--weight-semibold); }
+.revisionFields select { padding: var(--space-3); color: var(--text-primary); background: var(--surface); border: 1px solid var(--border-strong); border-radius: var(--radius-md); }
+.revisionFields small { color: var(--text-secondary); line-height: var(--leading-normal); }
 
 .modalBackdrop {
   position: fixed;
@@ -139,6 +144,7 @@
   }
 
   .syncPanel { align-items: flex-start; flex-direction: column; }
+  .revisionFields { grid-template-columns: 1fr; }
   .syncPanel button { width: 100%; }
   .resetModal { padding: var(--space-5); }
 }

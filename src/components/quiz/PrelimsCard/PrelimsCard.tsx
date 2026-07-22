@@ -61,6 +61,8 @@ export function PrelimsCard({
       recordAttempt({
         chapterId,
         questionId: question.id,
+        questionText: question.statement,
+        questionTags: question.tags,
         type: 'prelims',
         selectedOption: optionId,
         correct,

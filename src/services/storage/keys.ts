@@ -10,11 +10,15 @@ export const STORAGE_SCHEMA_VERSION = 1;
 
 export const StorageKeys = {
   progress: 'progress',
+  questionAttemptLog: 'question-attempt-log',
   annotations: 'annotations',
   quizResults: 'quiz-results',
   userChapters: 'user-chapters',
   theme: 'theme',
   settings: 'settings',
+  revisionPreferences: 'revision-preferences',
+  quizSettings: 'quiz-settings',
+  dailyRevisionAssignment: 'daily-revision-assignment',
 } as const;
 
 export type StorageKey = (typeof StorageKeys)[keyof typeof StorageKeys];

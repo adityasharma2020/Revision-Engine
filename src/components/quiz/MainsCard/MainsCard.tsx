@@ -37,6 +37,8 @@ export function MainsCard({ question, index, chapterId, elementId, focusLabel = 
       recordAttempt({
         chapterId,
         questionId: question.id,
+        questionText: question.question,
+        questionTags: question.tags,
         type: 'mains',
         difficulty: question.difficulty,
         origin: question.origin,

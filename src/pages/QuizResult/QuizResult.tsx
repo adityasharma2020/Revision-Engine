@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import { AsyncBoundary, EmptyState, Icon } from '../../components/common';
 import { Button } from '../../components/common';
@@ -16,6 +16,8 @@ import {
 import { useAuth } from '../../context/AuthContext';
 import styles from './QuizResult.module.css';
 import { questionAttemptStats } from '../../utils/questionStats';
+import { DeleteQuizDialog } from '../../components/quiz/DeleteQuizDialog';
+import { useDailyRevisionAssignment } from '../../hooks/useDailyRevisionAssignment';
 
 export function QuizResultPage() {
   const { resultId = '' } = useParams();
@@ -41,13 +43,23 @@ export function QuizResultPage() {
 }
 
 function LoadedResult({ result }: { result: QuizResult }) {
-  const chapterState = useChapter(result.chapterId);
+  const chapterSnapshot = useMemo(() => result.questions?.length ? ({
+      id: result.chapterId,
+      title: result.chapterTitle ?? 'Generated quiz',
+      subject: result.subject ?? 'Mixed subjects',
+      chapterNumber: 0,
+      prelims: result.questions,
+      mains: [],
+    }) : undefined, [result]);
+  const chapterState = useChapter(result.chapterId, chapterSnapshot);
   const navigate = useNavigate();
   const { quizResults, setQuizResultAnalytics } = useUserData();
   const { status } = useAuth();
   const [shareToken, setShareToken] = useState<string | null>(null);
   const [showOwner, setShowOwner] = useState(true);
   const [shareStatus, setShareStatus] = useState<'idle' | 'working' | 'copied' | 'error'>('idle');
+  const [deleteOpen, setDeleteOpen] = useState(false);
+  const { assignment, clear: clearAssignment } = useDailyRevisionAssignment();
 
   useEffect(() => {
     if (status !== 'authenticated') return;
@@ -61,7 +73,7 @@ function LoadedResult({ result }: { result: QuizResult }) {
 
   return (
     <>
-      <Link to={Routes.chapter(result.chapterId)} className={styles.back}>
+      <Link to={result.chapterId === 'daily-revision' ? Routes.revision : Routes.chapter(result.chapterId)} className={styles.back}>
         <Icon name="arrowLeft" size={16} />
         Quiz history
       </Link>
@@ -76,6 +88,7 @@ function LoadedResult({ result }: { result: QuizResult }) {
           return (
             <>
               <header className={styles.header}>
+                <button type="button" className={styles.deleteAttempt} onClick={() => setDeleteOpen(true)} aria-label="Delete this quiz attempt" title="Delete quiz attempt"><Icon name="trash" size={16} /></button>
                 <div>
                   <span>Saved result</span>
                   <h1>{result.chapterTitle ?? 'Quiz attempt'}</h1>
@@ -85,6 +98,10 @@ function LoadedResult({ result }: { result: QuizResult }) {
                   }).format(result.takenAt)}</p>
                   <div className={styles.resultContext}>
                     <span>{result.questionSet?.label ?? 'Full chapter'}</span>
+                    {(result.purpose === 'daily-revision' || result.chapterId === 'daily-revision') && (
+                      <span>Daily Revision · {new Intl.DateTimeFormat(undefined, { day: 'numeric', month: 'short', year: 'numeric' }).format(result.dailyDateKey ? new Date(`${result.dailyDateKey}T12:00:00`) : result.takenAt)}</span>
+                    )}
+                    {result.timedOut && <span>Time expired · automatically submitted</span>}
                     <span>
                       {result.totalQuestions}/{result.questionSet?.sourceQuestionCount ?? result.totalQuestions} questions
                       {result.questionSet && result.questionSet.type !== 'full' ? ' · targeted quiz' : ' · full quiz'}
@@ -172,9 +189,16 @@ function LoadedResult({ result }: { result: QuizResult }) {
               }}
               questionHistory={questionAttemptStats(quizResults, result.chapterId)}
               onAnalyticsChange={(included) => setQuizResultAnalytics(result.id, included)}
-              onRetry={() => navigate(Routes.chapter(result.chapterId))}
-              onExit={() => navigate(Routes.chapter(result.chapterId))}
+              onRetry={() => navigate(result.chapterId === 'daily-revision' ? Routes.revision : Routes.chapter(result.chapterId))}
+              onExit={() => navigate(result.chapterId === 'daily-revision' ? Routes.revision : Routes.chapter(result.chapterId))}
               />
+              {deleteOpen && <DeleteQuizDialog result={result} onClose={() => setDeleteOpen(false)} onDeleted={() => {
+                if (shareToken) void revokeQuizShare(shareToken);
+                if (assignment?.resultId === result.id) {
+                  clearAssignment();
+                }
+                navigate(result.purpose === 'daily-revision' || result.chapterId === 'daily-revision' ? Routes.revision : Routes.chapter(result.chapterId), { replace: true });
+              }} />}
             </>
           );
         }}

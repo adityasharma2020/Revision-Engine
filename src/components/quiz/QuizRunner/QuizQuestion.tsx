@@ -12,10 +12,16 @@ interface QuizQuestionProps {
   onSelect: (optionId: string) => void;
   disabled?: boolean;
   chapterId: string;
+  revisionMeta?: {
+    attempts: number;
+    accuracy: number | null;
+    level: number;
+    reason: string;
+  };
 }
 
 /** A quiz question in-flight: selectable, but never reveals the answer. */
-export function QuizQuestion({ question, selected, onSelect, disabled = false, chapterId }: QuizQuestionProps) {
+export function QuizQuestion({ question, selected, onSelect, disabled = false, chapterId, revisionMeta }: QuizQuestionProps) {
   return (
     <div className={styles.question}>
       <div className={styles.questionMeta}>
@@ -25,6 +31,15 @@ export function QuizQuestion({ question, selected, onSelect, disabled = false, c
             {formatQuestionOrigin(question.origin)}
           </Badge>
           )}
+          {revisionMeta && (
+            <span className={styles.revisionMeta}>
+              Reviewed {revisionMeta.attempts}× · Level {revisionMeta.level}
+              {revisionMeta.accuracy !== null ? ` · ${revisionMeta.accuracy}% accuracy` : ' · New'}
+            </span>
+          )}
+          {question.tags?.slice(0, 3).map((tag) => (
+            <span key={tag} className={styles.questionTag}>{tag}</span>
+          ))}
         </div>
         <QuestionAnnotations
           chapterId={chapterId}

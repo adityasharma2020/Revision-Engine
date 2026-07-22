@@ -2,10 +2,15 @@ import type {
   AnnotationMap,
   Chapter,
   ProgressMap,
+  QuestionAttemptList,
   QuizResult,
   QuizResultList,
   ThemeMode,
+  RevisionPreferences,
+  QuizSettings,
+  DailyRevisionAssignment,
 } from '../../types';
+import { DEFAULT_REVISION_PREFERENCES } from '../../types/revision';
 import { StorageKeys } from './keys';
 import type { KeyValueStore } from './types';
 
@@ -44,6 +49,14 @@ export class StorageService {
 
   async saveProgress(progress: ProgressMap): Promise<void> {
     await this.store.set(StorageKeys.progress, progress);
+  }
+
+  async loadQuestionAttemptLog(): Promise<QuestionAttemptList> {
+    return (await this.store.get<QuestionAttemptList>(StorageKeys.questionAttemptLog)) ?? [];
+  }
+
+  async saveQuestionAttemptLog(attempts: QuestionAttemptList): Promise<void> {
+    await this.store.set(StorageKeys.questionAttemptLog, attempts);
   }
 
   // ---- Annotations (bookmarks, notes, user tags) -----------------------
@@ -100,6 +113,50 @@ export class StorageService {
 
   async saveSettings(settings: AppSettings): Promise<void> {
     await this.store.set(StorageKeys.settings, settings);
+  }
+
+  async loadQuizSettings(defaults: QuizSettings): Promise<QuizSettings | null> {
+    const stored = await this.store.get<Partial<QuizSettings>>(StorageKeys.quizSettings);
+    return stored ? { ...defaults, ...stored } : null;
+  }
+
+  async saveQuizSettings(settings: QuizSettings): Promise<void> {
+    await this.store.set(StorageKeys.quizSettings, settings);
+  }
+
+  async loadRevisionPreferences(): Promise<RevisionPreferences> {
+    const stored = await this.store.get<Partial<RevisionPreferences>>(StorageKeys.revisionPreferences);
+    if (!stored) return DEFAULT_REVISION_PREFERENCES;
+    const migrated = {
+      ...DEFAULT_REVISION_PREFERENCES,
+      ...stored,
+      // Migrate the former hard-coded label away; exam names are user-owned.
+      examName: stored.examName === 'UPSC Prelims 2027' ? '' : (stored.examName ?? ''),
+      examDate: stored.examDate ?? DEFAULT_REVISION_PREFERENCES.examDate,
+      // v2 changes the former 20-question default to the more sustainable 10.
+      dailyQuestionLimit: stored.schemaVersion ? (stored.dailyQuestionLimit ?? 10) : 10,
+      schemaVersion: DEFAULT_REVISION_PREFERENCES.schemaVersion,
+    };
+    if (stored.schemaVersion !== DEFAULT_REVISION_PREFERENCES.schemaVersion) {
+      await this.store.set(StorageKeys.revisionPreferences, migrated);
+    }
+    return migrated;
+  }
+
+  async saveRevisionPreferences(preferences: RevisionPreferences): Promise<void> {
+    await this.store.set(StorageKeys.revisionPreferences, preferences);
+  }
+
+  async loadDailyRevisionAssignment(): Promise<DailyRevisionAssignment | null> {
+    return this.store.get<DailyRevisionAssignment>(StorageKeys.dailyRevisionAssignment);
+  }
+
+  async saveDailyRevisionAssignment(assignment: DailyRevisionAssignment): Promise<void> {
+    await this.store.set(StorageKeys.dailyRevisionAssignment, assignment);
+  }
+
+  async clearDailyRevisionAssignment(): Promise<void> {
+    await this.store.remove(StorageKeys.dailyRevisionAssignment);
   }
 
   // ---- Maintenance -----------------------------------------------------

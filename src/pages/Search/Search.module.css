@@ -33,10 +33,23 @@
   gap: var(--space-3);
   margin: var(--space-4) 0 var(--space-6);
 }
-.filters label { display: flex; flex-direction: column; gap: var(--space-1); }
+.filters label { position: relative; display: flex; flex-direction: column; gap: var(--space-1); }
+.filters label::after {
+  position: absolute;
+  right: var(--space-3);
+  bottom: 15px;
+  width: 6px;
+  height: 6px;
+  content: '';
+  pointer-events: none;
+  border-right: 1.5px solid var(--text-tertiary);
+  border-bottom: 1.5px solid var(--text-tertiary);
+  transform: rotate(45deg);
+}
 .filters label > span { font-size: var(--text-xs); font-weight: var(--weight-medium); color: var(--text-tertiary); }
 .filters select {
-  width: 100%; height: 38px; padding: 0 var(--space-7) 0 var(--space-3);
+  width: 100%; height: 38px; padding: 0 var(--space-6) 0 var(--space-3);
+  appearance: none;
   color: var(--text-primary); background-color: var(--surface);
   border: 1px solid var(--border); border-radius: var(--radius-md);
 }
@@ -65,4 +78,6 @@
   .result { padding: var(--space-4); }
   .searchBox { gap: var(--space-2); padding-inline: var(--space-3); }
   .submit { padding-inline: var(--space-3); }
+  .searchBox .clear { display: none; }
+  .resultHead { align-items: flex-start; flex-direction: column; }
 }

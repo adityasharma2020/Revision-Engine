@@ -8,13 +8,15 @@
   color: var(--text-secondary);
 }
 .back:hover { color: var(--text-primary); }
-.header { display: flex; align-items: flex-start; justify-content: space-between; gap: var(--space-4); margin-bottom: var(--space-6); }
+.header { position: relative; display: flex; align-items: flex-start; justify-content: space-between; gap: var(--space-4); margin-bottom: var(--space-6); padding-right: 38px; }
 .header > span { font-size: var(--text-xs); font-weight: var(--weight-semibold); color: var(--accent); text-transform: uppercase; letter-spacing: var(--tracking-wide); }
 .header h1 { margin-top: var(--space-2); font-size: var(--text-2xl); }
 .header p { margin-top: var(--space-1); font-size: var(--text-sm); color: var(--text-secondary); }
 .resultContext { display: flex; flex-wrap: wrap; gap: var(--space-2); margin-top: var(--space-3); }
 .resultContext span { padding: 4px 8px; font-size: var(--text-xs); color: var(--text-secondary); background-color: var(--bg-sunken); border-radius: var(--radius-full); }
 .resultContext span:first-child { color: var(--accent); background-color: var(--accent-subtle); }
+.deleteAttempt { position: absolute; top: 0; right: 0; display: inline-flex; width: 32px; height: 32px; align-items: center; justify-content: center; padding: 0; color: var(--text-tertiary); background: transparent; border: 1px solid transparent; border-radius: var(--radius-md); cursor: pointer; }
+.deleteAttempt:hover { color: var(--danger); background: var(--danger-subtle); border-color: color-mix(in srgb, var(--danger) 35%, transparent); }
 .loading { padding: var(--space-8); text-align: center; color: var(--text-secondary); }
 .action { display: inline-flex; padding: var(--space-2) var(--space-4); color: var(--accent-text); background-color: var(--accent); border-radius: var(--radius-md); }
 .shareActions { display: flex; align-items: center; justify-content: flex-end; gap: var(--space-2); flex-wrap: wrap; }
@@ -22,8 +24,12 @@
 .identityChoice { display: inline-flex; align-items: center; gap: var(--space-2); width: 100%; justify-content: flex-end; font-size: var(--text-xs); color: var(--text-secondary); cursor: pointer; }
 .identityChoice input { accent-color: var(--accent); }
 @media (max-width: 620px) {
-  .header { flex-direction: column; }
+  .header { min-width: 0; flex-direction: column; }
+  .header > div:first-of-type { width: 100%; min-width: 0; }
+  .resultContext { max-width: 100%; }
   .shareActions { width: 100%; justify-content: flex-start; }
   .shareActions small { text-align: left; }
   .identityChoice { justify-content: flex-start; }
+  .header h1 { font-size: var(--text-xl); }
+  .shareActions > * { max-width: 100%; white-space: normal; }
 }

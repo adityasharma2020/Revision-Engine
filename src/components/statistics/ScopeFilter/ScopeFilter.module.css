@@ -79,3 +79,8 @@
   background-color: var(--accent-subtle);
   border-color: var(--accent);
 }
+
+@media (max-width: 560px) {
+  .quick, .chapters { flex-wrap: nowrap; overflow-x: auto; padding-bottom: var(--space-2); }
+  .chip, .chapterChip { flex-shrink: 0; }
+}

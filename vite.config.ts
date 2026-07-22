@@ -32,6 +32,9 @@ export default defineConfig({
         ],
       },
       workbox: {
+        cleanupOutdatedCaches: true,
+        skipWaiting: true,
+        clientsClaim: true,
         globPatterns: ['**/*.{js,css,html,svg,woff2}'],
         // Chapter JSON + manifest: serve cached-first, refresh in the background,
         // so the library and every opened chapter work fully offline.

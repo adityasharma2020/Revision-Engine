@@ -1,0 +1,1348 @@
+{
+  "quotes": [
+    {
+      "id": "gandhi-means",
+      "quote": "Means are, after all, everything. As the means, so the end.",
+      "author": "Mahatma Gandhi",
+      "topics": ["Ethics", "Integrity"]
+    },
+    {
+      "id": "gandhi-service",
+      "quote": "The best way to find yourself is to lose yourself in the service of others.",
+      "author": "Mahatma Gandhi",
+      "topics": ["Service", "Compassion"]
+    },
+    {
+      "id": "gandhi-change",
+      "quote": "Be the change you wish to see in the world.",
+      "author": "Mahatma Gandhi",
+      "topics": ["Leadership", "Ethics"]
+    },
+    {
+      "id": "gandhi-poverty",
+      "quote": "Poverty is the worst form of violence.",
+      "author": "Mahatma Gandhi",
+      "topics": ["Poverty", "Justice"]
+    },
+    {
+      "id": "gandhi-earth",
+      "quote": "Earth provides enough to satisfy every man's need, but not every man's greed.",
+      "author": "Mahatma Gandhi",
+      "topics": ["Environment", "Ethics"]
+    },
+    {
+      "id": "gandhi-eye",
+      "quote": "An eye for an eye makes the whole world blind.",
+      "author": "Mahatma Gandhi",
+      "topics": ["Peace", "Non-violence"]
+    },
+    {
+      "id": "gandhi-future",
+      "quote": "The future depends on what we do in the present.",
+      "author": "Mahatma Gandhi",
+      "topics": ["Action", "Governance"]
+    },
+    {
+      "id": "gandhi-forgiveness",
+      "quote": "The weak can never forgive. Forgiveness is the attribute of the strong.",
+      "author": "Mahatma Gandhi",
+      "topics": ["Ethics", "Compassion"]
+    },
+    {
+      "id": "gandhi-culture",
+      "quote": "A nation's culture resides in the hearts and souls of its people.",
+      "author": "Mahatma Gandhi",
+      "topics": ["Culture", "Society"]
+    },
+    {
+      "id": "gandhi-bread",
+      "quote": "There are people in the world so hungry that God cannot appear to them except in the form of bread.",
+      "author": "Mahatma Gandhi",
+      "topics": ["Poverty", "Welfare"]
+    },
+    {
+      "id": "ambedkar-mind",
+      "quote": "Cultivation of mind should be the ultimate aim of human existence.",
+      "author": "B. R. Ambedkar",
+      "topics": ["Education", "Human development"]
+    },
+    {
+      "id": "ambedkar-democracy",
+      "quote": "Democracy is not merely a form of government. It is primarily a mode of associated living.",
+      "author": "B. R. Ambedkar",
+      "topics": ["Democracy", "Society"]
+    },
+    {
+      "id": "ambedkar-women",
+      "quote": "I measure the progress of a community by the degree of progress which women have achieved.",
+      "author": "B. R. Ambedkar",
+      "topics": ["Gender", "Social Justice"]
+    },
+    {
+      "id": "ambedkar-social-democracy",
+      "quote": "Political democracy cannot last unless there lies at the base of it social democracy.",
+      "author": "B. R. Ambedkar",
+      "topics": ["Democracy", "Equality"]
+    },
+    {
+      "id": "ambedkar-life",
+      "quote": "Life should be great rather than long.",
+      "author": "B. R. Ambedkar",
+      "topics": ["Values", "Purpose"]
+    },
+    {
+      "id": "ambedkar-religion",
+      "quote": "Religion must mainly be a matter of principles only. It cannot be a matter of rules.",
+      "author": "B. R. Ambedkar",
+      "topics": ["Religion", "Ethics"]
+    },
+    {
+      "id": "ambedkar-rights",
+      "quote": "Lost rights are never regained by appeals to the conscience of the usurpers.",
+      "author": "B. R. Ambedkar",
+      "topics": ["Rights", "Justice"]
+    },
+    {
+      "id": "vivekananda-character",
+      "quote": "We want that education by which character is formed, strength of mind is increased, and intellect is expanded.",
+      "author": "Swami Vivekananda",
+      "topics": ["Education", "Character"]
+    },
+    {
+      "id": "vivekananda-arise",
+      "quote": "Arise, awake and stop not till the goal is reached.",
+      "author": "Swami Vivekananda",
+      "topics": ["Motivation", "Action"]
+    },
+    {
+      "id": "vivekananda-service",
+      "quote": "Service to man is service to God.",
+      "author": "Swami Vivekananda",
+      "topics": ["Service", "Compassion"]
+    },
+    {
+      "id": "vivekananda-power",
+      "quote": "All the powers in the universe are already ours. It is we who have put our hands before our eyes and cry that it is dark.",
+      "author": "Swami Vivekananda",
+      "topics": ["Potential", "Self-reliance"]
+    },
+    {
+      "id": "vivekananda-religion",
+      "quote": "The greatest religion is to be true to your own nature. Have faith in yourselves.",
+      "author": "Swami Vivekananda",
+      "topics": ["Ethics", "Character"]
+    },
+    {
+      "id": "tagore-freedom",
+      "quote": "Where the mind is without fear and the head is held high, into that heaven of freedom, my Father, let my country awake.",
+      "author": "Rabindranath Tagore",
+      "topics": ["Freedom", "Nation"]
+    },
+    {
+      "id": "tagore-reason",
+      "quote": "Where the clear stream of reason has not lost its way into the dreary desert sand of dead habit.",
+      "author": "Rabindranath Tagore",
+      "topics": ["Reason", "Reform"]
+    },
+    {
+      "id": "tagore-action",
+      "quote": "You can't cross the sea merely by standing and staring at the water.",
+      "author": "Rabindranath Tagore",
+      "topics": ["Action", "Courage"]
+    },
+    {
+      "id": "tagore-education",
+      "quote": "The highest education is that which does not merely give us information but makes our life in harmony with all existence.",
+      "author": "Rabindranath Tagore",
+      "topics": ["Education", "Values"]
+    },
+    {
+      "id": "nehru-culture",
+      "quote": "Culture is the widening of the mind and of the spirit.",
+      "author": "Jawaharlal Nehru",
+      "topics": ["Culture", "Society"]
+    },
+    {
+      "id": "nehru-destiny",
+      "quote": "At the stroke of the midnight hour, when the world sleeps, India will awake to life and freedom.",
+      "author": "Jawaharlal Nehru",
+      "topics": ["Nation", "Freedom"]
+    },
+    {
+      "id": "tilak-swaraj",
+      "quote": "Swaraj is my birthright and I shall have it.",
+      "author": "Bal Gangadhar Tilak",
+      "topics": ["Freedom", "Rights"]
+    },
+    {
+      "id": "patel-civil-servant",
+      "quote": "The civil servant must have the mind of a scholar and the heart of a mother.",
+      "author": "Sardar Vallabhbhai Patel",
+      "topics": ["Civil Services", "Ethics"]
+    },
+    {
+      "id": "aristotle-law",
+      "quote": "At his best, man is the noblest of all animals; separated from law and justice, he is the worst.",
+      "author": "Aristotle",
+      "topics": ["Justice", "Rule of law"]
+    },
+    {
+      "id": "aristotle-political",
+      "quote": "Man is by nature a political animal.",
+      "author": "Aristotle",
+      "topics": ["Governance", "Society"]
+    },
+    {
+      "id": "aristotle-education",
+      "quote": "The roots of education are bitter, but the fruit is sweet.",
+      "author": "Aristotle",
+      "topics": ["Education", "Values"]
+    },
+    {
+      "id": "socrates-examine",
+      "quote": "The unexamined life is not worth living.",
+      "author": "Socrates",
+      "topics": ["Ethics", "Self-reflection"]
+    },
+    {
+      "id": "socrates-wisdom",
+      "quote": "The only true wisdom is in knowing you know nothing.",
+      "author": "Socrates",
+      "topics": ["Humility", "Learning"]
+    },
+    {
+      "id": "kant-humanity",
+      "quote": "Treat humanity, whether in your own person or in another, always as an end and never merely as a means.",
+      "author": "Immanuel Kant",
+      "topics": ["Dignity", "Ethics"]
+    },
+    {
+      "id": "kant-universal",
+      "quote": "Act only according to that maxim by which you can also will it to become a universal law.",
+      "author": "Immanuel Kant",
+      "topics": ["Ethics", "Moral duty"]
+    },
+    {
+      "id": "aurelius-action",
+      "quote": "Waste no more time arguing about what a good man should be. Be one.",
+      "author": "Marcus Aurelius",
+      "topics": ["Ethics", "Action"]
+    },
+    {
+      "id": "aurelius-mind",
+      "quote": "You have power over your mind, not outside events. Realize this and you will find strength.",
+      "author": "Marcus Aurelius",
+      "topics": ["Emotional Intelligence", "Ethics"]
+    },
+    {
+      "id": "aurelius-obstacle",
+      "quote": "The obstacle is the way.",
+      "author": "Marcus Aurelius",
+      "topics": ["Resilience", "Challenges"]
+    },
+    {
+      "id": "aurelius-beehive",
+      "quote": "What is not good for the beehive cannot be good for the bees.",
+      "author": "Marcus Aurelius",
+      "topics": ["Society", "Ethics"]
+    },
+    {
+      "id": "plato-power",
+      "quote": "The measure of a man is what he does with power.",
+      "author": "Plato",
+      "topics": ["Ethics", "Power"]
+    },
+    {
+      "id": "bentham-happiness",
+      "quote": "The greatest happiness of the greatest number is the foundation of morals and legislation.",
+      "author": "Jeremy Bentham",
+      "topics": ["Utilitarianism", "Governance"]
+    },
+    {
+      "id": "rawls-justice",
+      "quote": "Justice is the first virtue of social institutions.",
+      "author": "John Rawls",
+      "topics": ["Justice", "Governance"]
+    },
+    {
+      "id": "hobbes-society",
+      "quote": "The life of man is solitary, poor, nasty, brutish, and short — without society.",
+      "author": "Thomas Hobbes",
+      "topics": ["Governance", "Society"]
+    },
+    {
+      "id": "bacon-knowledge",
+      "quote": "Knowledge is power.",
+      "author": "Francis Bacon",
+      "topics": ["Education", "Governance"]
+    },
+    {
+      "id": "acton-power",
+      "quote": "Power tends to corrupt, and absolute power corrupts absolutely.",
+      "author": "Lord Acton",
+      "topics": ["Governance", "Ethics"]
+    },
+    {
+      "id": "rousseau-freedom",
+      "quote": "Man is born free, and everywhere he is in chains.",
+      "author": "Jean-Jacques Rousseau",
+      "topics": ["Freedom", "Society"]
+    },
+    {
+      "id": "locke-rights",
+      "quote": "The end of law is not to abolish or restrain but to preserve and enlarge freedom.",
+      "author": "John Locke",
+      "topics": ["Rule of Law", "Freedom"]
+    },
+    {
+      "id": "thoreau-government",
+      "quote": "The government is best which governs least.",
+      "author": "Henry David Thoreau",
+      "topics": ["Governance", "Liberty"]
+    },
+    {
+      "id": "king-injustice",
+      "quote": "Injustice anywhere is a threat to justice everywhere.",
+      "author": "Martin Luther King Jr.",
+      "topics": ["Justice", "Rights"]
+    },
+    {
+      "id": "king-arc",
+      "quote": "The arc of the moral universe is long, but it bends toward justice.",
+      "author": "Martin Luther King Jr.",
+      "topics": ["Justice", "Hope"]
+    },
+    {
+      "id": "king-silence",
+      "quote": "Our lives begin to end the day we become silent about things that matter.",
+      "author": "Martin Luther King Jr.",
+      "topics": ["Courage", "Civil Society"]
+    },
+    {
+      "id": "king-darkness",
+      "quote": "Darkness cannot drive out darkness; only light can do that. Hate cannot drive out hate; only love can do that.",
+      "author": "Martin Luther King Jr.",
+      "topics": ["Peace", "Ethics"]
+    },
+    {
+      "id": "king-wars",
+      "quote": "Wars are poor chisels for carving out peaceful tomorrows.",
+      "author": "Martin Luther King Jr.",
+      "topics": ["Peace", "War"]
+    },
+    {
+      "id": "mandela-education",
+      "quote": "Education is the most powerful weapon which you can use to change the world.",
+      "author": "Nelson Mandela",
+      "topics": ["Education", "Social change"]
+    },
+    {
+      "id": "mandela-impossible",
+      "quote": "It always seems impossible until it is done.",
+      "author": "Nelson Mandela",
+      "topics": ["Perseverance", "Reform"]
+    },
+    {
+      "id": "mandela-poverty",
+      "quote": "Poverty is not an accident. Like slavery and apartheid, it is man-made and can be removed by human actions.",
+      "author": "Nelson Mandela",
+      "topics": ["Poverty", "Social Justice"]
+    },
+    {
+      "id": "mandela-heart",
+      "quote": "A good head and a good heart are always a formidable combination.",
+      "author": "Nelson Mandela",
+      "topics": ["Leadership", "Ethics"]
+    },
+    {
+      "id": "mandela-overcoming",
+      "quote": "Overcoming poverty is not a gesture of charity. It is an act of justice.",
+      "author": "Nelson Mandela",
+      "topics": ["Poverty", "Justice"]
+    },
+    {
+      "id": "sen-freedom",
+      "quote": "Development can be seen as a process of expanding the real freedoms that people enjoy.",
+      "author": "Amartya Sen",
+      "topics": ["Development", "Freedom"]
+    },
+    {
+      "id": "durant-excellence",
+      "quote": "We are what we repeatedly do. Excellence, then, is not an act, but a habit.",
+      "author": "Will Durant",
+      "topics": ["Excellence", "Discipline"]
+    },
+    {
+      "id": "lincoln-character",
+      "quote": "Nearly all men can stand adversity, but if you want to test a man's character, give him power.",
+      "author": "Abraham Lincoln",
+      "topics": ["Ethics", "Governance"]
+    },
+    {
+      "id": "lincoln-ballot",
+      "quote": "The ballot is stronger than the bullet.",
+      "author": "Abraham Lincoln",
+      "topics": ["Democracy", "Elections"]
+    },
+    {
+      "id": "jefferson-character",
+      "quote": "Character is what you do when nobody is watching.",
+      "author": "Thomas Jefferson",
+      "topics": ["Integrity", "Ethics"]
+    },
+    {
+      "id": "jefferson-liberty",
+      "quote": "The price of liberty is eternal vigilance.",
+      "author": "Thomas Jefferson",
+      "topics": ["Democracy", "Freedom"]
+    },
+    {
+      "id": "churchill-democracy",
+      "quote": "Democracy is the worst form of government, except for all the others.",
+      "author": "Winston Churchill",
+      "topics": ["Democracy", "Governance"]
+    },
+    {
+      "id": "churchill-success",
+      "quote": "Success is not final, failure is not fatal: it is the courage to continue that counts.",
+      "author": "Winston Churchill",
+      "topics": ["Perseverance", "Resilience"]
+    },
+    {
+      "id": "churchill-responsibility",
+      "quote": "The price of greatness is responsibility.",
+      "author": "Winston Churchill",
+      "topics": ["Leadership", "Ethics"]
+    },
+    {
+      "id": "kennedy-country",
+      "quote": "Ask not what your country can do for you; ask what you can do for your country.",
+      "author": "John F. Kennedy",
+      "topics": ["Citizenship", "Service"]
+    },
+    {
+      "id": "kennedy-rights",
+      "quote": "The rights of every man are diminished when the rights of one man are threatened.",
+      "author": "John F. Kennedy",
+      "topics": ["Rights", "Democracy"]
+    },
+    {
+      "id": "roosevelt-progress",
+      "quote": "The test of our progress is not whether we add more to the abundance of those who have much; it is whether we provide enough for those who have too little.",
+      "author": "Franklin D. Roosevelt",
+      "topics": ["Welfare", "Development"]
+    },
+    {
+      "id": "roosevelt-action",
+      "quote": "Do what you can, with what you have, where you are.",
+      "author": "Theodore Roosevelt",
+      "topics": ["Action", "Governance"]
+    },
+    {
+      "id": "einstein-imagination",
+      "quote": "Imagination is more important than knowledge.",
+      "author": "Albert Einstein",
+      "topics": ["Creativity", "Education"]
+    },
+    {
+      "id": "einstein-curiosity",
+      "quote": "The important thing is not to stop questioning. Curiosity has its own reason for existing.",
+      "author": "Albert Einstein",
+      "topics": ["Curiosity", "Education"]
+    },
+    {
+      "id": "einstein-science-religion",
+      "quote": "Science without religion is lame, religion without science is blind.",
+      "author": "Albert Einstein",
+      "topics": ["Science", "Religion"]
+    },
+    {
+      "id": "einstein-problems",
+      "quote": "We cannot solve our problems with the same thinking we used when we created them.",
+      "author": "Albert Einstein",
+      "topics": ["Innovation", "Reform"]
+    },
+    {
+      "id": "einstein-wisdom",
+      "quote": "Wisdom is not a product of schooling but of the lifelong attempt to acquire it.",
+      "author": "Albert Einstein",
+      "topics": ["Education", "Wisdom"]
+    },
+    {
+      "id": "malala-voice",
+      "quote": "I raise up my voice not so I can shout, but so that those without a voice can be heard.",
+      "author": "Malala Yousafzai",
+      "topics": ["Education", "Women", "Rights"]
+    },
+    {
+      "id": "malala-half",
+      "quote": "We cannot all succeed when half of us are held back.",
+      "author": "Malala Yousafzai",
+      "topics": ["Gender", "Development"]
+    },
+    {
+      "id": "malala-pen",
+      "quote": "One child, one teacher, one book, one pen can change the world.",
+      "author": "Malala Yousafzai",
+      "topics": ["Education", "Change"]
+    },
+    {
+      "id": "obama-women",
+      "quote": "No country can ever truly flourish if it stifles the potential of its women.",
+      "author": "Michelle Obama",
+      "topics": ["Women", "Development"]
+    },
+    {
+      "id": "annan-women",
+      "quote": "There is no tool for development more effective than the empowerment of women.",
+      "author": "Kofi Annan",
+      "topics": ["Gender", "Development"]
+    },
+    {
+      "id": "annan-literacy",
+      "quote": "Literacy is a bridge from misery to hope.",
+      "author": "Kofi Annan",
+      "topics": ["Education", "Development"]
+    },
+    {
+      "id": "tutu-neutrality",
+      "quote": "If you are neutral in situations of injustice, you have chosen the side of the oppressor.",
+      "author": "Desmond Tutu",
+      "topics": ["Justice", "Ethics"]
+    },
+    {
+      "id": "stiglitz-inequality",
+      "quote": "Inequality is not inevitable. It is a policy choice.",
+      "author": "Joseph Stiglitz",
+      "topics": ["Inequality", "Governance"]
+    },
+    {
+      "id": "keynes-longrun",
+      "quote": "In the long run, we are all dead.",
+      "author": "John Maynard Keynes",
+      "topics": ["Economic Policy", "Urgency"]
+    },
+    {
+      "id": "daly-environment",
+      "quote": "The economy is a wholly owned subsidiary of the environment.",
+      "author": "Herman Daly",
+      "topics": ["Environment", "Development"]
+    },
+    {
+      "id": "schumacher-small",
+      "quote": "Small is beautiful.",
+      "author": "E. F. Schumacher",
+      "topics": ["Sustainable Development", "Economy"]
+    },
+    {
+      "id": "drucker-responsibility",
+      "quote": "Rank does not confer privilege or give power. It imposes responsibility.",
+      "author": "Peter Drucker",
+      "topics": ["Ethics", "Governance"]
+    },
+    {
+      "id": "johnson-integrity",
+      "quote": "Integrity without knowledge is weak and useless, and knowledge without integrity is dangerous and dreadful.",
+      "author": "Samuel Johnson",
+      "topics": ["Ethics", "Knowledge"]
+    },
+    {
+      "id": "stewart-ethics",
+      "quote": "Ethics is knowing the difference between what you have a right to do and what is right to do.",
+      "author": "Potter Stewart",
+      "topics": ["Ethics", "Governance"]
+    },
+    {
+      "id": "sinek-leadership",
+      "quote": "Leadership is not about being in charge. It is about taking care of those in your charge.",
+      "author": "Simon Sinek",
+      "topics": ["Governance", "Service"]
+    },
+    {
+      "id": "nader-leadership",
+      "quote": "The function of leadership is to produce more leaders, not more followers.",
+      "author": "Ralph Nader",
+      "topics": ["Leadership", "Governance"]
+    },
+    {
+      "id": "laotzu-leader",
+      "quote": "A leader is best when people barely know he exists.",
+      "author": "Lao Tzu",
+      "topics": ["Leadership", "Humility"]
+    },
+    {
+      "id": "laotzu-journey",
+      "quote": "A journey of a thousand miles begins with a single step.",
+      "author": "Lao Tzu",
+      "topics": ["Action", "Reform"]
+    },
+    {
+      "id": "confucius-slow",
+      "quote": "It does not matter how slowly you go, so long as you do not stop.",
+      "author": "Confucius",
+      "topics": ["Perseverance", "Action"]
+    },
+    {
+      "id": "confucius-strength",
+      "quote": "The strength of a nation derives from the integrity of the home.",
+      "author": "Confucius",
+      "topics": ["Ethics", "Society"]
+    },
+    {
+      "id": "orwell-equality",
+      "quote": "All animals are equal, but some animals are more equal than others.",
+      "author": "George Orwell",
+      "topics": ["Equality", "Corruption"]
+    },
+    {
+      "id": "donne-island",
+      "quote": "No man is an island, entire of itself.",
+      "author": "John Donne",
+      "topics": ["Society", "Community"]
+    },
+    {
+      "id": "yeats-education",
+      "quote": "Education is not the filling of a pail, but the lighting of a fire.",
+      "author": "W. B. Yeats",
+      "topics": ["Education", "Values"]
+    },
+    {
+      "id": "franklin-investment",
+      "quote": "An investment in knowledge pays the best interest.",
+      "author": "Benjamin Franklin",
+      "topics": ["Education", "Development"]
+    },
+    {
+      "id": "voltaire-read",
+      "quote": "The more I read, the more I acquire, the more certain I am that I know nothing.",
+      "author": "Voltaire",
+      "topics": ["Humility", "Learning"]
+    },
+    {
+      "id": "malcolmx-education",
+      "quote": "Education is the passport to the future, for tomorrow belongs to those who prepare for it today.",
+      "author": "Malcolm X",
+      "topics": ["Education", "Future"]
+    },
+    {
+      "id": "bok-education",
+      "quote": "If you think education is expensive, try ignorance.",
+      "author": "Derek Bok",
+      "topics": ["Education", "Development"]
+    },
+    {
+      "id": "paine-triumph",
+      "quote": "The harder the conflict, the greater the triumph.",
+      "author": "Thomas Paine",
+      "topics": ["Resilience", "Achievement"]
+    },
+    {
+      "id": "asimov-science",
+      "quote": "The saddest aspect of life right now is that science gathers knowledge faster than society gathers wisdom.",
+      "author": "Isaac Asimov",
+      "topics": ["Technology", "Ethics"]
+    },
+    {
+      "id": "hawking-climate",
+      "quote": "Climate change is the greatest threat to our existence in our short history on this planet.",
+      "author": "Stephen Hawking",
+      "topics": ["Climate", "Future"]
+    },
+    {
+      "id": "swan-planet",
+      "quote": "The greatest threat to our planet is the belief that someone else will save it.",
+      "author": "Robert Swan",
+      "topics": ["Environment", "Responsibility"]
+    },
+    {
+      "id": "muir-nature",
+      "quote": "In every walk with nature, one receives far more than he seeks.",
+      "author": "John Muir",
+      "topics": ["Environment", "Nature"]
+    },
+    {
+      "id": "seattle-earth",
+      "quote": "The earth does not belong to us. We belong to the earth.",
+      "author": "Chief Seattle",
+      "topics": ["Environment", "Ethics"]
+    },
+    {
+      "id": "native-borrow",
+      "quote": "We do not inherit the earth from our ancestors; we borrow it from our children.",
+      "author": "Native American Proverb",
+      "topics": ["Environment", "Future"]
+    },
+    {
+      "id": "muste-peace",
+      "quote": "There is no way to peace; peace is the way.",
+      "author": "A. J. Muste",
+      "topics": ["Peace", "Conflict"]
+    },
+    {
+      "id": "herodotus-war",
+      "quote": "In peace, sons bury their fathers. In war, fathers bury their sons.",
+      "author": "Herodotus",
+      "topics": ["War", "Peace"]
+    },
+    {
+      "id": "hammarskjold-un",
+      "quote": "The United Nations was not created to take mankind to heaven, but to save humanity from hell.",
+      "author": "Dag Hammarskjöld",
+      "topics": ["International Relations", "Peace"]
+    },
+    {
+      "id": "vare-diplomacy",
+      "quote": "Diplomacy is the art of letting someone else have your way.",
+      "author": "Daniele Vare",
+      "topics": ["Diplomacy", "International Relations"]
+    },
+    {
+      "id": "pitt-law",
+      "quote": "Where law ends, tyranny begins.",
+      "author": "William Pitt",
+      "topics": ["Rule of Law", "Governance"]
+    },
+    {
+      "id": "gracian-courage",
+      "quote": "Without courage, wisdom bears no fruit.",
+      "author": "Baltasar Gracián",
+      "topics": ["Courage", "Ethics"]
+    },
+    {
+      "id": "heraclitus-character",
+      "quote": "Character is destiny.",
+      "author": "Heraclitus",
+      "topics": ["Ethics", "Character"]
+    },
+    {
+      "id": "rigveda-truth",
+      "quote": "Truth is one, the wise call it by many names.",
+      "author": "Rigveda",
+      "topics": ["Philosophy", "Unity"]
+    },
+    {
+      "id": "upanishad-happiness",
+      "quote": "Sarve bhavantu sukhinah — May all beings be happy.",
+      "author": "Upanishads",
+      "topics": ["Compassion", "Welfare"]
+    },
+    {
+      "id": "mahabharata-ahimsa",
+      "quote": "Ahimsa paramo dharma — Non-violence is the highest virtue.",
+      "author": "Mahabharata",
+      "topics": ["Ethics", "Peace"]
+    },
+    {
+      "id": "maha-upanishad-world",
+      "quote": "Vasudhaiva Kutumbakam — The world is one family.",
+      "author": "Maha Upanishad",
+      "topics": ["International Relations", "Unity"]
+    },
+    {
+      "id": "rigveda-thoughts",
+      "quote": "Let noble thoughts come to us from all directions.",
+      "author": "Rigveda",
+      "topics": ["Open-mindedness", "Wisdom"]
+    },
+    {
+      "id": "gita-karma",
+      "quote": "You have a right to perform your prescribed duties, but you are not entitled to the fruits of your actions.",
+      "author": "Bhagavad Gita",
+      "topics": ["Ethics", "Duty"]
+    },
+    {
+      "id": "gita-soul",
+      "quote": "The soul is neither born, nor does it die at any time.",
+      "author": "Bhagavad Gita",
+      "topics": ["Philosophy", "Religion"]
+    },
+    {
+      "id": "talmud-neighbor",
+      "quote": "That which is hateful to you, do not do to your neighbor.",
+      "author": "Talmud",
+      "topics": ["Ethics", "Compassion"]
+    },
+    {
+      "id": "bible-golden",
+      "quote": "Do unto others as you would have them do unto you.",
+      "author": "Bible",
+      "topics": ["Ethics", "Golden Rule"]
+    },
+    {
+      "id": "buddhism-hurt",
+      "quote": "Hurt not others in ways that you yourself would find hurtful.",
+      "author": "Buddhism",
+      "topics": ["Ethics", "Compassion"]
+    },
+    {
+      "id": "hadith-brother",
+      "quote": "No one of you is a believer until he desires for his brother that which he desires for himself.",
+      "author": "Hadith",
+      "topics": ["Ethics", "Compassion"]
+    },
+    {
+      "id": "african-village",
+      "quote": "It takes a village to raise a child.",
+      "author": "African Proverb",
+      "topics": ["Society", "Education"]
+    },
+    {
+      "id": "african-roots",
+      "quote": "When the roots are deep, there is no reason to fear the wind.",
+      "author": "African Proverb",
+      "topics": ["Values", "Resilience"]
+    },
+    {
+      "id": "african-woman",
+      "quote": "Educate a man and you educate an individual. Educate a woman and you educate a nation.",
+      "author": "African Proverb",
+      "topics": ["Women", "Education"]
+    },
+    {
+      "id": "african-spider",
+      "quote": "When spiders unite, they can tie down a lion.",
+      "author": "Ethiopian Proverb",
+      "topics": ["Unity", "Cooperation"]
+    },
+    {
+      "id": "chinese-fish",
+      "quote": "Give a man a fish and you feed him for a day; teach a man to fish and you feed him for a lifetime.",
+      "author": "Chinese Proverb",
+      "topics": ["Development", "Education"]
+    },
+    {
+      "id": "chinese-tree",
+      "quote": "The best time to plant a tree was 20 years ago. The second best time is now.",
+      "author": "Chinese Proverb",
+      "topics": ["Action", "Environment"]
+    },
+    {
+      "id": "chinese-candle",
+      "quote": "Light a candle rather than curse the darkness.",
+      "author": "Chinese Proverb",
+      "topics": ["Action", "Hope"]
+    },
+    {
+      "id": "japanese-nail",
+      "quote": "The nail that sticks out gets hammered down.",
+      "author": "Japanese Proverb",
+      "topics": ["Conformity", "Individuality"]
+    },
+    {
+      "id": "aesop-united",
+      "quote": "United we stand, divided we fall.",
+      "author": "Aesop",
+      "topics": ["Unity", "Nation"]
+    },
+    {
+      "id": "henry-forest",
+      "quote": "The forest would be silent if no bird sang except the one that sang best.",
+      "author": "Henry Van Dyke",
+      "topics": ["Diversity", "Inclusion"]
+    },
+    {
+      "id": "hugo-night",
+      "quote": "Even the longest night will end and the sun will rise.",
+      "author": "Victor Hugo",
+      "topics": ["Hope", "Resilience"]
+    },
+    {
+      "id": "reid-chain",
+      "quote": "The chain is only as strong as its weakest link.",
+      "author": "Thomas Reid",
+      "topics": ["Society", "Inclusion"]
+    },
+    {
+      "id": "william-difference",
+      "quote": "Act as if what you do makes a difference. It does.",
+      "author": "William James",
+      "topics": ["Action", "Responsibility"]
+    },
+    {
+      "id": "james-courage",
+      "quote": "Act as if what you do makes a difference. It does.",
+      "author": "William James",
+      "topics": ["Environment", "Action"]
+    },
+    {
+      "id": "disraeli-riches",
+      "quote": "The greatest good you can do for another is not just share your riches, but reveal to them their own.",
+      "author": "Benjamin Disraeli",
+      "topics": ["Empowerment", "Service"]
+    },
+    {
+      "id": "douglass-justice",
+      "quote": "Where justice is denied, where poverty is enforced, where ignorance prevails, crime will grow.",
+      "author": "Frederick Douglass",
+      "topics": ["Social Justice", "Crime"]
+    },
+    {
+      "id": "stevenson-hungry",
+      "quote": "The hungry man is not a free man.",
+      "author": "Adlai Stevenson",
+      "topics": ["Food Security", "Freedom"]
+    },
+    {
+      "id": "diouf-hunger",
+      "quote": "Hunger is not an issue of charity. It is an issue of justice.",
+      "author": "Jacques Diouf",
+      "topics": ["Food Security", "Justice"]
+    },
+    {
+      "id": "buck-civilization",
+      "quote": "The test of a civilization is the way that it cares for its helpless members.",
+      "author": "Pearl S. Buck",
+      "topics": ["Welfare", "Society"]
+    },
+    {
+      "id": "milton-freedom",
+      "quote": "A society that puts equality before freedom will get neither. A society that puts freedom before equality will get a high degree of both.",
+      "author": "Milton Friedman",
+      "topics": ["Freedom", "Equality"]
+    },
+    {
+      "id": "cameron-count",
+      "quote": "Not everything that counts can be counted, and not everything that can be counted counts.",
+      "author": "William Bruce Cameron",
+      "topics": ["Governance", "Values"]
+    },
+    {
+      "id": "gates-automation",
+      "quote": "The first rule of any technology is that automation applied to efficient operation will magnify the efficiency.",
+      "author": "Bill Gates",
+      "topics": ["Technology", "Development"]
+    },
+    {
+      "id": "kranzberg-technology",
+      "quote": "Technology is neither good nor bad; nor is it neutral.",
+      "author": "Melvin Kranzberg",
+      "topics": ["Technology", "Ethics"]
+    },
+    {
+      "id": "saint-exupery-machine",
+      "quote": "The machine does not isolate man from the great problems of nature but plunges him more deeply into them.",
+      "author": "Antoine de Saint-Exupéry",
+      "topics": ["Technology", "Society"]
+    },
+    {
+      "id": "sartre-freedom",
+      "quote": "Man is condemned to be free.",
+      "author": "Jean-Paul Sartre",
+      "topics": ["Freedom", "Responsibility"]
+    },
+    {
+      "id": "mencken-honor",
+      "quote": "The difference between a moral man and a man of honor is that the latter regrets a discreditable act even when it has worked.",
+      "author": "H. L. Mencken",
+      "topics": ["Ethics", "Integrity"]
+    },
+    {
+      "id": "aeschylus-oath",
+      "quote": "It is not the oath that makes us believe the man, but the man the oath.",
+      "author": "Aeschylus",
+      "topics": ["Integrity", "Governance"]
+    },
+    {
+      "id": "peale-moon",
+      "quote": "Shoot for the moon. Even if you miss, you'll land among the stars.",
+      "author": "Norman Vincent Peale",
+      "topics": ["Ambition", "Hope"]
+    },
+    {
+      "id": "ashe-start",
+      "quote": "Start where you are. Use what you have. Do what you can.",
+      "author": "Arthur Ashe",
+      "topics": ["Action", "Development"]
+    },
+    {
+      "id": "walker-power",
+      "quote": "The most common way people give up their power is by thinking they don't have any.",
+      "author": "Alice Walker",
+      "topics": ["Empowerment", "Women"]
+    },
+    {
+      "id": "gates-melinda-voice",
+      "quote": "A woman with a voice is by definition a strong woman.",
+      "author": "Melinda Gates",
+      "topics": ["Women", "Empowerment"]
+    },
+    {
+      "id": "bose-blood",
+      "quote": "Give me blood and I will give you freedom.",
+      "author": "Subhash Chandra Bose",
+      "topics": ["Sacrifice", "Nation"]
+    },
+    {
+      "id": "naidu-greatness",
+      "quote": "A country's greatness lies in its undying ideals of love and sacrifice that inspire the mothers of the race.",
+      "author": "Sarojini Naidu",
+      "topics": ["Women", "Nation"]
+    },
+    {
+      "id": "hemingway-noble",
+      "quote": "There is nothing noble in being superior to your fellow man. True nobility is being superior to your former self.",
+      "author": "Ernest Hemingway",
+      "topics": ["Ethics", "Self-improvement"]
+    },
+    {
+      "id": "descartes-think",
+      "quote": "I think therefore I am.",
+      "author": "René Descartes",
+      "topics": ["Reason", "Philosophy"]
+    },
+    {
+      "id": "descartes-mind",
+      "quote": "It is not enough to have a good mind. The main thing is to use it well.",
+      "author": "René Descartes",
+      "topics": ["Reason", "Intellect"]
+    },
+    {
+      "id": "voltaire-stan",
+      "quote": "With great power comes great responsibility.",
+      "author": "Voltaire",
+      "topics": ["Ethics", "Governance"]
+    },
+    {
+      "id": "hugo-misery",
+      "quote": "So long as ignorance and misery remain on earth, books of the nature of this one cannot be useless.",
+      "author": "Victor Hugo",
+      "topics": ["Education", "Social Justice"]
+    },
+    {
+      "id": "bulwer-pen",
+      "quote": "The pen is mightier than the sword.",
+      "author": "Edward Bulwer-Lytton",
+      "topics": ["Media", "Free Speech"]
+    },
+    {
+      "id": "eleanor-present",
+      "quote": "Yesterday is history, tomorrow is a mystery, today is a gift — that is why it is called the present.",
+      "author": "Eleanor Roosevelt",
+      "topics": ["Action", "Mindfulness"]
+    },
+    {
+      "id": "eleanor-rights",
+      "quote": "Where, after all, do universal human rights begin? In small places, close to home.",
+      "author": "Eleanor Roosevelt",
+      "topics": ["Human Rights", "Society"]
+    },
+    {
+      "id": "bbking-learning",
+      "quote": "The beautiful thing about learning is that nobody can take it away from you.",
+      "author": "B. B. King",
+      "topics": ["Education", "Empowerment"]
+    },
+    {
+      "id": "chavez-education",
+      "quote": "Real education should consist of drawing the goodness and best out of our own students.",
+      "author": "Cesar Chavez",
+      "topics": ["Education", "Values"]
+    },
+    {
+      "id": "schweitzer-ethics",
+      "quote": "Ethics is nothing else than reverence for life.",
+      "author": "Albert Schweitzer",
+      "topics": ["Ethics", "Environment"]
+    },
+    {
+      "id": "gandhi-nonviolence",
+      "quote": "Non-violence is the greatest force at the disposal of mankind. It is mightier than the mightiest weapon of destruction.",
+      "author": "Mahatma Gandhi",
+      "topics": ["Peace", "Non-violence"]
+    },
+    {
+      "id": "ambedkar-educate",
+      "quote": "Educate, Agitate, Organise.",
+      "author": "B. R. Ambedkar",
+      "topics": ["Education", "Social Justice"]
+    },
+    {
+      "id": "tagore-lamp",
+      "quote": "Faith is the bird that feels the light when the dawn is still dark.",
+      "author": "Rabindranath Tagore",
+      "topics": ["Hope", "Faith"]
+    },
+    {
+      "id": "vivekananda-fear",
+      "quote": "The greatest sin is to think yourself weak.",
+      "author": "Swami Vivekananda",
+      "topics": ["Courage", "Self-reliance"]
+    },
+    {
+      "id": "aurelius-present",
+      "quote": "Confine yourself to the present.",
+      "author": "Marcus Aurelius",
+      "topics": ["Mindfulness", "Action"]
+    },
+    {
+      "id": "mill-liberty",
+      "quote": "The only freedom which deserves the name is that of pursuing our own good in our own way.",
+      "author": "John Stuart Mill",
+      "topics": ["Freedom", "Liberty"]
+    },
+    {
+      "id": "mill-women",
+      "quote": "The legal subordination of one sex to the other is wrong in itself, and one of the chief hindrances to human improvement.",
+      "author": "John Stuart Mill",
+      "topics": ["Gender", "Rights"]
+    },
+    {
+      "id": "tocqueville-democracy",
+      "quote": "The health of a democratic society may be measured by the quality of functions performed by private citizens.",
+      "author": "Alexis de Tocqueville",
+      "topics": ["Democracy", "Civil Society"]
+    },
+    {
+      "id": "burke-evil",
+      "quote": "The only thing necessary for the triumph of evil is for good men to do nothing.",
+      "author": "Edmund Burke",
+      "topics": ["Ethics", "Governance"]
+    },
+    {
+      "id": "kennedy-tide",
+      "quote": "A rising tide lifts all boats.",
+      "author": "John F. Kennedy",
+      "topics": ["Development", "Inclusive Growth"]
+    },
+    {
+      "id": "lincoln-fool",
+      "quote": "You can fool all the people some of the time, and some of the people all the time, but you cannot fool all the people all the time.",
+      "author": "Abraham Lincoln",
+      "topics": ["Democracy", "Governance"]
+    },
+    {
+      "id": "einstein-opportunity",
+      "quote": "In the middle of difficulty lies opportunity.",
+      "author": "Albert Einstein",
+      "topics": ["Resilience", "Innovation"]
+    },
+    {
+      "id": "ambedkar-constitution",
+      "quote": "Constitutional morality is not a natural sentiment. It has to be cultivated.",
+      "author": "B. R. Ambedkar",
+      "topics": ["Constitution", "Democracy"]
+    },
+    {
+      "id": "nehru-science",
+      "quote": "The scientific temper of mind is essential not only for the application of science but for life itself.",
+      "author": "Jawaharlal Nehru",
+      "topics": ["Science", "Reason"]
+    },
+    {
+      "id": "gandhi-strength",
+      "quote": "Strength does not come from physical capacity. It comes from an indomitable will.",
+      "author": "Mahatma Gandhi",
+      "topics": ["Resilience", "Courage"]
+    },
+    {
+      "id": "aristotle-virtue",
+      "quote": "Happiness is the settling of the soul into its most appropriate spot.",
+      "author": "Aristotle",
+      "topics": ["Ethics", "Happiness"]
+    },
+    {
+      "id": "kant-duty",
+      "quote": "Duty is the necessity to act out of reverence for the law.",
+      "author": "Immanuel Kant",
+      "topics": ["Duty", "Ethics"]
+    },
+    {
+      "id": "rousseau-general-will",
+      "quote": "The general will is always right, but the judgment which guides it is not always enlightened.",
+      "author": "Jean-Jacques Rousseau",
+      "topics": ["Democracy", "Governance"]
+    },
+    {
+      "id": "boethius-fortune",
+      "quote": "I turn the wheel that spins. I delight to see the high come down and the low ascend.",
+      "author": "Boethius",
+      "topics": ["Fortune", "Philosophy"]
+    },
+    {
+      "id": "seneca-time",
+      "quote": "It is not that we have a short time to live, but that we waste a lot of it.",
+      "author": "Seneca",
+      "topics": ["Action", "Time Management"]
+    },
+    {
+      "id": "seneca-luck",
+      "quote": "Luck is what happens when preparation meets opportunity.",
+      "author": "Seneca",
+      "topics": ["Preparation", "Success"]
+    },
+    {
+      "id": "epictetus-control",
+      "quote": "Make the best use of what is in your power, and take the rest as it happens.",
+      "author": "Epictetus",
+      "topics": ["Ethics", "Resilience"]
+    },
+    {
+      "id": "cicero-law",
+      "quote": "The more laws, the less justice.",
+      "author": "Cicero",
+      "topics": ["Rule of Law", "Governance"]
+    },
+    {
+      "id": "cicero-nation",
+      "quote": "The welfare of the people is the ultimate law.",
+      "author": "Cicero",
+      "topics": ["Governance", "Welfare"]
+    },
+    {
+      "id": "tagore-stars",
+      "quote": "If you cry because the sun has gone out of your life, your tears will prevent you from seeing the stars.",
+      "author": "Rabindranath Tagore",
+      "topics": ["Hope", "Resilience"]
+    },
+    {
+      "id": "tolstoy-happy",
+      "quote": "All happy families are alike; each unhappy family is unhappy in its own way.",
+      "author": "Leo Tolstoy",
+      "topics": ["Society", "Family"]
+    },
+    {
+      "id": "dostoyevsky-beauty",
+      "quote": "Beauty will save the world.",
+      "author": "Fyodor Dostoyevsky",
+      "topics": ["Culture", "Values"]
+    },
+    {
+      "id": "camus-absurd",
+      "quote": "In the midst of winter, I found there was, within me, an invincible summer.",
+      "author": "Albert Camus",
+      "topics": ["Resilience", "Hope"]
+    },
+    {
+      "id": "darwin-survive",
+      "quote": "It is not the strongest of the species that survives, nor the most intelligent, but the one most responsive to change.",
+      "author": "Charles Darwin",
+      "topics": ["Adaptation", "Change"]
+    },
+    {
+      "id": "woodrow-democracy",
+      "quote": "The world must be made safe for democracy.",
+      "author": "Woodrow Wilson",
+      "topics": ["Democracy", "International Relations"]
+    },
+    {
+      "id": "schweitzer-humanity",
+      "quote": "I don't know what your destiny will be, but one thing I know: the ones among you who will be really happy are those who have sought and found how to serve.",
+      "author": "Albert Schweitzer",
+      "topics": ["Service", "Happiness"]
+    },
+    {
+      "id": "james-wisdom",
+      "quote": "The greatest weapon against stress is our ability to choose one thought over another.",
+      "author": "William James",
+      "topics": ["Emotional Intelligence", "Ethics"]
+    },
+    {
+      "id": "ibn-khaldun-society",
+      "quote": "The rise and fall of civilizations depends on their social solidarity and the character of their people.",
+      "author": "Ibn Khaldun",
+      "topics": ["Society", "Civilization"]
+    },
+    {
+      "id": "kautilya-king",
+      "quote": "In the happiness of his subjects lies the king's happiness; in their welfare his welfare.",
+      "author": "Kautilya",
+      "topics": ["Governance", "Welfare"]
+    },
+    {
+      "id": "kautilya-enemy",
+      "quote": "The enemy of my enemy is my friend.",
+      "author": "Kautilya",
+      "topics": ["Diplomacy", "International Relations"]
+    },
+    {
+      "id": "chanakya-selfcontrol",
+      "quote": "Before you start some work, always ask yourself three questions: Why am I doing it, what the results might be, and will I be successful.",
+      "author": "Chanakya",
+      "topics": ["Ethics", "Governance"]
+    },
+    {
+      "id": "rumi-wound",
+      "quote": "The wound is the place where the light enters you.",
+      "author": "Rumi",
+      "topics": ["Resilience", "Hope"]
+    },
+    {
+      "id": "rumi-silence",
+      "quote": "Raise your words, not your voice. It is rain that grows flowers, not thunder.",
+      "author": "Rumi",
+      "topics": ["Peace", "Communication"]
+    },
+    {
+      "id": "kabir-dono",
+      "quote": "Bura jo dekhan main chala, bura na milya koy; jo man khoja apna, toh mujhse bura na koy.",
+      "author": "Kabir",
+      "topics": ["Ethics", "Self-reflection"]
+    },
+    {
+      "id": "iqbal-khudi",
+      "quote": "Khudi ko kar buland itna ki har taqdir se pehle, Khuda bande se khud pooche bata teri raza kya hai.",
+      "author": "Allama Iqbal",
+      "topics": ["Self-reliance", "Ambition"]
+    },
+    {
+      "id": "premchand-literature",
+      "quote": "Literature is the criticism of life.",
+      "author": "Munshi Premchand",
+      "topics": ["Literature", "Society"]
+    },
+    {
+      "id": "radhakrishnan-teacher",
+      "quote": "Teachers should be the best minds in the country.",
+      "author": "S. Radhakrishnan",
+      "topics": ["Education", "Society"]
+    },
+    {
+      "id": "kalam-dream",
+      "quote": "Dream is not what you see in sleep, dream is the thing which does not let you sleep.",
+      "author": "A. P. J. Abdul Kalam",
+      "topics": ["Ambition", "Motivation"]
+    },
+    {
+      "id": "kalam-nation",
+      "quote": "You have to dream before your dreams can come true.",
+      "author": "A. P. J. Abdul Kalam",
+      "topics": ["Vision", "Nation"]
+    },
+    {
+      "id": "kalam-failure",
+      "quote": "Failure will never overtake me if my determination to succeed is strong enough.",
+      "author": "A. P. J. Abdul Kalam",
+      "topics": ["Resilience", "Determination"]
+    },
+    {
+      "id": "tagore-love",
+      "quote": "Love is not a mere impulse, it must contain truth, which is law.",
+      "author": "Rabindranath Tagore",
+      "topics": ["Ethics", "Love"]
+    },
+    {
+      "id": "aristotle-friend",
+      "quote": "A friend to all is a friend to none.",
+      "author": "Aristotle",
+      "topics": ["Character", "Ethics"]
+    },
+    {
+      "id": "gandhi-speak",
+      "quote": "Speak only if it improves upon the silence.",
+      "author": "Mahatma Gandhi",
+      "topics": ["Wisdom", "Communication"]
+    },
+    {
+      "id": "aurelius-loss",
+      "quote": "Loss is nothing else but change, and change is Nature's delight.",
+      "author": "Marcus Aurelius",
+      "topics": ["Change", "Philosophy"]
+    },
+    {
+      "id": "vivekananda-truth",
+      "quote": "Truth can be stated in a thousand different ways, yet each one can be true.",
+      "author": "Swami Vivekananda",
+      "topics": ["Philosophy", "Unity"]
+    }
+  ]
+}

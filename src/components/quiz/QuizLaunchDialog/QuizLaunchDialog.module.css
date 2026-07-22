@@ -1,0 +1,23 @@
+.backdrop { position: fixed; z-index: var(--z-modal); inset: 0; display: grid; place-items: center; padding: max(var(--space-4), env(safe-area-inset-top)) max(var(--space-4), env(safe-area-inset-right)) max(var(--space-4), env(safe-area-inset-bottom)) max(var(--space-4), env(safe-area-inset-left)); background: rgb(0 0 0 / 68%); backdrop-filter: blur(5px); }
+.dialog { width: min(620px, 100%); max-height: calc(100dvh - 32px); overflow-y: auto; padding: var(--space-6); background: var(--surface); border: 1px solid var(--border-strong); border-radius: var(--radius-xl); box-shadow: var(--shadow-lg); }
+.dialog > header { display: flex; align-items: flex-start; justify-content: space-between; gap: var(--space-4); }
+.dialog > header span { color: var(--accent); font-size: var(--text-xs); font-weight: var(--weight-semibold); text-transform: uppercase; letter-spacing: var(--tracking-wide); }
+.dialog > header h2 { margin-top: 2px; font-size: var(--text-xl); }
+.dialog > header p { margin-top: var(--space-1); color: var(--text-secondary); font-size: var(--text-sm); }
+.dialog > header > button { flex: 0 0 34px; width: 34px; height: 34px; color: var(--text-secondary); font-size: var(--text-xl); background: transparent; border: 0; border-radius: var(--radius-md); cursor: pointer; }
+.dialog > header > button:hover { color: var(--text-primary); background: var(--surface-hover); }
+.controls { display: flex; flex-direction: column; align-items: stretch; gap: var(--space-3); margin-top: var(--space-5); }
+.controls > * { width: 100%; max-width: none; margin: 0; }
+.optional { overflow: hidden; background: var(--bg-sunken); border: 1px solid var(--border); border-radius: var(--radius-lg); }
+.optional > summary { display: flex; align-items: center; justify-content: space-between; padding: var(--space-4); cursor: pointer; list-style: none; }
+.optional > summary::-webkit-details-marker { display: none; }
+.optional > summary::after { content: '›'; color: var(--text-tertiary); font-size: var(--text-lg); transform: rotate(90deg); transition: transform var(--duration-fast) var(--ease-out); }
+.optional[open] > summary::after { transform: rotate(-90deg); }
+.optional > summary > span { display: flex; flex-direction: column; }
+.optional > summary strong { font-size: var(--text-sm); }
+.optional > summary small { margin-top: 2px; color: var(--text-secondary); font-size: var(--text-xs); }
+.optional > summary em { margin-left: auto; margin-right: var(--space-3); padding: 4px 8px; color: var(--accent); background: var(--accent-subtle); border-radius: var(--radius-full); font-size: var(--text-xs); font-style: normal; }
+.optional > div { display: flex; flex-direction: column; gap: var(--space-3); padding: var(--space-4); border-top: 1px solid var(--border); }
+.optional > div > * { width: 100%; max-width: none; margin: 0; }
+.dialog > footer { display: flex; justify-content: flex-end; gap: var(--space-2); margin-top: var(--space-5); }
+@media (max-width: 560px) { .backdrop { align-items: end; padding-right: 0; padding-bottom: 0; padding-left: 0; } .dialog { width: 100%; max-height: calc(100dvh - max(var(--space-4), env(safe-area-inset-top))); padding: var(--space-4) var(--space-4) max(var(--space-4), env(safe-area-inset-bottom)); border-radius: var(--radius-xl) var(--radius-xl) 0 0; } .dialog > footer { position: sticky; bottom: calc(-1 * max(var(--space-4), env(safe-area-inset-bottom))); z-index: 1; flex-direction: column-reverse; padding-top: var(--space-3); padding-bottom: max(var(--space-4), env(safe-area-inset-bottom)); background: var(--surface); } .dialog > footer button { width: 100%; min-height: 44px; } }

@@ -12,6 +12,30 @@ body {
     color var(--duration-base) var(--ease-out);
 }
 
+html,
+body {
+  max-width: 100%;
+  overflow-x: hidden;
+}
+
+img,
+svg,
+video,
+canvas {
+  max-width: 100%;
+}
+
+p,
+h1,
+h2,
+h3,
+h4,
+span,
+strong,
+small {
+  overflow-wrap: anywhere;
+}
+
 #root {
   min-height: 100vh;
   isolation: isolate;
@@ -30,11 +54,6 @@ h4 {
   font-weight: var(--weight-semibold);
   letter-spacing: var(--tracking-tight);
   line-height: var(--leading-tight);
-  color: var(--text-primary);
-}
-
-::selection {
-  background-color: var(--accent-subtle);
   color: var(--text-primary);
 }
 
@@ -58,4 +77,13 @@ h4 {
 
 *::-webkit-scrollbar-thumb:hover {
   background-color: var(--text-tertiary);
+}
+::selection {
+  color: var(--text-inverse);
+  background-color: var(--accent);
+}
+
+::-moz-selection {
+  color: var(--text-inverse);
+  background-color: var(--accent);
 }

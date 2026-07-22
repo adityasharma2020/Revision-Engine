@@ -29,6 +29,9 @@
   font-weight: var(--weight-medium);
   color: var(--text-tertiary);
 }
+.revisionAdd, .revisionIncluded { display: inline-flex; align-items: center; gap: var(--space-1); padding: 6px var(--space-2); font-size: var(--text-xs); font-weight: var(--weight-semibold); color: var(--text-secondary); border: 1px solid var(--border); border-radius: var(--radius-full); }
+.revisionAdd:hover { color: var(--accent); border-color: var(--accent); }
+.revisionIncluded { color: var(--success); background: var(--success-subtle); border-color: var(--success); }
 
 .chapterSearch {
   display: inline-flex;
@@ -175,6 +178,11 @@
 
 @media (max-width: 560px) {
   .searchShortcut { display: none; }
+  .revisionAdd, .revisionIncluded { order: 3; }
+  .headTop { flex-wrap: wrap; }
+  .chapterSearch { margin-left: 0; }
+  .modeOption, .modeActive { min-width: 0; }
+  .modeOption em, .modeActive em { display: none; }
 
   .modeRow {
     grid-template-columns: 1fr;
