@@ -14,6 +14,17 @@
 .searchBox input { flex: 1; min-width: 0; outline: 0; font-size: var(--text-md); }
 .searchBox input::placeholder { color: var(--text-tertiary); }
 .clear { padding: var(--space-2); font-size: var(--text-sm); color: var(--accent); }
+.submit {
+  height: 36px;
+  padding: 0 var(--space-4);
+  font-size: var(--text-sm);
+  font-weight: var(--weight-medium);
+  color: var(--accent-text);
+  background-color: var(--accent);
+  border-radius: var(--radius-md);
+}
+.submit:hover { background-color: var(--accent-hover); }
+.searchError { margin-top: var(--space-2); font-size: var(--text-sm); color: var(--danger); }
 
 .filters {
   display: grid;
@@ -50,4 +61,6 @@
 @media (max-width: 480px) {
   .filters { grid-template-columns: 1fr; }
   .result { padding: var(--space-4); }
+  .searchBox { gap: var(--space-2); padding-inline: var(--space-3); }
+  .submit { padding-inline: var(--space-3); }
 }

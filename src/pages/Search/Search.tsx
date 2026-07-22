@@ -1,3 +1,4 @@
+import { useEffect, useRef, useState, type FormEvent } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 import { AsyncBoundary, Badge, EmptyState, Icon } from '../../components/common';
 import { Page, PageHeader } from '../../components/layout';
@@ -17,6 +18,9 @@ export function Search() {
   const state = useSearchIndex();
   const [params, setParams] = useSearchParams();
   const query = params.get('q') ?? '';
+  const [draft, setDraft] = useState(query);
+  const [searchError, setSearchError] = useState('');
+  const inputRef = useRef<HTMLInputElement>(null);
   const chapterId = params.get('chapter') ?? '';
   const type = (params.get('type') ?? 'all') as SearchDocumentType | 'all';
   const origin = (params.get('origin') ?? 'all') as 'all' | 'fyq' | 'pyq' | 'other';
@@ -29,6 +33,27 @@ export function Search() {
     setParams(next, { replace: true });
   };
 
+  useEffect(() => setDraft(query), [query]);
+
+  const submitSearch = (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    const clean = draft.trim();
+    if (clean.length > 0 && clean.length < 3) {
+      setSearchError('Enter at least 3 characters to search.');
+      return;
+    }
+    setSearchError('');
+    update('q', clean);
+    inputRef.current?.blur();
+  };
+
+  const clearSearch = () => {
+    setDraft('');
+    setSearchError('');
+    update('q', '');
+    inputRef.current?.focus();
+  };
+
   return (
     <Page>
       <PageHeader
@@ -36,22 +61,30 @@ export function Search() {
         title="Search your library"
         description="Search chapters, questions, answers, explanations, tags, FYQs and PYQs—even offline."
       />
-      <div className={styles.searchBox}>
+      <form className={styles.searchBox} onSubmit={submitSearch}>
         <Icon name="search" size={20} />
         <input
+          ref={inputRef}
           autoFocus
           type="search"
-          value={query}
-          onChange={(event) => update('q', event.target.value)}
+          enterKeyHint="search"
+          value={draft}
+          onChange={(event) => {
+            setDraft(event.target.value);
+            if (searchError) setSearchError('');
+          }}
           placeholder="Search a topic, fact, tag, question…"
           aria-label="Search your revision library"
+          aria-describedby={searchError ? 'search-error' : undefined}
         />
-        {query && (
-          <button type="button" className={styles.clear} onClick={() => update('q', '')}>
+        {draft && (
+          <button type="button" className={styles.clear} onClick={clearSearch}>
             Clear
           </button>
         )}
-      </div>
+        <button type="submit" className={styles.submit}>Search</button>
+      </form>
+      {searchError && <p id="search-error" className={styles.searchError}>{searchError}</p>}
 
       <AsyncBoundary state={state} loadingLabel="Building your search index…">
         {(index) => {
