@@ -40,6 +40,7 @@ interface UserDataValue {
 
   recordAttempt: (attempt: QuestionAttempt) => void;
   recordQuizResult: (result: QuizResult) => void;
+  setQuizResultAnalytics: (resultId: string, included: boolean) => void;
 
   addUserChapter: (chapter: Chapter) => void;
   removeUserChapter: (chapterId: string) => void;
@@ -180,6 +181,19 @@ export function UserDataProvider({ children }: { children: ReactNode }) {
     [storage],
   );
 
+  const setQuizResultAnalytics = useCallback(
+    (resultId: string, included: boolean) => {
+      setQuizResults((prev) => {
+        const next = prev.map((result) =>
+          result.id === resultId ? { ...result, includedInAnalytics: included } : result,
+        );
+        void storage.saveQuizResults(next);
+        return next;
+      });
+    },
+    [storage],
+  );
+
   const addUserChapter = useCallback(
     (chapter: Chapter) => {
       setUserChapters((prev) => {
@@ -216,6 +230,7 @@ export function UserDataProvider({ children }: { children: ReactNode }) {
       removeTag,
       recordAttempt,
       recordQuizResult,
+      setQuizResultAnalytics,
       addUserChapter,
       removeUserChapter,
     }),
@@ -232,6 +247,7 @@ export function UserDataProvider({ children }: { children: ReactNode }) {
       removeTag,
       recordAttempt,
       recordQuizResult,
+      setQuizResultAnalytics,
       addUserChapter,
       removeUserChapter,
     ],

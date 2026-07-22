@@ -74,6 +74,7 @@ function collectAttempts(
   }
 
   for (const r of quizResults) {
+    if (r.includedInAnalytics === false) continue;
     if (!r.perQuestion || r.perQuestion.length === 0) {
       legacy.push(r);
       continue;
@@ -147,7 +148,8 @@ export function computeOverview(
   annotations: AnnotationMap,
   meta: ChapterMetaMap,
 ): Overview {
-  const { attempts, legacy } = collectAttempts(quizResults, progress, meta);
+  const includedResults = quizResults.filter((result) => result.includedInAnalytics !== false);
+  const { attempts, legacy } = collectAttempts(includedResults, progress, meta);
   const graded = attempts.filter((a) => a.correct !== null);
 
   let answered = graded.length;
@@ -160,15 +162,15 @@ export function computeOverview(
   const learningTime = attempts
     .filter((a) => a.source === 'learning')
     .reduce((sum, a) => sum + a.timeMs, 0);
-  const quizTime = quizResults.reduce((sum, r) => sum + r.durationMs, 0);
+  const quizTime = includedResults.reduce((sum, r) => sum + r.durationMs, 0);
 
   const chapters = new Set<string>();
   attempts.forEach((a) => chapters.add(a.chapterId));
-  quizResults.forEach((r) => chapters.add(r.chapterId));
+  includedResults.forEach((r) => chapters.add(r.chapterId));
 
   const days = new Set<string>();
   attempts.forEach((a) => days.add(dayKey(a.at)));
-  quizResults.forEach((r) => days.add(dayKey(r.takenAt)));
+  includedResults.forEach((r) => days.add(dayKey(r.takenAt)));
 
   const quizTimings = attempts.filter((a) => a.source === 'quiz' && a.timeMs > 0);
   const avgTimePerQuestionMs =
@@ -182,7 +184,7 @@ export function computeOverview(
     answered,
     correct,
     accuracy: answered === 0 ? 0 : Math.round((correct / answered) * 100),
-    quizzes: quizResults.length,
+    quizzes: includedResults.length,
     timeStudiedMs: learningTime + quizTime,
     chaptersRevised: chapters.size,
     bookmarks: Object.values(annotations).filter((a) => a.bookmarked).length,
@@ -204,6 +206,7 @@ export interface TrendPoint {
 
 export function accuracyTrend(results: QuizResultList, limit = 12): TrendPoint[] {
   return results
+    .filter((result) => result.includedInAnalytics !== false)
     .slice(0, limit)
     .reverse()
     .map((r, i) => ({
@@ -229,7 +232,8 @@ export function dailyActivity(
   meta: ChapterMetaMap,
   days = 14,
 ): DayActivity[] {
-  const { attempts } = collectAttempts(quizResults, progress, meta);
+  const includedResults = quizResults.filter((result) => result.includedInAnalytics !== false);
+  const { attempts } = collectAttempts(includedResults, progress, meta);
   const byDay = new Map<string, { questions: number; timeMs: number }>();
   const bump = (ts: number, questions: number, timeMs: number) => {
     const k = dayKey(ts);
@@ -239,7 +243,7 @@ export function dailyActivity(
     byDay.set(k, cur);
   };
   attempts.forEach((a) => bump(a.at, 1, a.source === 'learning' ? a.timeMs : 0));
-  quizResults.forEach((r) => bump(r.takenAt, 0, r.durationMs));
+  includedResults.forEach((r) => bump(r.takenAt, 0, r.durationMs));
 
   const out: DayActivity[] = [];
   const today = new Date();

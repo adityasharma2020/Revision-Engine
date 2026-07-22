@@ -66,7 +66,12 @@ export function quizDraftKey(chapterId: string): string {
 
 const QUIZ_DRAFT_PREFIX = 'revision-engine:quiz-draft:';
 
-export function findActiveQuizDraft(): { chapterId: string; status: 'active' | 'paused'; settings: QuizSettings } | null {
+export function findActiveQuizDraft(): {
+  chapterId: string;
+  status: 'active' | 'paused';
+  settings: QuizSettings;
+  questionIds: readonly string[];
+} | null {
   try {
     for (let index = 0; index < sessionStorage.length; index += 1) {
       const key = sessionStorage.key(index);
@@ -77,6 +82,7 @@ export function findActiveQuizDraft(): { chapterId: string; status: 'active' | '
           chapterId: key.slice(QUIZ_DRAFT_PREFIX.length),
           status: draft?.state.status === 'paused' ? 'paused' : 'active',
           settings: settingsFromDraft(draft?.state),
+          questionIds: draft?.questionIds ?? [],
         };
       }
     }

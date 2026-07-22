@@ -37,7 +37,7 @@ export function Chapter() {
 function ChapterView({ chapter }: { chapter: ChapterModel }) {
   const [searchParams] = useSearchParams();
   const { hue, label } = subjectStyle(chapter.subject);
-  const [mode, setMode] = useState<Mode>('learning');
+  const [mode, setMode] = useState<Mode>('quiz');
   const requestedTab = searchParams.get('tab');
   const [tab, setTab] = useState<TabId>(requestedTab === 'mains' || requestedTab === 'prelims'
     ? requestedTab
@@ -55,7 +55,7 @@ function ChapterView({ chapter }: { chapter: ChapterModel }) {
   const quizDraftPresent = hasQuizDraft(chapter.id);
 
   const changeMode = (next: Mode) => {
-    if (next === 'learning' && mode === 'quiz' && quizActive) {
+    if (next === 'learning' && mode === 'quiz' && (quizActive || hasQuizDraft(chapter.id))) {
       setLeaveQuizOpen(true);
       return;
     }
@@ -80,20 +80,25 @@ function ChapterView({ chapter }: { chapter: ChapterModel }) {
       </header>
 
       <div className={styles.modeRow}>
-        <Tabs<Mode>
-          aria-label="Study mode"
-          value={mode}
-          onChange={changeMode}
-          items={[
-            { id: 'learning', label: 'Learning' },
-            { id: 'quiz', label: 'Quiz' },
-          ]}
-        />
-        <p className={styles.modeHint}>
-          {mode === 'learning'
-            ? 'Answers and explanations reveal instantly.'
-            : 'Timed — answers reveal at the end.'}
-        </p>
+        <button
+          type="button"
+          className={mode === 'learning' ? styles.modeActive : styles.modeOption}
+          aria-pressed={mode === 'learning'}
+          onClick={() => changeMode('learning')}
+        >
+          <span className={styles.modeIcon}><Icon name="book" size={18} /></span>
+          <span><strong>Learn &amp; review</strong><small>Study with instant answers and explanations.</small></span>
+        </button>
+        <button
+          type="button"
+          className={mode === 'quiz' ? styles.modeActive : styles.modeOption}
+          aria-pressed={mode === 'quiz'}
+          onClick={() => changeMode('quiz')}
+        >
+          <span className={styles.modeIcon}><Icon name="clock" size={18} /></span>
+          <span><strong>Take a quiz</strong><small>Timed attempt with results saved to history.</small></span>
+          {quizDraftPresent && <em>{quizActive ? 'In progress' : 'Paused · resume'}</em>}
+        </button>
       </div>
 
       {availableOrigins.size > 0 && (
@@ -120,7 +125,13 @@ function ChapterView({ chapter }: { chapter: ChapterModel }) {
       )}
 
       {mode === 'quiz' ? (
-        <QuizRunner key={origin} chapter={chapter} questions={filteredPrelims} onActiveChange={setQuizActive} />
+        <QuizRunner
+          key={origin}
+          chapter={chapter}
+          questions={filteredPrelims}
+          onActiveChange={setQuizActive}
+          onRequestLearning={() => setMode('learning')}
+        />
       ) : (
         <LearningView
           chapter={chapter}
@@ -142,7 +153,9 @@ function ChapterView({ chapter }: { chapter: ChapterModel }) {
           >
             <span className={styles.modalIcon}><Icon name="clock" size={20} /></span>
             <h2 id="leave-quiz-title">Quiz in progress</h2>
-            <p>Submit your timed quiz before switching to Learning mode. This keeps the attempt and timer accurate.</p>
+            <p>{quizActive
+              ? 'Pause or submit your timed quiz before switching modes. This keeps the attempt and timer accurate.'
+              : 'This quiz is paused and safely saved. Resume it here, then submit the attempt when you are finished.'}</p>
             <div className={styles.modalActions}>
               <Button variant="primary" onClick={() => setLeaveQuizOpen(false)}>Continue quiz</Button>
             </div>

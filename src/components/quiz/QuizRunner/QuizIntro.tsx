@@ -30,6 +30,16 @@ export function QuizIntro({ questionCount, lastScore, onStart }: QuizIntroProps)
   const toggle = (key: keyof QuizSettings) =>
     setSettings((current) => ({ ...current, [key]: !current[key] }));
 
+  const start = () => {
+    if (settings.trackFocusLoss && !document.fullscreenElement) {
+      void document.documentElement.requestFullscreen().catch(() => {
+        // Fullscreen can be denied by browser/device policy; the quiz still
+        // starts with focus detection and navigation guards enabled.
+      });
+    }
+    onStart(settings);
+  };
+
   return (
     <div className={styles.intro}>
       <span className={styles.introMark}><Icon name="sparkle" size={22} /></span>
@@ -54,20 +64,20 @@ export function QuizIntro({ questionCount, lastScore, onStart }: QuizIntroProps)
           onClick={() => setSettings(STRICT_QUIZ_SETTINGS)}
         >
           <strong>Strict preset</strong>
-          <span>No pause, navigation locked, focus changes tracked.</span>
+          <span>Fullscreen, no pause, navigation locked, focus changes recorded.</span>
         </button>
       </div>
 
       <div className={styles.quizToggles}>
         <ToggleRow label="Allow timer pause" description="Freeze the timer and question controls while paused." checked={settings.allowPause} onChange={() => toggle('allowPause')} />
         <ToggleRow label="Lock internal navigation" description="Prevent opening Library, Search, Settings, or Learning while running." checked={settings.lockNavigation} onChange={() => toggle('lockNavigation')} />
-        <ToggleRow label="Track focus changes" description="Show a notice if another browser tab or app interrupts focus." checked={settings.trackFocusLoss} onChange={() => toggle('trackFocusLoss')} />
+        <ToggleRow label="Track focus changes" description="Start fullscreen, deter common exit shortcuts, and record tab or app switching." checked={settings.trackFocusLoss} onChange={() => toggle('trackFocusLoss')} />
       </div>
 
       {preset === 'custom' && <p className={styles.customLabel}>Custom configuration</p>}
       {lastScore && <p className={styles.introLast}>Last attempt · {lastScore.correct}/{lastScore.total} correct</p>}
 
-      <Button variant="primary" size="lg" onClick={() => onStart(settings)}>
+      <Button variant="primary" size="lg" onClick={start}>
         Start quiz
       </Button>
     </div>

@@ -27,6 +27,8 @@ export interface QuizQuestionResult {
 export interface QuizResult {
   readonly id: string;
   readonly chapterId: string;
+  /** Chapter title snapshot for readable history even if content later changes. */
+  readonly chapterTitle?: string;
   /** Subject snapshot, so analytics don't need the chapter loaded. */
   readonly subject?: string;
   readonly totalQuestions: number;
@@ -41,6 +43,16 @@ export interface QuizResult {
   readonly answers: QuizAnswerMap;
   /** Granular per-question timing + outcome (added for deep analytics). */
   readonly perQuestion?: readonly QuizQuestionResult[];
+  /** False keeps the attempt in history/review but excludes it from analytics. */
+  readonly includedInAnalytics?: boolean;
+  /** Session policy snapshot for attempt history. */
+  readonly settings?: {
+    readonly allowPause: boolean;
+    readonly lockNavigation: boolean;
+    readonly trackFocusLoss: boolean;
+  };
+  /** Number of detected tab/app focus interruptions during the attempt. */
+  readonly focusLossCount?: number;
 }
 
 export type QuizResultList = QuizResult[];

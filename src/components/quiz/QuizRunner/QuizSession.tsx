@@ -28,9 +28,12 @@ export function QuizSession({ chapter, questions, onExit, onRetry, onActiveChang
   const elapsedMs = state.status === 'paused' && state.pausedAt
     ? Math.max(0, state.pausedAt - state.startedAt)
     : liveElapsedMs;
-  const { recordQuizResult } = useUserData();
+  const { recordQuizResult, setQuizResultAnalytics } = useUserData();
+  const resultId = useRef(createId());
   const [fullscreen, setFullscreen] = useState(Boolean(document.fullscreenElement));
   const [focusInterrupted, setFocusInterrupted] = useState(false);
+  const [focusLossCount, setFocusLossCount] = useState(0);
+  const interruptionOpen = useRef(false);
   const paused = state.status === 'paused';
 
   useEffect(() => {
@@ -43,11 +46,32 @@ export function QuizSession({ chapter, questions, onExit, onRetry, onActiveChang
 
   useEffect(() => {
     if (!state.settings.trackFocusLoss || state.status !== 'active') return;
+    const recordInterruption = () => {
+      if (interruptionOpen.current) return;
+      interruptionOpen.current = true;
+      setFocusInterrupted(true);
+      setFocusLossCount((count) => count + 1);
+    };
     const visibility = () => {
-      if (document.hidden) setFocusInterrupted(true);
+      if (document.hidden) recordInterruption();
+    };
+    const blur = () => recordInterruption();
+    const guardShortcuts = (event: KeyboardEvent) => {
+      const key = event.key.toLowerCase();
+      const browserExit = (event.metaKey || event.ctrlKey) && ['l', 't', 'n', 'w'].includes(key);
+      if (!browserExit) return;
+      event.preventDefault();
+      event.stopPropagation();
+      recordInterruption();
     };
     document.addEventListener('visibilitychange', visibility);
-    return () => document.removeEventListener('visibilitychange', visibility);
+    window.addEventListener('blur', blur);
+    window.addEventListener('keydown', guardShortcuts, true);
+    return () => {
+      document.removeEventListener('visibilitychange', visibility);
+      window.removeEventListener('blur', blur);
+      window.removeEventListener('keydown', guardShortcuts, true);
+    };
   }, [state.settings.trackFocusLoss, state.status]);
 
   useEffect(() => {
@@ -87,8 +111,9 @@ export function QuizSession({ chapter, questions, onExit, onRetry, onActiveChang
       };
     });
     recordQuizResult({
-      id: createId(),
+      id: resultId.current,
       chapterId: chapter.id,
+      chapterTitle: chapter.title,
       subject: chapter.subject,
       totalQuestions: s.total,
       answered: s.answered,
@@ -98,8 +123,11 @@ export function QuizSession({ chapter, questions, onExit, onRetry, onActiveChang
       takenAt: Date.now(),
       answers: state.answers,
       perQuestion,
+      includedInAnalytics: true,
+      settings: state.settings,
+      focusLossCount,
     });
-  }, [state.status, state.answers, summary, recordQuizResult, chapter.id, chapter.subject, questions]);
+  }, [state.status, state.answers, state.settings, summary, recordQuizResult, chapter.id, chapter.title, chapter.subject, questions, focusLossCount]);
 
   if (state.status === 'finished') {
     return (
@@ -107,6 +135,9 @@ export function QuizSession({ chapter, questions, onExit, onRetry, onActiveChang
         questions={questions}
         answers={state.answers}
         summary={summary()}
+        includedInAnalytics
+        focusLossCount={focusLossCount}
+        onAnalyticsChange={(included) => setQuizResultAnalytics(resultId.current, included)}
         onRetry={onRetry}
         onExit={onExit}
       />
@@ -150,9 +181,19 @@ export function QuizSession({ chapter, questions, onExit, onRetry, onActiveChang
               {paused ? 'Resume' : 'Pause'}
             </Button>
           )}
-          <Button variant="ghost" size="sm" onClick={() => void toggleFullscreen()}>
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => void toggleFullscreen()}
+            disabled={state.settings.trackFocusLoss && fullscreen}
+            title={state.settings.trackFocusLoss && fullscreen
+              ? 'Fullscreen stays enabled while focus tracking is active.'
+              : undefined}
+          >
             <Icon name={fullscreen ? 'minimize' : 'expand'} size={15} />
-            {fullscreen ? 'Exit full screen' : 'Full screen'}
+            {state.settings.trackFocusLoss && fullscreen
+              ? 'Strict full screen'
+              : fullscreen ? 'Exit full screen' : 'Full screen'}
           </Button>
           <Button variant="secondary" size="sm" onClick={submit} disabled={paused}>Submit test</Button>
         </div>
@@ -166,9 +207,27 @@ export function QuizSession({ chapter, questions, onExit, onRetry, onActiveChang
         </div>
       )}
       {focusInterrupted && !paused && (
-        <div className={styles.focusNotice} role="status">
-          Strict mode focus was interrupted. The timer continued running.
-          <button type="button" onClick={() => setFocusInterrupted(false)}>Dismiss</button>
+        <div className={styles.focusGuard} role="presentation">
+          <section className={styles.focusDialog} role="alertdialog" aria-modal="true" aria-labelledby="focus-title">
+            <span className={styles.focusIcon}><Icon name="target" size={22} /></span>
+            <h2 id="focus-title">Focus left the quiz</h2>
+            <p>
+              Strict mode detected another tab, window, or app. The timer kept
+              running and this interruption was recorded. Browsers cannot fully
+              block system-level switching, but quiz controls stay locked until
+              you acknowledge it.
+            </p>
+            <div className={styles.focusMeta}>Interruption {focusLossCount}</div>
+            <Button variant="primary" onClick={() => {
+              interruptionOpen.current = false;
+              setFocusInterrupted(false);
+              if (!document.fullscreenElement) {
+                void document.documentElement.requestFullscreen().catch(() => undefined);
+              }
+            }}>
+              Return to quiz
+            </Button>
+          </section>
         </div>
       )}
 
