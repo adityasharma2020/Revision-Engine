@@ -1,0 +1,35 @@
+{
+  "generatedAt": "2026-07-22T02:59:34.477Z",
+  "chapters": [
+    {
+      "id": "history-ch01",
+      "subject": "History",
+      "title": "Sources of Ancient Indian History",
+      "chapterNumber": 1,
+      "source": "Coaching Notes · Ancient India Module",
+      "description": "Literary, archaeological and foreign accounts used to reconstruct ancient India, and how historians weigh them.",
+      "tags": [
+        "ancient-india",
+        "historiography"
+      ],
+      "file": "history_ch01.json",
+      "prelimsCount": 3,
+      "mainsCount": 1
+    },
+    {
+      "id": "polity-ch01",
+      "subject": "Polity",
+      "title": "Making of the Indian Constitution",
+      "chapterNumber": 1,
+      "source": "Coaching Notes · Indian Polity Module",
+      "description": "The Constituent Assembly, its composition and working, and the influences that shaped the Constitution of India.",
+      "tags": [
+        "constitution",
+        "constituent-assembly"
+      ],
+      "file": "polity_ch01.json",
+      "prelimsCount": 2,
+      "mainsCount": 1
+    }
+  ]
+}

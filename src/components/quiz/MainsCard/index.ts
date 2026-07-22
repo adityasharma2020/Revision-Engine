@@ -1,0 +1,1 @@
+export { MainsCard } from './MainsCard';

@@ -1,0 +1,138 @@
+import { useState } from 'react';
+import type { PrelimsQuestion } from '../../../types';
+import { useUserData } from '../../../context/UserDataContext';
+import { QuestionAnnotations } from '../../annotations/QuestionAnnotations';
+import { Badge } from '../../common/Badge';
+import { Icon } from '../../common/Icon';
+import { cx } from '../../../utils/cx';
+import styles from './PrelimsCard.module.css';
+
+interface PrelimsCardProps {
+  question: PrelimsQuestion;
+  index: number;
+  /**
+   * 'interactive' (default): the user picks an option, which reveals the answer.
+   * 'review': read-only recap of a previous attempt (used by quiz results).
+   */
+  mode?: 'interactive' | 'review';
+  /** In review mode, the option the user had selected (null = skipped). */
+  selectedOptionId?: string | null;
+  /** When provided (interactive mode), enables progress + annotations. */
+  chapterId?: string;
+  onAnswered?: (correct: boolean, selectedOptionId: string) => void;
+}
+
+/**
+ * A single prelims MCQ. In interactive mode, selecting an option reveals
+ * correctness and the explanation. In review mode it shows a past answer,
+ * fully revealed and non-interactive.
+ */
+export function PrelimsCard({
+  question,
+  index,
+  mode = 'interactive',
+  selectedOptionId = null,
+  chapterId,
+  onAnswered,
+}: PrelimsCardProps) {
+  const { recordAttempt } = useUserData();
+  const [picked, setPicked] = useState<string | null>(null);
+  const isReview = mode === 'review';
+  const annotatable = !isReview && Boolean(chapterId);
+  const selected = isReview ? selectedOptionId : picked;
+  const revealed = isReview || picked !== null;
+  const locked = isReview || picked !== null;
+
+  const choose = (optionId: string) => {
+    if (locked) return;
+    setPicked(optionId);
+    const correct = optionId === question.answer;
+    onAnswered?.(correct, optionId);
+    if (chapterId) {
+      recordAttempt({
+        chapterId,
+        questionId: question.id,
+        type: 'prelims',
+        selectedOption: optionId,
+        correct,
+        attemptedAt: Date.now(),
+      });
+    }
+  };
+
+  return (
+    <article className={styles.card}>
+      <div className={styles.head}>
+        <span className={styles.index}>{index}</span>
+        <p className={styles.statement}>{question.statement}</p>
+      </div>
+
+      <ul className={styles.options}>
+        {question.options.map((option) => {
+          const isAnswer = option.id === question.answer;
+          const isPicked = option.id === selected;
+          const stateClass = !revealed
+            ? undefined
+            : isAnswer
+              ? styles.correct
+              : isPicked
+                ? styles.incorrect
+                : styles.muted;
+
+          return (
+            <li key={option.id}>
+              <button
+                type="button"
+                className={cx(styles.option, stateClass)}
+                onClick={() => choose(option.id)}
+                disabled={locked}
+                aria-pressed={isPicked}
+              >
+                <span className={styles.marker}>{option.id.toUpperCase()}</span>
+                <span className={styles.optionText}>{option.text}</span>
+                {revealed && isAnswer && (
+                  <Icon name="check" size={16} className={styles.tick} />
+                )}
+                {revealed && isPicked && !isAnswer && (
+                  <Icon name="close" size={16} className={styles.cross} />
+                )}
+              </button>
+            </li>
+          );
+        })}
+      </ul>
+
+      {isReview && selected === null && (
+        <p className={styles.skipped}>Skipped — not answered.</p>
+      )}
+
+      {revealed && question.explanation && (
+        <div className={styles.explanation}>
+          <span className={styles.explanationLabel}>Explanation</span>
+          <p>{question.explanation}</p>
+        </div>
+      )}
+
+      {(question.year || (!annotatable && question.tags?.length)) && (
+        <footer className={styles.meta}>
+          {question.year && <Badge tone="neutral">PYQ {question.year}</Badge>}
+          {!annotatable &&
+            question.tags?.map((tag) => (
+              <Badge key={tag} tone="neutral">
+                {tag}
+              </Badge>
+            ))}
+        </footer>
+      )}
+
+      {annotatable && chapterId && (
+        <QuestionAnnotations
+          chapterId={chapterId}
+          questionId={question.id}
+          type="prelims"
+          baseTags={question.tags}
+        />
+      )}
+    </article>
+  );
+}

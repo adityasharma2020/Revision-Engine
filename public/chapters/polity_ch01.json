@@ -1,0 +1,57 @@
+{
+  "id": "polity-ch01",
+  "subject": "Polity",
+  "chapterNumber": 1,
+  "title": "Making of the Indian Constitution",
+  "source": "Coaching Notes · Indian Polity Module",
+  "description": "The Constituent Assembly, its composition and working, and the influences that shaped the Constitution of India.",
+  "tags": ["constitution", "constituent-assembly"],
+  "prelims": [
+    {
+      "id": "pol-c1-p1",
+      "statement": "The Constituent Assembly of India was constituted on the recommendation of:",
+      "options": [
+        { "id": "a", "text": "The Cripps Mission, 1942" },
+        { "id": "b", "text": "The Cabinet Mission, 1946" },
+        { "id": "c", "text": "The Mountbatten Plan, 1947" },
+        { "id": "d", "text": "The Government of India Act, 1935" }
+      ],
+      "answer": "b",
+      "explanation": "The Constituent Assembly was set up under the scheme of the Cabinet Mission Plan of 1946. Its members were elected indirectly by the members of the provincial assemblies.",
+      "difficulty": "easy",
+      "tags": ["constituent-assembly"],
+      "year": 2019
+    },
+    {
+      "id": "pol-c1-p2",
+      "statement": "Consider the following statements about the Constituent Assembly:\n1. It first met on 9 December 1946.\n2. Dr. Rajendra Prasad was elected its permanent Chairman.\n3. The Objectives Resolution was moved by B. R. Ambedkar.\nWhich of the statements given above are correct?",
+      "options": [
+        { "id": "a", "text": "1 and 2 only" },
+        { "id": "b", "text": "2 and 3 only" },
+        { "id": "c", "text": "1 and 3 only" },
+        { "id": "d", "text": "1, 2 and 3" }
+      ],
+      "answer": "a",
+      "explanation": "The Assembly first met on 9 December 1946 and Dr. Rajendra Prasad became its permanent Chairman (President). The Objectives Resolution, however, was moved by Jawaharlal Nehru, not Ambedkar — so statement 3 is incorrect.",
+      "difficulty": "medium",
+      "tags": ["constituent-assembly", "facts"]
+    }
+  ],
+  "mains": [
+    {
+      "id": "pol-c1-m1",
+      "question": "The Indian Constitution has been described as a 'bag of borrowings'. Critically examine this characterisation.",
+      "keyPoints": [
+        "Borrowed features: parliamentary system and rule of law (UK), fundamental rights and judicial review (USA), directive principles (Ireland), emergency provisions (Germany), federal scheme (Canada).",
+        "Yet borrowings were adapted to Indian conditions, not copied.",
+        "Original elements: strong centre with federal form, integrated judiciary, universal adult franchise from the outset, detailed provisions for diversity.",
+        "Conclusion: a synthesis suited to India's needs rather than a mere compilation."
+      ],
+      "modelAnswer": "While the Constitution of India draws several features from other constitutions, calling it a mere 'bag of borrowings' understates the creativity of its framers. The parliamentary system, fundamental rights, directive principles and emergency provisions were indeed inspired by other democracies, but each was modified to suit Indian realities. Moreover, the Constitution contains genuinely original features — a strong yet federal union, an integrated judiciary, and universal adult franchise adopted at independence. The borrowings were therefore acts of informed selection and adaptation, making the document a thoughtful synthesis rather than an uncritical compilation.",
+      "wordLimit": 150,
+      "marks": 15,
+      "difficulty": "hard",
+      "tags": ["constitution", "borrowed-features"]
+    }
+  ]
+}

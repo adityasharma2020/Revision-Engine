@@ -1,0 +1,18 @@
+.page {
+  padding: var(--space-7) var(--space-7) var(--space-9);
+}
+
+.inner {
+  margin: 0 auto;
+  max-width: 1080px;
+}
+
+.narrow {
+  max-width: var(--content-max);
+}
+
+@media (max-width: 720px) {
+  .page {
+    padding: var(--space-5) var(--space-4) var(--space-8);
+  }
+}

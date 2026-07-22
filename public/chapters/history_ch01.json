@@ -1,0 +1,72 @@
+{
+  "id": "history-ch01",
+  "subject": "History",
+  "chapterNumber": 1,
+  "title": "Sources of Ancient Indian History",
+  "source": "Coaching Notes · Ancient India Module",
+  "description": "Literary, archaeological and foreign accounts used to reconstruct ancient India, and how historians weigh them.",
+  "tags": ["ancient-india", "historiography"],
+  "prelims": [
+    {
+      "id": "hist-c1-p1",
+      "statement": "With reference to sources of ancient Indian history, consider the following pairs:\n1. Arthashastra — Kautilya\n2. Indica — Megasthenes\n3. Rajatarangini — Kalhana\nHow many of the above pairs are correctly matched?",
+      "options": [
+        { "id": "a", "text": "Only one pair" },
+        { "id": "b", "text": "Only two pairs" },
+        { "id": "c", "text": "All three pairs" },
+        { "id": "d", "text": "None of the pairs" }
+      ],
+      "answer": "c",
+      "explanation": "Arthashastra is attributed to Kautilya (Chanakya), Indica was written by the Greek ambassador Megasthenes, and Rajatarangini — a chronicle of the kings of Kashmir — was composed by Kalhana in the 12th century. All three pairs are correctly matched.",
+      "difficulty": "easy",
+      "tags": ["sources", "texts"],
+      "year": 2021
+    },
+    {
+      "id": "hist-c1-p2",
+      "statement": "The term 'epigraphy' refers to the study of:",
+      "options": [
+        { "id": "a", "text": "Coins" },
+        { "id": "b", "text": "Inscriptions" },
+        { "id": "c", "text": "Ancient scripts and their decipherment" },
+        { "id": "d", "text": "Monuments and architecture" }
+      ],
+      "answer": "b",
+      "explanation": "Epigraphy is the study of inscriptions. The study of coins is numismatics, the study of scripts is palaeography, and the study of monuments falls under archaeology/architecture.",
+      "difficulty": "easy",
+      "tags": ["terminology"]
+    },
+    {
+      "id": "hist-c1-p3",
+      "statement": "Which of the following is/are considered archaeological sources of ancient Indian history?\n1. Coins\n2. Inscriptions\n3. Puranas\nSelect the correct answer using the code given below.",
+      "options": [
+        { "id": "a", "text": "1 and 2 only" },
+        { "id": "b", "text": "2 and 3 only" },
+        { "id": "c", "text": "1 and 3 only" },
+        { "id": "d", "text": "1, 2 and 3" }
+      ],
+      "answer": "a",
+      "explanation": "Coins and inscriptions are archaeological (material) sources. The Puranas are literary sources, not archaeological ones.",
+      "difficulty": "medium",
+      "tags": ["sources", "classification"]
+    }
+  ],
+  "mains": [
+    {
+      "id": "hist-c1-m1",
+      "question": "Assess the relative reliability of literary and archaeological sources in reconstructing the history of ancient India.",
+      "keyPoints": [
+        "Literary sources: religious (Vedas, epics, Puranas) and secular (Arthashastra, Sangam texts); rich in ideas but often undated and idealised.",
+        "Archaeological sources: inscriptions, coins, monuments; more objective and datable but fragmentary.",
+        "Foreign accounts (Megasthenes, Fa-Hien, Hiuen Tsang) offer an outsider's perspective yet carry bias.",
+        "Historians corroborate across categories — no single source is self-sufficient."
+      ],
+      "modelAnswer": "Ancient Indian history is reconstructed from literary sources, archaeological remains and foreign accounts, each with distinct strengths and limitations. Literary sources convey the intellectual and religious life of the age but are frequently undated, interpolated and idealised. Archaeological sources such as inscriptions and coins are comparatively objective and datable, though fragmentary and open to interpretation. Foreign travellers add valuable external perspectives but reflect their own biases. A sound reconstruction therefore rests on the critical cross-verification of all three categories rather than reliance on any one.",
+      "explanation": "A strong answer explicitly compares reliability rather than merely listing source types.",
+      "wordLimit": 150,
+      "marks": 10,
+      "difficulty": "medium",
+      "tags": ["historiography", "sources"]
+    }
+  ]
+}
