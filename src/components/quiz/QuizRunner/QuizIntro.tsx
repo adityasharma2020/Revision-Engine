@@ -1,5 +1,6 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import type { PrelimsQuestion, QuizQuestionSet, QuizQuestionSetType, QuizResultList } from '../../../types';
+import type { QuestionOriginKind } from '../../../utils/questionOrigin';
 import {
   STANDARD_QUIZ_SETTINGS,
   STRICT_QUIZ_SETTINGS,
@@ -14,6 +15,9 @@ import styles from './QuizRunner.module.css';
 interface QuizIntroProps {
   chapterId: string;
   questions: readonly PrelimsQuestion[];
+  origin: 'all' | QuestionOriginKind;
+  availableOrigins: ReadonlySet<QuestionOriginKind>;
+  onOrigin?: (origin: 'all' | QuestionOriginKind) => void;
   results: QuizResultList;
   lastScore?: { correct: number; total: number } | null;
   onStart: (settings: QuizSettings, questionSet: QuizQuestionSet) => void;
@@ -28,7 +32,7 @@ const sameSettings = (left: QuizSettings, right: QuizSettings) =>
   left.focusLossGrace === right.focusLossGrace &&
   left.focusPenaltyPerLoss === right.focusPenaltyPerLoss;
 
-export function QuizIntro({ chapterId, questions, results, lastScore, onStart }: QuizIntroProps) {
+export function QuizIntro({ chapterId, questions, origin, availableOrigins, onOrigin, results, lastScore, onStart }: QuizIntroProps) {
   const [settings, setSettings] = useState<QuizSettings>(STANDARD_QUIZ_SETTINGS);
   const [selectorOpen, setSelectorOpen] = useState(false);
   const [questionSet, setQuestionSet] = useState<QuizQuestionSet>(() => ({
@@ -37,6 +41,15 @@ export function QuizIntro({ chapterId, questions, results, lastScore, onStart }:
     questionIds: questions.map((question) => question.id),
     sourceQuestionCount: questions.length,
   }));
+
+  useEffect(() => {
+    setQuestionSet({
+      type: 'full',
+      label: 'All questions',
+      questionIds: questions.map((question) => question.id),
+      sourceQuestionCount: questions.length,
+    });
+  }, [questions]);
   const stats = useMemo(() => questionAttemptStats(results, chapterId), [results, chapterId]);
   const lastResult = useMemo(() => results
     .filter((result) => result.chapterId === chapterId && result.perQuestion?.length)
@@ -108,6 +121,29 @@ export function QuizIntro({ chapterId, questions, results, lastScore, onStart }:
             : preset === 'custom' ? 'Custom settings' : 'Optional'}</em>
         </summary>
         <div className={styles.quizAdvancedBody}>
+          {availableOrigins.size > 0 && onOrigin && (
+            <section className={styles.quizSourcePanel} aria-labelledby="quiz-source-title">
+              <div>
+                <h3 id="quiz-source-title">Question source</h3>
+                <p>All sources are included by default.</p>
+              </div>
+              <div className={styles.quizSourceOptions}>
+                {(['all', 'fyq', 'pyq', 'other'] as const).map((value) =>
+                  value === 'all' || availableOrigins.has(value) ? (
+                    <button
+                      key={value}
+                      type="button"
+                      className={origin === value ? styles.quizSourceActive : styles.quizSourceOption}
+                      aria-pressed={origin === value}
+                      onClick={() => onOrigin(value)}
+                    >
+                      {value === 'all' ? 'All' : value.toUpperCase()}
+                    </button>
+                  ) : null,
+                )}
+              </div>
+            </section>
+          )}
           <section className={styles.questionSetPanel} aria-labelledby="question-set-title">
             <div className={styles.questionSetHead}>
               <div><h3 id="question-set-title">Question selection</h3><p>Repeat an outcome from your last quiz or choose questions manually.</p></div>

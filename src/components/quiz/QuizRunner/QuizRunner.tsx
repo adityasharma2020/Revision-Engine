@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import type { Chapter, QuizQuestionSet } from '../../../types';
+import type { QuestionOriginKind } from '../../../utils/questionOrigin';
 import { useUserData } from '../../../context/UserDataContext';
 import { EmptyState } from '../../common/EmptyState';
 import { QuizIntro } from './QuizIntro';
@@ -20,6 +21,9 @@ import styles from './QuizRunner.module.css';
 interface QuizRunnerProps {
   chapter: Chapter;
   questions?: Chapter['prelims'];
+  origin?: 'all' | QuestionOriginKind;
+  availableOrigins?: ReadonlySet<QuestionOriginKind>;
+  onOrigin?: (origin: 'all' | QuestionOriginKind) => void;
   onActiveChange?: (active: boolean) => void;
   onImmersiveChange?: (immersive: boolean) => void;
 }
@@ -28,6 +32,9 @@ interface QuizRunnerProps {
 export function QuizRunner({
   chapter,
   questions = chapter.prelims,
+  origin = 'all',
+  availableOrigins = new Set<QuestionOriginKind>(),
+  onOrigin,
   onActiveChange,
   onImmersiveChange,
 }: QuizRunnerProps) {
@@ -38,6 +45,7 @@ export function QuizRunner({
     hasQuizDraft(chapter.id) ? 'running' : 'intro',
   );
   const [attempt, setAttempt] = useState(0);
+  const [historyOpen, setHistoryOpen] = useState(false);
   const [settings, setSettings] = useState<QuizSettings>(
     () => activeDraft?.settings ?? STANDARD_QUIZ_SETTINGS,
   );
@@ -102,6 +110,9 @@ export function QuizRunner({
       <QuizIntro
         chapterId={chapter.id}
         questions={questions}
+        origin={origin}
+        availableOrigins={availableOrigins}
+        onOrigin={onOrigin}
         results={quizResults}
         lastScore={lastScore}
         onStart={(selectedSettings, selectedQuestionSet) => {
@@ -111,10 +122,20 @@ export function QuizRunner({
           setPhase('running');
         }}
       />
-      <AttemptHistory
-        results={chapterHistory}
-        onReview={(resultId) => navigate(Routes.quizResult(resultId))}
-      />
+      {chapterHistory.length > 0 && (
+        <div className={styles.historyDisclosure}>
+          <Button variant="ghost" size="sm" onClick={() => setHistoryOpen((open) => !open)}>
+            <Icon name="clock" size={15} />
+            {historyOpen ? 'Hide past attempts' : `Past attempts (${chapterHistory.length})`}
+          </Button>
+        </div>
+      )}
+      {historyOpen && chapterHistory.length > 0 && (
+        <AttemptHistory
+          results={chapterHistory}
+          onReview={(resultId) => navigate(Routes.quizResult(resultId))}
+        />
+      )}
     </>;
   }
 

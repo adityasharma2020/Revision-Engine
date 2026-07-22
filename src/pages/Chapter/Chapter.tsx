@@ -59,6 +59,11 @@ function ChapterView({ chapter }: { chapter: ChapterModel }) {
   const [leaveQuizOpen, setLeaveQuizOpen] = useState(false);
   const filteredPrelims = filterByOrigin(chapter.prelims, origin);
   const filteredMains = filterByOrigin(chapter.mains, origin);
+  const quizAvailableOrigins = new Set(
+    chapter.prelims
+      .filter((question) => question.origin)
+      .map((question) => questionOriginKind(question.origin)),
+  );
   const availableOrigins = new Set(
     [...chapter.prelims, ...chapter.mains]
       .filter((question) => question.origin)
@@ -101,8 +106,15 @@ function ChapterView({ chapter }: { chapter: ChapterModel }) {
           <Badge hue={hue}>{label}</Badge>
           <span className={styles.chapterNo}>Chapter {chapter.chapterNumber}</span>
           {!hideStudyChrome && (
-            <Link to={Routes.search} className={styles.chapterSearch}>
-              <Icon name="search" size={15} /> Global search
+            <Link
+              to={Routes.search}
+              className={styles.chapterSearch}
+              aria-keyshortcuts="Meta+Shift+P Control+Shift+P"
+              title="Open global search (⌘⇧P or Ctrl⇧P)"
+            >
+              <Icon name="search" size={15} />
+              <span>Global search</span>
+              <kbd className={styles.searchShortcut}>⌘⇧P</kbd>
             </Link>
           )}
         </div>
@@ -135,34 +147,13 @@ function ChapterView({ chapter }: { chapter: ChapterModel }) {
         </button>
       </div>}
 
-      {!hideStudyChrome && mode === 'quiz' && availableOrigins.size > 0 && (
-        <div className={styles.originFilter} aria-label={`Filter ${mode} questions by origin`}>
-          <span className={styles.filterLabel}>Quiz source</span>
-          <div className={styles.filterOptions}>
-            {(['all', 'fyq', 'pyq', 'other'] as const).map((value) =>
-              value === 'all' || availableOrigins.has(value) ? (
-                <button
-                  key={value}
-                  type="button"
-                  className={origin === value ? styles.filterActive : styles.filterButton}
-                  aria-pressed={origin === value}
-                  disabled={mode === 'quiz' && (quizActive || quizDraftPresent)}
-                  title={quizActive ? 'Finish or leave the active quiz before changing its source.' : undefined}
-                  onClick={() => setOrigins((current) => ({ ...current, [mode]: value }))}
-                >
-                  {value === 'all' ? 'All' : value.toUpperCase()}
-                </button>
-              ) : null,
-            )}
-          </div>
-        </div>
-      )}
-
       {mode === 'quiz' ? (
         <QuizRunner
-          key={origin}
           chapter={chapter}
           questions={filteredPrelims}
+          origin={origins.quiz}
+          availableOrigins={quizAvailableOrigins}
+          onOrigin={(value) => setOrigins((current) => ({ ...current, quiz: value }))}
           onActiveChange={setQuizActive}
           onImmersiveChange={setQuizImmersive}
         />

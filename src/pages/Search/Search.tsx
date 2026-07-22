@@ -53,7 +53,9 @@ export function Search({ overlay = false, onNavigate }: SearchProps = {}) {
     }
     setSearchError('');
     update('q', clean);
-    inputRef.current?.blur();
+    window.requestAnimationFrame(() => {
+      inputRef.current?.focus({ preventScroll: true });
+    });
   };
 
   const clearSearch = () => {
@@ -161,7 +163,7 @@ export function Search({ overlay = false, onNavigate }: SearchProps = {}) {
                         <Link key={hit.id} to={destination} className={styles.result} onClick={onNavigate}>
                           <div className={styles.resultMeta}>
                             <Badge tone="neutral">{TYPE_LABEL[hit.type]}</Badge>
-                            {hit.origin && <Badge tone={hit.origin.toUpperCase().startsWith('PYQ') ? 'accent' : 'neutral'}>{formatQuestionOrigin(hit.origin)}</Badge>}
+                            {hit.origin && <Badge tone="neutral">{formatQuestionOrigin(hit.origin)}</Badge>}
                             {hit.year && <Badge tone="neutral">{hit.year}</Badge>}
                           </div>
                           <h2>{hit.title}</h2>

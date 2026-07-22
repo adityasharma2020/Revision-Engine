@@ -1,4 +1,5 @@
-import type { Chapter, QuestionType } from '../types';
+import type { AnnotationMap, Chapter, QuestionType } from '../types';
+import { annotationKey } from './annotations';
 import { questionOriginKind, type QuestionOriginKind } from './questionOrigin';
 
 export type SearchDocumentType = 'chapter' | QuestionType;
@@ -32,7 +33,13 @@ export interface SearchHit extends SearchDocument {
 const normalize = (value: string) =>
   value.toLocaleLowerCase().normalize('NFKD').replace(/[\u0300-\u036f]/g, '');
 
-export function buildSearchIndex(chapters: readonly Chapter[]): SearchDocument[] {
+const mergedTags = (base: readonly string[] = [], personal: readonly string[] = []) =>
+  [...new Set([...base, ...personal].map((tag) => tag.trim()).filter(Boolean))];
+
+export function buildSearchIndex(
+  chapters: readonly Chapter[],
+  annotations: AnnotationMap = {},
+): SearchDocument[] {
   return chapters.flatMap((chapter) => {
     const chapterDoc: SearchDocument = {
       id: `chapter:${chapter.id}`,
@@ -54,7 +61,10 @@ export function buildSearchIndex(chapters: readonly Chapter[]): SearchDocument[]
       title: question.statement,
       body: question.options.map((option) => option.text).join(' '),
       answerText: question.explanation ?? '',
-      tags: question.tags ?? [],
+      tags: mergedTags(
+        question.tags,
+        annotations[annotationKey(chapter.id, question.id)]?.tags,
+      ),
       origin: question.origin,
       year: question.year,
     }));
@@ -67,7 +77,10 @@ export function buildSearchIndex(chapters: readonly Chapter[]): SearchDocument[]
       title: question.question,
       body: [...(question.keyPoints ?? []), question.modelAnswer ?? ''].join(' '),
       answerText: question.explanation ?? '',
-      tags: question.tags ?? [],
+      tags: mergedTags(
+        question.tags,
+        annotations[annotationKey(chapter.id, question.id)]?.tags,
+      ),
       origin: question.origin,
       year: question.year,
     }));
