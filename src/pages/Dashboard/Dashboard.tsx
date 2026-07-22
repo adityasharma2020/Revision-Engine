@@ -12,7 +12,7 @@ import styles from './Dashboard.module.css';
 export function Dashboard() {
   const state = useLibrary();
   return (
-    <Page>
+    <Page narrow>
       <AsyncBoundary state={state} loadingLabel="Preparing your dashboard…">
         {(chapters) => <HomeContent chapters={chapters} />}
       </AsyncBoundary>
@@ -34,11 +34,6 @@ function HomeContent({ chapters }: { chapters: readonly ChapterSummary[] }) {
       .slice(0, 3);
   }, [chapters, progress, quizResults]);
   const continueChapter = recent[0] ?? chapters[0];
-  const totalQuestions = chapters.reduce(
-    (sum, chapter) => sum + chapter.prelimsCount + chapter.mainsCount,
-    0,
-  );
-
   return (
     <>
       <section className={styles.hero}>
@@ -46,11 +41,6 @@ function HomeContent({ chapters }: { chapters: readonly ChapterSummary[] }) {
           <span className={styles.eyebrow}>Revision dashboard</span>
           <h1>What will you revise today?</h1>
           <p>Continue where you stopped, test yourself, or add new study material.</p>
-        </div>
-        <div className={styles.summary}>
-          <strong>{chapters.length}</strong><span>chapters</span>
-          <strong>{totalQuestions}</strong><span>questions</span>
-          <strong>{quizResults.length}</strong><span>quizzes</span>
         </div>
       </section>
 
@@ -70,7 +60,6 @@ function HomeContent({ chapters }: { chapters: readonly ChapterSummary[] }) {
         <Action to={Routes.library} icon="book" title="Open library" text="Browse every subject and chapter." />
         <Action to={Routes.import} icon="plus" title="Import your own" text="Create a chapter from your material." />
         <Action to={continueChapter ? Routes.chapter(continueChapter.id) : Routes.library} icon="clock" title="Take a quiz" text="Start a timed attempt with saved results." />
-        <Action to={Routes.search} icon="search" title="Find a question" text="Search chapters, tags and question text." />
       </section>
 
       {recent.length > 0 && (
