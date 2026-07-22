@@ -19,8 +19,21 @@ export function questionPresentation(question: PrelimsQuestion): QuestionPresent
   }
 
   const text = question.statement.trim();
-  const matches = [...text.matchAll(/(?:^|\s)(\d+)\.\s+/g)];
-  if (matches.length < 2 || matches[0][1] !== '1') return null;
+  const candidates = [...text.matchAll(/(?:^|\s)(\d+)\.\s+/g)];
+  if (candidates.length < 2 || candidates[0][1] !== '1') return null;
+
+  // Years and other values can look like list markers (for example
+  // "Delhi in 1556. Which..."). Only accept a consecutive 1, 2, 3…
+  // sequence so those values remain part of their statement.
+  const matches: RegExpMatchArray[] = [];
+  let expected = 1;
+  for (const candidate of candidates) {
+    if (Number(candidate[1]) === expected) {
+      matches.push(candidate);
+      expected += 1;
+    }
+  }
+  if (matches.length < 2) return null;
 
   const firstStart = (matches[0].index ?? 0) + (matches[0][0].startsWith(' ') ? 1 : 0);
   const lead = text.slice(0, firstStart).trim().replace(/:\s*$/, '');
@@ -37,6 +50,8 @@ export function questionPresentation(question: PrelimsQuestion): QuestionPresent
     ask = final.slice(askMatch.index).trim();
     statements[statements.length - 1] = final.slice(0, askMatch.index).trim();
   }
+
+  if (statements.some((statement) => statement.length === 0)) return null;
 
   return { lead, statements, ask };
 }

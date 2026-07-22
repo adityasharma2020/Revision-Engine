@@ -88,15 +88,6 @@ function ChapterView({ chapter }: { chapter: ChapterModel }) {
       {!hideStudyChrome && <div className={styles.modeRow}>
         <button
           type="button"
-          className={mode === 'learning' ? styles.modeActive : styles.modeOption}
-          aria-pressed={mode === 'learning'}
-          onClick={() => changeMode('learning')}
-        >
-          <span className={styles.modeIcon}><Icon name="book" size={18} /></span>
-          <span><strong>Learn &amp; review</strong><small>Study with instant answers and explanations.</small></span>
-        </button>
-        <button
-          type="button"
           className={mode === 'quiz' ? styles.modeActive : styles.modeOption}
           aria-pressed={mode === 'quiz'}
           onClick={() => changeMode('quiz')}
@@ -104,6 +95,15 @@ function ChapterView({ chapter }: { chapter: ChapterModel }) {
           <span className={styles.modeIcon}><Icon name="clock" size={18} /></span>
           <span><strong>Take a quiz</strong><small>Timed attempt with results saved to history.</small></span>
           {quizDraftPresent && <em>{quizActive ? 'In progress' : 'Paused · resume'}</em>}
+        </button>
+        <button
+          type="button"
+          className={mode === 'learning' ? styles.modeActive : styles.modeOption}
+          aria-pressed={mode === 'learning'}
+          onClick={() => changeMode('learning')}
+        >
+          <span className={styles.modeIcon}><Icon name="book" size={18} /></span>
+          <span><strong>Learn &amp; review</strong><small>Study with instant answers and explanations.</small></span>
         </button>
       </div>}
 
