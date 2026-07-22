@@ -1,6 +1,6 @@
 import { lazy, Suspense } from 'react';
 import { Route, Routes as RouterRoutes } from 'react-router-dom';
-import { ErrorBoundary } from './components/common';
+import { ErrorBoundary, FirstVisitTour } from './components/common';
 import { AppShell } from './components/layout';
 import { Routes } from './constants/routes';
 import { Bookmarks } from './pages/Bookmarks';
@@ -24,6 +24,7 @@ const Statistics = lazy(() =>
 export function App() {
   return (
     <ErrorBoundary>
+      <FirstVisitTour />
       <RouterRoutes>
         <Route element={<AppShell />}>
           <Route path={Routes.dashboard} element={<Dashboard />} />

@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Button, Icon, ThemeToggle } from "../../components/common";
+import { Button, Icon, replayFirstVisitTour, ThemeToggle } from "../../components/common";
 import { AccountPanel } from "../../components/auth/AccountPanel";
 import { Page, PageHeader } from "../../components/layout";
 import { useStorage } from "../../context/StorageContext";
@@ -112,6 +112,18 @@ export function Settings() {
             </p>
           </div>
           <ThemeToggle />
+        </div>
+      </section>
+
+      <section className={styles.group}>
+        <div className={styles.row}>
+          <div className={styles.rowText}>
+            <h3 className={styles.rowTitle}>Product tour</h3>
+            <p className={styles.rowDesc}>A brief overview of the question bank, quizzes, revision and analytics.</p>
+          </div>
+          <Button variant='secondary' size='sm' onClick={replayFirstVisitTour}>
+            <Icon name='sparkle' size={15} /> Replay tour
+          </Button>
         </div>
       </section>
 
