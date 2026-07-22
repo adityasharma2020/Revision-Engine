@@ -32,7 +32,7 @@ export function QuizResultPage() {
           icon="clock"
           title="Result not found"
           description="This private result is not available on the current account or device."
-          action={<Link className={styles.action} to={Routes.dashboard}>Go to library</Link>}
+          action={<Link className={styles.action} to={Routes.library}>Go to library</Link>}
         />
       )}
     </Page>
@@ -45,12 +45,16 @@ function LoadedResult({ result }: { result: QuizResult }) {
   const { setQuizResultAnalytics } = useUserData();
   const { status } = useAuth();
   const [shareToken, setShareToken] = useState<string | null>(null);
+  const [showOwner, setShowOwner] = useState(true);
   const [shareStatus, setShareStatus] = useState<'idle' | 'working' | 'copied' | 'error'>('idle');
 
   useEffect(() => {
     if (status !== 'authenticated') return;
     void getActiveQuizShare(result.id)
-      .then(setShareToken)
+      .then((share) => {
+        setShareToken(share?.shareToken ?? null);
+        if (share) setShowOwner(share.showOwner);
+      })
       .catch(() => setShareStatus('error'));
   }, [result.id, status]);
 
@@ -81,6 +85,14 @@ function LoadedResult({ result }: { result: QuizResult }) {
                 </div>
                 {status === 'authenticated' && (
                   <div className={styles.shareActions}>
+                    <label className={styles.identityChoice}>
+                      <input
+                        type="checkbox"
+                        checked={showOwner}
+                        onChange={(event) => setShowOwner(event.target.checked)}
+                      />
+                      Show my name and photo
+                    </label>
                     <Button
                       variant="secondary"
                       size="sm"
@@ -88,7 +100,7 @@ function LoadedResult({ result }: { result: QuizResult }) {
                       onClick={async () => {
                         setShareStatus('working');
                         try {
-                          const token = await createQuizShare(result, questions);
+                          const token = await createQuizShare(result, questions, showOwner);
                           setShareToken(token);
                           await navigator.clipboard.writeText(
                             `${window.location.origin}${Routes.sharedQuizResult(token)}`,

@@ -63,7 +63,7 @@ function ChapterView({ chapter }: { chapter: ChapterModel }) {
   return (
     <>
       {!hideStudyChrome && (
-        <Link to={Routes.dashboard} className={styles.back}>
+        <Link to={Routes.library} className={styles.back}>
           <Icon name="arrowLeft" size={16} />
           Library
         </Link>

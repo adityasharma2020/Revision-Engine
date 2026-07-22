@@ -50,13 +50,17 @@ export function SharedQuizResultPage() {
     );
   }
 
-  const { result, questions } = state.snapshot;
+  const { result, questions, owner } = state.snapshot;
   return (
     <Page narrow>
       <header className={styles.header}>
-        <span className={styles.mark}><Icon name="share" size={17} /></span>
+        {owner?.avatarUrl ? (
+          <img className={styles.avatar} src={owner.avatarUrl} alt="" />
+        ) : (
+          <span className={styles.mark}><Icon name="share" size={17} /></span>
+        )}
         <div>
-          <p>Shared quiz result</p>
+          <p>{owner?.name ? `${owner.name}'s result` : 'Shared quiz result'}</p>
           <h1>{result.chapterTitle ?? 'Quiz attempt'}</h1>
           <small>{new Intl.DateTimeFormat(undefined, {
             dateStyle: 'long',

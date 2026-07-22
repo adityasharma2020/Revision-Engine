@@ -8,6 +8,9 @@ create table if not exists public.shared_quiz_results (
   result_id   text not null,
   result      jsonb not null,
   questions   jsonb not null,
+  show_owner  boolean not null default true,
+  owner_name  text,
+  owner_avatar_url text,
   is_active   boolean not null default true,
   created_at  timestamptz not null default now(),
   revoked_at  timestamptz
