@@ -1,35 +1,22 @@
 {
-  "generatedAt": "2026-07-22T03:53:23.499Z",
+  "generatedAt": "2026-07-22T05:00:27.809Z",
   "chapters": [
     {
-      "id": "history-ch01",
+      "id": "history-mughals-ch01",
       "subject": "History",
-      "title": "Sources of Ancient Indian History",
+      "title": "The Advent of the Mughals",
       "chapterNumber": 1,
-      "source": "Coaching Notes · Ancient India Module",
-      "description": "Literary, archaeological and foreign accounts used to reconstruct ancient India, and how historians weigh them.",
+      "source": "Sarrthi IAS · GS Foundation · UPSC Prelims 2028 · History",
+      "description": "Babur's takeover from the Lodis, Humayun and Sher Shah Suri, the re-establishment of the Mughal kingdom at Panipat 1556, Akbar's Mansabdari system, Mughal land revenue from Zabti to Ijaradari, and Akbar's religious vision.",
       "tags": [
-        "ancient-india",
-        "historiography"
+        "medieval-india",
+        "mughals",
+        "akbar",
+        "land-revenue"
       ],
       "file": "history_ch01.json",
-      "prelimsCount": 3,
-      "mainsCount": 1
-    },
-    {
-      "id": "polity-ch01",
-      "subject": "Polity",
-      "title": "Making of the Indian Constitution",
-      "chapterNumber": 1,
-      "source": "Coaching Notes · Indian Polity Module",
-      "description": "The Constituent Assembly, its composition and working, and the influences that shaped the Constitution of India.",
-      "tags": [
-        "constitution",
-        "constituent-assembly"
-      ],
-      "file": "polity_ch01.json",
-      "prelimsCount": 2,
-      "mainsCount": 1
+      "prelimsCount": 15,
+      "mainsCount": 3
     }
   ]
 }

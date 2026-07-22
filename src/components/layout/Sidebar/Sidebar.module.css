@@ -16,6 +16,12 @@
   gap: var(--space-3);
   padding: var(--space-2) var(--space-3);
   margin-bottom: var(--space-6);
+  border-radius: var(--radius-md);
+  transition: background-color var(--duration-fast) var(--ease-out);
+}
+
+.brand:hover {
+  background-color: var(--surface-hover);
 }
 
 .mark {

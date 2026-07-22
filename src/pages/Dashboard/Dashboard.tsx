@@ -1,8 +1,10 @@
 import { useMemo } from 'react';
-import { AsyncBoundary, EmptyState } from '../../components/common';
+import { useNavigate } from 'react-router-dom';
+import { AsyncBoundary, Button, EmptyState } from '../../components/common';
 import { SubjectSection } from '../../components/dashboard/SubjectSection';
 import { Page, PageHeader } from '../../components/layout';
 import { APP_TAGLINE } from '../../constants/app';
+import { Routes } from '../../constants/routes';
 import { useLibrary } from '../../hooks/useChapters';
 import type { ChapterSummary } from '../../types';
 import { groupBySubject } from '../../utils/chapters';
@@ -20,6 +22,7 @@ export function Dashboard() {
 }
 
 function DashboardContent({ chapters }: { chapters: readonly ChapterSummary[] }) {
+  const navigate = useNavigate();
   const groups = useMemo(() => groupBySubject(chapters), [chapters]);
 
   const totals = useMemo(() => {
@@ -37,7 +40,12 @@ function DashboardContent({ chapters }: { chapters: readonly ChapterSummary[] })
       <EmptyState
         icon="book"
         title="No chapters yet"
-        description="Drop a chapter JSON file into public/chapters and it will appear here automatically."
+        description="Import your first chapter to start building your revision library."
+        action={
+          <Button variant="primary" onClick={() => navigate(Routes.import)}>
+            Import a chapter
+          </Button>
+        }
       />
     );
   }

@@ -14,12 +14,12 @@ export function Sidebar() {
 
   return (
     <aside className={styles.sidebar}>
-      <div className={styles.brand}>
+      <Link to={Routes.dashboard} className={styles.brand} aria-label={`${APP_NAME} home`}>
         <span className={styles.mark}>
           <Icon name="sparkle" size={18} />
         </span>
         <span className={styles.brandName}>{APP_NAME}</span>
-      </div>
+      </Link>
 
       <nav className={styles.nav} aria-label="Primary">
         {PRIMARY_NAV.map((item) => (
@@ -27,6 +27,8 @@ export function Sidebar() {
             key={item.to}
             to={item.to}
             end={item.end}
+            aria-label={item.label}
+            title={item.label}
             className={({ isActive }) => cx(styles.link, isActive && styles.active)}
           >
             <Icon name={item.icon} size={18} />
