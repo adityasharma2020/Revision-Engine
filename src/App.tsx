@@ -5,6 +5,7 @@ import { Routes } from './constants/routes';
 import { Bookmarks } from './pages/Bookmarks';
 import { Chapter } from './pages/Chapter';
 import { Dashboard } from './pages/Dashboard';
+import { Import } from './pages/Import';
 import { NotFound } from './pages/NotFound';
 import { Settings } from './pages/Settings';
 import { Statistics } from './pages/Statistics';
@@ -17,6 +18,7 @@ export function App() {
         <Route element={<AppShell />}>
           <Route path={Routes.dashboard} element={<Dashboard />} />
           <Route path={Routes.chapter()} element={<Chapter />} />
+          <Route path={Routes.import} element={<Import />} />
           <Route path={Routes.statistics} element={<Statistics />} />
           <Route path={Routes.bookmarks} element={<Bookmarks />} />
           <Route path={Routes.settings} element={<Settings />} />

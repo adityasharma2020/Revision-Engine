@@ -1,0 +1,128 @@
+.note {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-2);
+  padding: var(--space-4);
+  font-size: var(--text-base);
+  line-height: var(--leading-normal);
+  color: var(--text-secondary);
+  background-color: var(--bg-sunken);
+  border-radius: var(--radius-md);
+}
+.note code {
+  font-family: var(--font-mono);
+  font-size: var(--text-sm);
+  padding: 1px 5px;
+  background-color: var(--surface);
+  border-radius: var(--radius-sm);
+}
+
+.account {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+}
+.identity {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+}
+.avatar,
+.avatarFallback {
+  width: 40px;
+  height: 40px;
+  border-radius: var(--radius-full);
+  flex-shrink: 0;
+}
+.avatarFallback {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: var(--weight-semibold);
+  color: var(--accent-text);
+  background-color: var(--accent);
+}
+.identityText {
+  display: flex;
+  flex-direction: column;
+}
+.name {
+  font-weight: var(--weight-semibold);
+}
+.email {
+  font-size: var(--text-sm);
+  color: var(--text-secondary);
+}
+
+.syncRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+}
+.syncBadge {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  font-size: var(--text-sm);
+  color: var(--text-secondary);
+}
+.dotOnline,
+.dotOffline {
+  width: 7px;
+  height: 7px;
+  border-radius: var(--radius-full);
+}
+.dotOnline {
+  background-color: var(--success);
+}
+.dotOffline {
+  background-color: var(--warning);
+}
+
+.signin {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+.signinLead {
+  font-size: var(--text-base);
+  line-height: var(--leading-normal);
+  color: var(--text-secondary);
+}
+.divider {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  color: var(--text-tertiary);
+  font-size: var(--text-xs);
+}
+.divider::before,
+.divider::after {
+  content: '';
+  flex: 1;
+  height: 1px;
+  background-color: var(--border);
+}
+.emailForm {
+  display: flex;
+  gap: var(--space-2);
+}
+.emailInput {
+  flex: 1;
+  height: 36px;
+  padding: 0 var(--space-3);
+  font-size: var(--text-base);
+  color: var(--text-primary);
+  background-color: var(--surface);
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius-md);
+}
+.emailInput:focus {
+  outline: none;
+  border-color: var(--accent);
+}
+.error {
+  font-size: var(--text-sm);
+  color: var(--danger);
+}

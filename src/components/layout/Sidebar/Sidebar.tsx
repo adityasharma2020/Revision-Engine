@@ -1,12 +1,17 @@
-import { NavLink } from 'react-router-dom';
+import { Link, NavLink } from 'react-router-dom';
 import { APP_NAME } from '../../../constants/app';
 import { PRIMARY_NAV } from '../../../constants/navigation';
+import { Routes } from '../../../constants/routes';
+import { useAuth } from '../../../context/AuthContext';
 import { Icon } from '../../common/Icon';
 import { ThemeToggle } from '../../common/ThemeToggle';
 import { cx } from '../../../utils/cx';
 import styles from './Sidebar.module.css';
 
 export function Sidebar() {
+  const { status, user } = useAuth();
+  const signedIn = status === 'authenticated' && user;
+
   return (
     <aside className={styles.sidebar}>
       <div className={styles.brand}>
@@ -31,6 +36,22 @@ export function Sidebar() {
       </nav>
 
       <div className={styles.footer}>
+        <Link to={Routes.settings} className={styles.account}>
+          {signedIn && user.avatarUrl ? (
+            <img src={user.avatarUrl} alt="" className={styles.accountAvatar} />
+          ) : (
+            <span className={styles.accountAvatarFallback}>
+              {signedIn ? (
+                (user.displayName ?? user.email ?? '?').charAt(0).toUpperCase()
+              ) : (
+                <Icon name="user" size={15} />
+              )}
+            </span>
+          )}
+          <span className={styles.accountText}>
+            {signedIn ? (user.displayName ?? user.email) : 'Guest — sign in'}
+          </span>
+        </Link>
         <ThemeToggle />
       </div>
     </aside>

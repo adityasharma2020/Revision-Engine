@@ -3,17 +3,17 @@ import { AsyncBoundary, EmptyState } from '../../components/common';
 import { SubjectSection } from '../../components/dashboard/SubjectSection';
 import { Page, PageHeader } from '../../components/layout';
 import { APP_TAGLINE } from '../../constants/app';
-import { useManifest } from '../../hooks/useChapters';
+import { useLibrary } from '../../hooks/useChapters';
 import type { ChapterSummary } from '../../types';
 import { groupBySubject } from '../../utils/chapters';
 
 export function Dashboard() {
-  const state = useManifest();
+  const state = useLibrary();
 
   return (
     <Page>
       <AsyncBoundary state={state} loadingLabel="Loading your library…">
-        {(manifest) => <DashboardContent chapters={manifest.chapters} />}
+        {(chapters) => <DashboardContent chapters={chapters} />}
       </AsyncBoundary>
     </Page>
   );

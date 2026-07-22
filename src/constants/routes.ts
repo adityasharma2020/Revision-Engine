@@ -5,5 +5,6 @@ export const Routes = {
   quiz: (chapterId: string = ':chapterId') => `/chapter/${chapterId}/revise`,
   statistics: '/statistics',
   bookmarks: '/bookmarks',
+  import: '/import',
   settings: '/settings',
 } as const;

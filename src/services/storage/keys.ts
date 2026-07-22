@@ -12,6 +12,7 @@ export const StorageKeys = {
   progress: 'progress',
   annotations: 'annotations',
   quizResults: 'quiz-results',
+  userChapters: 'user-chapters',
   theme: 'theme',
   settings: 'settings',
 } as const;

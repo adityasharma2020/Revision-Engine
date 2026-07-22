@@ -1,15 +1,45 @@
+import { useMemo } from 'react';
 import { useServices } from '../context/ServicesContext';
-import type { Chapter, ChapterManifest } from '../types';
+import { useUserData } from '../context/UserDataContext';
+import type { Chapter, ChapterSummary } from '../types';
+import { chapterToSummary } from '../utils/chapters';
 import { useAsync, type AsyncState } from './useAsync';
 
-/** Load the chapter index (cached by the service). */
-export function useManifest(): AsyncState<ChapterManifest> {
+/**
+ * The combined library: static (shipped) chapters from the manifest plus the
+ * user's uploaded chapters. Returns summaries; adding an upload updates this
+ * live without a reload.
+ */
+export function useLibrary(): AsyncState<ChapterSummary[]> {
   const { chapters } = useServices();
-  return useAsync(() => chapters.loadManifest(), [chapters]);
+  const { userChapters } = useUserData();
+
+  const userSummaries = useMemo(
+    () => userChapters.map((c) => chapterToSummary(c, 'user')),
+    [userChapters],
+  );
+
+  return useAsync<ChapterSummary[]>(async () => {
+    const manifest = await chapters.loadManifest();
+    const builtin = manifest.chapters.map(
+      (c): ChapterSummary => ({ ...c, origin: c.origin ?? 'builtin' }),
+    );
+    return [...builtin, ...userSummaries];
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [chapters, userSummaries]);
 }
 
-/** Load a single full chapter by id. */
+/** Load a single chapter by id — user uploads resolve instantly, else static. */
 export function useChapter(id: string): AsyncState<Chapter> {
   const { chapters } = useServices();
-  return useAsync(() => chapters.loadChapter(id), [chapters, id]);
+  const { userChapters } = useUserData();
+  const userChapter = useMemo(
+    () => userChapters.find((c) => c.id === id) ?? null,
+    [userChapters, id],
+  );
+
+  return useAsync<Chapter>(async () => {
+    if (userChapter) return userChapter;
+    return chapters.loadChapter(id);
+  }, [id, userChapter, chapters]);
 }

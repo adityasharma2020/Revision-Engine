@@ -66,7 +66,7 @@ export class ChapterService {
 
     const manifest = await this.loadManifest();
     const entry = manifest.chapters.find((c) => c.id === id);
-    if (!entry) {
+    if (!entry || !entry.file) {
       throw new ChapterParseError(`Unknown chapter "${id}"`, 'id');
     }
 

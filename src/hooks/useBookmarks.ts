@@ -21,12 +21,16 @@ export interface ResolvedBookmark {
  * of bookmarks changes; missing questions/chapters are skipped gracefully.
  */
 export function useBookmarks(): AsyncState<ResolvedBookmark[]> {
-  const { annotations } = useUserData();
+  const { annotations, userChapters } = useUserData();
   const { chapters } = useServices();
 
   const bookmarked = useMemo(
     () => Object.values(annotations).filter((a) => a.bookmarked),
     [annotations],
+  );
+  const userById = useMemo(
+    () => new Map(userChapters.map((c) => [c.id, c])),
+    [userChapters],
   );
   const signature = useMemo(
     () =>
@@ -40,7 +44,9 @@ export function useBookmarks(): AsyncState<ResolvedBookmark[]> {
   return useAsync<ResolvedBookmark[]>(async () => {
     const chapterIds = [...new Set(bookmarked.map((b) => b.chapterId))];
     const loaded = await Promise.all(
-      chapterIds.map((id) => chapters.loadChapter(id).catch(() => null)),
+      chapterIds.map((id) =>
+        userById.get(id) ?? chapters.loadChapter(id).catch(() => null),
+      ),
     );
     const byId = new Map(loaded.filter((c) => c !== null).map((c) => [c.id, c]));
 
@@ -78,5 +84,5 @@ export function useBookmarks(): AsyncState<ResolvedBookmark[]> {
       .filter((b): b is ResolvedBookmark => b !== null);
     // signature captures the meaningful dependency (which bookmarks exist).
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [signature, chapters]);
+  }, [signature, chapters, userById]);
 }

@@ -75,6 +75,8 @@ export type QuestionType = 'prelims' | 'mains';
  * render instantly without downloading every full chapter file. The heavy
  * `prelims`/`mains` arrays are fetched lazily only when a chapter is opened.
  */
+export type ChapterOrigin = 'builtin' | 'user';
+
 export interface ChapterSummary {
   readonly id: string;
   readonly subject: Subject;
@@ -83,10 +85,12 @@ export interface ChapterSummary {
   readonly source?: string;
   readonly description?: string;
   readonly tags?: readonly string[];
-  /** Path of the chapter file relative to the chapters directory. */
-  readonly file: string;
+  /** Path of the chapter file relative to the chapters directory (builtin only). */
+  readonly file?: string;
   readonly prelimsCount: number;
   readonly mainsCount: number;
+  /** Where the chapter came from — shipped with the app, or user-uploaded. */
+  readonly origin?: ChapterOrigin;
 }
 
 /** The generated index of all available chapters. */

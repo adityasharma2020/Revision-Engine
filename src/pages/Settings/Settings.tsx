@@ -1,11 +1,12 @@
 import { useState } from 'react';
 import { Button, ThemeToggle } from '../../components/common';
+import { AccountPanel } from '../../components/auth/AccountPanel';
 import { Page, PageHeader } from '../../components/layout';
-import { useServices } from '../../context/ServicesContext';
+import { useStorage } from '../../context/StorageContext';
 import styles from './Settings.module.css';
 
 export function Settings() {
-  const { storage } = useServices();
+  const { storage } = useStorage();
   const [cleared, setCleared] = useState(false);
 
   const resetAll = async () => {
@@ -25,6 +26,18 @@ export function Settings() {
         title="Preferences"
         description="Personalise the app. Everything is stored locally on this device."
       />
+
+      <section className={styles.group}>
+        <div className={styles.stack}>
+          <div className={styles.rowText}>
+            <h3 className={styles.rowTitle}>Account &amp; sync</h3>
+            <p className={styles.rowDesc}>
+              Sign in to continue on any device.
+            </p>
+          </div>
+          <AccountPanel />
+        </div>
+      </section>
 
       <section className={styles.group}>
         <div className={styles.row}>

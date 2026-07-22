@@ -8,9 +8,10 @@ import {
   useState,
   type ReactNode,
 } from 'react';
-import { useServices } from './ServicesContext';
+import { useStorage } from './StorageContext';
 import type {
   AnnotationMap,
+  Chapter,
   ProgressMap,
   QuestionAnnotation,
   QuestionAttempt,
@@ -29,6 +30,7 @@ interface UserDataValue {
   annotations: AnnotationMap;
   progress: ProgressMap;
   quizResults: QuizResultList;
+  userChapters: Chapter[];
 
   getAnnotation: (chapterId: string, questionId: string) => QuestionAnnotation | undefined;
   toggleBookmark: (chapterId: string, questionId: string, type: QuestionType) => void;
@@ -38,6 +40,9 @@ interface UserDataValue {
 
   recordAttempt: (attempt: QuestionAttempt) => void;
   recordQuizResult: (result: QuizResult) => void;
+
+  addUserChapter: (chapter: Chapter) => void;
+  removeUserChapter: (chapterId: string) => void;
 }
 
 const UserDataContext = createContext<UserDataValue | null>(null);
@@ -48,11 +53,12 @@ const UserDataContext = createContext<UserDataValue | null>(null);
  * that becomes cloud-synced: swap the storage backend, this stays identical.
  */
 export function UserDataProvider({ children }: { children: ReactNode }) {
-  const { storage } = useServices();
+  const { storage } = useStorage();
   const [ready, setReady] = useState(false);
   const [annotations, setAnnotations] = useState<AnnotationMap>({});
   const [progress, setProgress] = useState<ProgressMap>({});
   const [quizResults, setQuizResults] = useState<QuizResultList>([]);
+  const [userChapters, setUserChapters] = useState<Chapter[]>([]);
 
   // Keep latest refs so persistence helpers never read stale closures.
   const annotationsRef = useRef(annotations);
@@ -64,11 +70,13 @@ export function UserDataProvider({ children }: { children: ReactNode }) {
       storage.loadAnnotations(),
       storage.loadProgress(),
       storage.loadQuizResults(),
-    ]).then(([a, p, q]) => {
+      storage.loadUserChapters(),
+    ]).then(([a, p, q, uc]) => {
       if (!active) return;
       setAnnotations(a);
       setProgress(p);
       setQuizResults(q);
+      setUserChapters(uc);
       setReady(true);
     });
     return () => {
@@ -172,12 +180,35 @@ export function UserDataProvider({ children }: { children: ReactNode }) {
     [storage],
   );
 
+  const addUserChapter = useCallback(
+    (chapter: Chapter) => {
+      setUserChapters((prev) => {
+        const next = [chapter, ...prev.filter((c) => c.id !== chapter.id)];
+        void storage.saveUserChapters(next);
+        return next;
+      });
+    },
+    [storage],
+  );
+
+  const removeUserChapter = useCallback(
+    (chapterId: string) => {
+      setUserChapters((prev) => {
+        const next = prev.filter((c) => c.id !== chapterId);
+        void storage.saveUserChapters(next);
+        return next;
+      });
+    },
+    [storage],
+  );
+
   const value = useMemo<UserDataValue>(
     () => ({
       ready,
       annotations,
       progress,
       quizResults,
+      userChapters,
       getAnnotation,
       toggleBookmark,
       setNote,
@@ -185,12 +216,15 @@ export function UserDataProvider({ children }: { children: ReactNode }) {
       removeTag,
       recordAttempt,
       recordQuizResult,
+      addUserChapter,
+      removeUserChapter,
     }),
     [
       ready,
       annotations,
       progress,
       quizResults,
+      userChapters,
       getAnnotation,
       toggleBookmark,
       setNote,
@@ -198,6 +232,8 @@ export function UserDataProvider({ children }: { children: ReactNode }) {
       removeTag,
       recordAttempt,
       recordQuizResult,
+      addUserChapter,
+      removeUserChapter,
     ],
   );
 

@@ -1,5 +1,6 @@
 import type {
   AnnotationMap,
+  Chapter,
   ProgressMap,
   QuizResult,
   QuizResultList,
@@ -69,6 +70,15 @@ export class StorageService {
     const next = [result, ...results];
     await this.saveQuizResults(next);
     return next;
+  }
+
+  // ---- User-uploaded chapters ------------------------------------------
+  async loadUserChapters(): Promise<Chapter[]> {
+    return (await this.store.get<Chapter[]>(StorageKeys.userChapters)) ?? [];
+  }
+
+  async saveUserChapters(chapters: Chapter[]): Promise<void> {
+    await this.store.set(StorageKeys.userChapters, chapters);
   }
 
   // ---- Theme -----------------------------------------------------------

@@ -8,7 +8,7 @@ import {
 } from 'react';
 import type { ResolvedTheme, ThemeMode } from '../types';
 import { applyTheme, resolveTheme, watchSystemTheme } from '../utils/theme';
-import { useServices } from './ServicesContext';
+import { useStorage } from './StorageContext';
 
 interface ThemeContextValue {
   /** The user's preference: 'light' | 'dark' | 'system'. */
@@ -25,7 +25,7 @@ const ThemeContext = createContext<ThemeContextValue | null>(null);
 const DEFAULT_MODE: ThemeMode = 'system';
 
 export function ThemeProvider({ children }: { children: ReactNode }) {
-  const { storage } = useServices();
+  const { storage } = useStorage();
   const [mode, setModeState] = useState<ThemeMode>(DEFAULT_MODE);
   const [resolved, setResolved] = useState<ResolvedTheme>(() =>
     resolveTheme(DEFAULT_MODE),

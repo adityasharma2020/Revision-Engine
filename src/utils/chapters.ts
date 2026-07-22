@@ -1,5 +1,24 @@
 import { subjectStyle } from '../constants/subjects';
-import type { ChapterSummary } from '../types';
+import type { Chapter, ChapterOrigin, ChapterSummary } from '../types';
+
+/** Derive a lightweight summary from a full chapter (used for user uploads). */
+export function chapterToSummary(
+  chapter: Chapter,
+  origin: ChapterOrigin = 'user',
+): ChapterSummary {
+  return {
+    id: chapter.id,
+    subject: chapter.subject,
+    title: chapter.title,
+    chapterNumber: chapter.chapterNumber,
+    source: chapter.source,
+    description: chapter.description,
+    tags: chapter.tags,
+    prelimsCount: chapter.prelims.length,
+    mainsCount: chapter.mains.length,
+    origin,
+  };
+}
 
 export interface SubjectGroup {
   readonly subject: string;

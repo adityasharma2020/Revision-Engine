@@ -128,26 +128,81 @@ scripts/
 
 ---
 
-## Going to the cloud later (Supabase / Firebase / …)
+## Accounts, cloud sync & PWA
 
-The storage seam is one interface, [`KeyValueStore`](src/services/storage/types.ts).
-To migrate:
+The app is offline-first and works with **no account** (guest mode, data in the
+browser). Add Supabase and it becomes a multi-device, multi-user system — same
+URL on laptop/tablet/phone, continue where you left off. **No custom backend.**
 
-1. Implement `KeyValueStore` against your backend (e.g. `SupabaseStore`).
-2. Return it from `createStorageService()` in
-   [`src/services/storage/index.ts`](src/services/storage/index.ts).
+### 1. Environment
 
-No React component, hook, or page changes. Because every method is already
-async, no call site needs rewriting when storage becomes networked.
-Authentication can be layered the same way — inject an auth service through
-`ServicesContext`.
+```bash
+cp .env.example .env       # then fill in your Supabase values
+```
 
----
+| Var | Purpose |
+| --- | --- |
+| `VITE_SUPABASE_URL` | Supabase project URL (Settings → API) |
+| `VITE_SUPABASE_ANON_KEY` | Public anon key — safe in the browser, guarded by RLS |
+| `VITE_ENABLE_GUEST_MODE` | Allow use without an account (default `true`) |
+| `VITE_AUTH_PROVIDERS` | `google,email` |
 
-## Status
+`.env` is git-ignored. Never put a `service_role` key in a `VITE_` var.
 
-The foundation is complete and runs end-to-end: library → chapter → interactive
-prelims/mains revision, theming, and a fully abstracted storage/parsing/DI
-layer. The data models for **progress tracking, spaced repetition and bookmarks**
-already exist in [`src/types/progress.ts`](src/types/progress.ts); the
-Statistics and Bookmarks views are wired as placeholders awaiting that logic.
+### 2. Database
+
+Run the migration once (Supabase → SQL Editor → paste → Run, or `supabase db push`):
+
+- [`supabase/migrations/0001_init.sql`](supabase/migrations/0001_init.sql)
+
+It creates `profiles` and `user_state` with **Row Level Security** — every row is
+scoped to `auth.uid()`, so a user can only ever read/write their own data.
+
+### 3. Auth providers
+
+- **Google**: Supabase → Authentication → Providers → Google. Add your OAuth
+  client id/secret and set the redirect URL to your app origin (and
+  `http://localhost:5173` for local dev).
+- **Email**: enabled by default (magic-link / OTP).
+- **Guest**: always available; local-only until the user signs in, at which point
+  their local data migrates into the account.
+
+### How storage works (the seam)
+
+Everything user-generated flows through `StorageService` → `KeyValueStore`. There
+are three backends, chosen automatically by [`StorageContext`](src/context/StorageContext.tsx):
+
+| Backend | When |
+| --- | --- |
+| [`LocalStorageStore`](src/services/storage/LocalStorageStore.ts) | guest / no Supabase |
+| [`SupabaseKeyValueStore`](src/services/supabase/SupabaseKeyValueStore.ts) | signed in (the `user_state` table) |
+| [`SyncedKeyValueStore`](src/services/storage/SyncedKeyValueStore.ts) | signed in — local-first cache + remote mirror + offline outbox |
+
+Writes hit local first (instant, offline-safe) and mirror to Supabase; offline
+writes queue in an [`Outbox`](src/services/storage/Outbox.ts) and flush on
+reconnect. On sign-in the app reconciles (empty account ← local guest data;
+otherwise account → local cache). Conflict rule: newest write wins.
+
+### Uploading your own chapters
+
+The **Import** page lets anyone add chapters without touching code: choose or
+paste a chapter JSON → it's validated against the schema → saved to *your*
+library and synced to *your* account (private, RLS-isolated). Built-in chapters
+stay read-only; your uploads live alongside them. See [ROADMAP](docs/ROADMAP.md)
+for the sharing/authoring plans.
+
+### PWA / offline
+
+Built with `vite-plugin-pwa`. After `npm run build && npm run preview` (or once
+deployed) the app is **installable** on desktop/Android/iPad and works fully
+offline — the shell and every opened chapter JSON are cached.
+
+### Deploy (no backend)
+
+- **Vercel**: import the repo, add the `VITE_*` env vars, deploy. Easiest.
+- **GitHub Pages**: set Vite `base: '/Revision-Engine/'` in `vite.config.ts`,
+  build, and publish `dist/` (e.g. via an Actions workflow). Add the Pages URL to
+  Supabase Auth redirect URLs.
+
+The full phase plan, schema notes and multi-user design are in
+[`docs/ROADMAP.md`](docs/ROADMAP.md).
