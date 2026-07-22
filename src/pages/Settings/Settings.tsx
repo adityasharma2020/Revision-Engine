@@ -3,21 +3,39 @@ import { Button, Icon, ThemeToggle } from "../../components/common";
 import { AccountPanel } from "../../components/auth/AccountPanel";
 import { Page, PageHeader } from "../../components/layout";
 import { useStorage } from "../../context/StorageContext";
+import { useAuth } from "../../context/AuthContext";
+import { createLocalStorageService } from "../../services/storage";
 import { APP_NAME, APP_VERSION } from "../../constants/app";
 import styles from "./Settings.module.css";
 
 export function Settings() {
-  const { storage } = useStorage();
+  const { storage, cloudAvailable, online, syncing, syncNow } = useStorage();
+  const { signOut } = useAuth();
   const [cleared, setCleared] = useState(false);
+  const [resetOpen, setResetOpen] = useState(false);
+  const [syncMessage, setSyncMessage] = useState<string | null>(null);
 
-  const resetAll = async () => {
-    const confirmed = window.confirm(
-      "This permanently deletes all revision progress, bookmarks and preferences on this device. Continue?"
-    );
-    if (!confirmed) return;
+  const clearDeviceOnly = async () => {
+    if (cloudAvailable) await signOut();
+    await createLocalStorageService().resetAll();
+    setCleared(true);
+    window.location.reload();
+  };
+
+  const clearDeviceAndArchiveCloud = async () => {
     await storage.resetAll();
     setCleared(true);
     window.location.reload();
+  };
+
+  const manualSync = async () => {
+    setSyncMessage(null);
+    try {
+      await syncNow();
+      setSyncMessage("Synced with Supabase just now.");
+    } catch {
+      setSyncMessage("Sync failed. Your local data is safe; try again when online.");
+    }
   };
 
   return (
@@ -25,7 +43,7 @@ export function Settings() {
       <PageHeader
         eyebrow='Settings'
         title='Preferences'
-        description='Personalise the app. Everything is stored locally on this device.'
+        description='Personalise the app and control how your study data is stored.'
       />
 
       <section className={styles.group}>
@@ -35,6 +53,24 @@ export function Settings() {
             <p className={styles.rowDesc}>Sign in to continue on any device.</p>
           </div>
           <AccountPanel />
+          <div className={styles.syncPanel}>
+            <div>
+              <strong>{cloudAvailable ? "Local + Supabase" : "Local storage only"}</strong>
+              <span>{cloudAvailable
+                ? "Quiz attempts and responses save locally first, then sync to your account."
+                : "Sign in to back up quiz history and use it across devices."}</span>
+              {syncMessage && <small role='status'>{syncMessage}</small>}
+            </div>
+            <Button
+              variant='secondary'
+              size='sm'
+              disabled={!cloudAvailable || !online || syncing}
+              onClick={() => void manualSync()}
+            >
+              <Icon name='sync' size={15} />
+              {syncing ? "Syncing…" : "Sync now"}
+            </Button>
+          </div>
         </div>
       </section>
 
@@ -55,14 +91,55 @@ export function Settings() {
           <div className={styles.rowText}>
             <h3 className={styles.rowTitle}>Reset all data</h3>
             <p className={styles.rowDesc}>
-              Clear progress, bookmarks and preferences from this browser.
+              Clear progress, quiz history, responses, bookmarks, imports and preferences.
             </p>
           </div>
-          <Button variant='danger' onClick={resetAll} disabled={cleared}>
+          <Button variant='danger' onClick={() => setResetOpen(true)} disabled={cleared}>
             Reset data
           </Button>
         </div>
       </section>
+
+      {resetOpen && (
+        <div className={styles.modalBackdrop} onMouseDown={() => setResetOpen(false)}>
+          <section
+            className={styles.resetModal}
+            role='dialog'
+            aria-modal='true'
+            aria-labelledby='reset-title'
+            onMouseDown={(event) => event.stopPropagation()}
+          >
+            <span className={styles.resetIcon}><Icon name='trash' size={20} /></span>
+            <h2 id='reset-title'>Where should data disappear from?</h2>
+            <p>
+              Cloud removal is non-destructive: Supabase rows are marked as
+              deleted and excluded from the app, while their database history is retained.
+            </p>
+            <div className={styles.resetChoices}>
+              <button type='button' onClick={() => void clearDeviceOnly()}>
+                <strong>Clear this device</strong>
+                <span>{cloudAvailable
+                  ? "Signs you out and clears this browser. Supabase data remains available."
+                  : "Clears all data stored in this browser."}</span>
+              </button>
+              {cloudAvailable && (
+                <button
+                  type='button'
+                  className={styles.cloudDelete}
+                  onClick={() => void clearDeviceAndArchiveCloud()}
+                >
+                  <strong>Clear device and remove cloud data from the app</strong>
+                  <span>
+                    Soft-deletes the active Supabase records. No database row or
+                    previous version is physically deleted.
+                  </span>
+                </button>
+              )}
+            </div>
+            <Button variant='ghost' onClick={() => setResetOpen(false)}>Cancel</Button>
+          </section>
+        </div>
+      )}
 
       <section className={styles.group}>
         <div className={styles.about}>

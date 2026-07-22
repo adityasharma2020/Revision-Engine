@@ -109,12 +109,14 @@ export class SyncedKeyValueStore implements KeyValueStore {
    */
   async sync(): Promise<void> {
     if (!this.online) return;
+    // Push queued local changes first so a stale cloud snapshot cannot replace
+    // newer offline work in the local cache.
+    await this.flush();
     const remoteKeys = await this.remote.keys();
     if (remoteKeys.length === 0) {
       await this.migrateLocalToRemote();
     } else {
       await this.hydrate();
     }
-    await this.flush();
   }
 }

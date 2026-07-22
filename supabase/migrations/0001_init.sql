@@ -74,6 +74,7 @@ create table if not exists public.user_state (
   user_id    uuid not null references auth.users (id) on delete cascade,
   key        text not null,
   value      jsonb not null,
+  is_deleted boolean not null default false,
   updated_at timestamptz not null default now(),
   primary key (user_id, key)
 );

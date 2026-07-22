@@ -1,4 +1,5 @@
 import {
+  useCallback,
   createContext,
   useContext,
   useEffect,
@@ -21,6 +22,9 @@ interface StorageValue {
   /** True while an initial sign-in reconciliation is in flight. */
   syncing: boolean;
   online: boolean;
+  cloudAvailable: boolean;
+  /** Reconcile queued/local data with Supabase and refresh consumers. */
+  syncNow: () => Promise<void>;
 }
 
 const StorageContext = createContext<StorageValue | null>(null);
@@ -99,9 +103,30 @@ export function StorageProvider({ children }: { children: ReactNode }) {
     };
   }, [active.store]);
 
+  const syncNow = useCallback(async () => {
+    const store = active.store;
+    if (!store) return;
+    setSyncing(true);
+    try {
+      await store.sync();
+      setActive((current) => ({
+        ...current,
+        service: new StorageService(store),
+      }));
+    } finally {
+      setSyncing(false);
+    }
+  }, [active.store]);
+
   const value = useMemo<StorageValue>(
-    () => ({ storage: active.service, syncing, online }),
-    [active.service, syncing, online],
+    () => ({
+      storage: active.service,
+      syncing,
+      online,
+      cloudAvailable: active.store !== null,
+      syncNow,
+    }),
+    [active.service, active.store, syncing, online, syncNow],
   );
 
   return <StorageContext.Provider value={value}>{children}</StorageContext.Provider>;

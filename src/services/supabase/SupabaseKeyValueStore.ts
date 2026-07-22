@@ -23,6 +23,7 @@ export class SupabaseKeyValueStore implements KeyValueStore {
       .select('value')
       .eq('user_id', this.userId)
       .eq('key', key)
+      .eq('is_deleted', false)
       .maybeSingle();
     if (error) throw new StorageError(`Remote read failed for "${key}"`, key, error);
     return (data?.value as T) ?? null;
@@ -32,7 +33,13 @@ export class SupabaseKeyValueStore implements KeyValueStore {
     const { error } = await this.client
       .from(TABLE)
       .upsert(
-        { user_id: this.userId, key, value, updated_at: new Date().toISOString() },
+        {
+          user_id: this.userId,
+          key,
+          value,
+          is_deleted: false,
+          updated_at: new Date().toISOString(),
+        },
         { onConflict: 'user_id,key' },
       );
     if (error) throw new StorageError(`Remote write failed for "${key}"`, key, error);
@@ -41,24 +48,29 @@ export class SupabaseKeyValueStore implements KeyValueStore {
   async remove(key: string): Promise<void> {
     const { error } = await this.client
       .from(TABLE)
-      .delete()
+      .update({ is_deleted: true, updated_at: new Date().toISOString() })
       .eq('user_id', this.userId)
       .eq('key', key);
-    if (error) throw new StorageError(`Remote delete failed for "${key}"`, key, error);
+    if (error) throw new StorageError(`Remote soft delete failed for "${key}"`, key, error);
   }
 
   async keys(): Promise<string[]> {
     const { data, error } = await this.client
       .from(TABLE)
       .select('key')
-      .eq('user_id', this.userId);
+      .eq('user_id', this.userId)
+      .eq('is_deleted', false);
     if (error) throw new StorageError('Remote key listing failed', '', error);
     return (data ?? []).map((row) => row.key as string);
   }
 
   async clear(): Promise<void> {
-    const { error } = await this.client.from(TABLE).delete().eq('user_id', this.userId);
-    if (error) throw new StorageError('Remote clear failed', '', error);
+    const { error } = await this.client
+      .from(TABLE)
+      .update({ is_deleted: true, updated_at: new Date().toISOString() })
+      .eq('user_id', this.userId)
+      .eq('is_deleted', false);
+    if (error) throw new StorageError('Remote soft clear failed', '', error);
   }
 
   /** Snapshot every key/value for this user — used to hydrate the local cache. */
@@ -66,7 +78,8 @@ export class SupabaseKeyValueStore implements KeyValueStore {
     const { data, error } = await this.client
       .from(TABLE)
       .select('key, value')
-      .eq('user_id', this.userId);
+      .eq('user_id', this.userId)
+      .eq('is_deleted', false);
     if (error) throw new StorageError('Remote snapshot failed', '', error);
     const out: Record<string, unknown> = {};
     for (const row of data ?? []) out[row.key as string] = row.value;

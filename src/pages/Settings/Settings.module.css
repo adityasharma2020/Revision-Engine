@@ -84,6 +84,50 @@
   color: var(--danger);
 }
 
+.syncPanel {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-4);
+  padding: var(--space-4);
+  background-color: var(--bg-sunken);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+}
+.syncPanel > div { display: flex; min-width: 0; flex-direction: column; gap: 2px; }
+.syncPanel strong { font-size: var(--text-sm); }
+.syncPanel span { font-size: var(--text-xs); color: var(--text-secondary); }
+.syncPanel small { margin-top: var(--space-1); font-size: var(--text-xs); color: var(--accent); }
+.syncPanel button { flex-shrink: 0; }
+
+.modalBackdrop {
+  position: fixed;
+  inset: 0;
+  z-index: var(--z-modal);
+  display: grid;
+  place-items: center;
+  padding: var(--space-4);
+  background-color: var(--overlay);
+  backdrop-filter: blur(5px);
+}
+.resetModal {
+  width: min(100%, 500px);
+  padding: var(--space-6);
+  background-color: var(--surface-elevated);
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius-xl);
+  box-shadow: var(--shadow-lg);
+}
+.resetIcon { display: inline-flex; align-items: center; justify-content: center; width: 42px; height: 42px; margin-bottom: var(--space-3); color: var(--danger); background-color: var(--danger-subtle); border-radius: var(--radius-md); }
+.resetModal h2 { font-size: var(--text-xl); }
+.resetModal > p { margin: var(--space-2) 0 var(--space-5); font-size: var(--text-sm); line-height: var(--leading-normal); color: var(--text-secondary); }
+.resetChoices { display: flex; flex-direction: column; gap: var(--space-3); margin-bottom: var(--space-4); }
+.resetChoices > button { display: flex; flex-direction: column; gap: 3px; width: 100%; padding: var(--space-4); text-align: left; color: var(--text-primary); background-color: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-md); }
+.resetChoices > button:hover { border-color: var(--border-strong); background-color: var(--surface-hover); }
+.resetChoices span { font-size: var(--text-xs); line-height: var(--leading-normal); color: var(--text-secondary); }
+.resetChoices > .cloudDelete { border-color: var(--danger); }
+.cloudDelete strong { color: var(--danger); }
+
 @media (max-width: 560px) {
   .row {
     flex-direction: column;
@@ -93,4 +137,8 @@
   .responsibleUse {
     margin: var(--space-4);
   }
+
+  .syncPanel { align-items: flex-start; flex-direction: column; }
+  .syncPanel button { width: 100%; }
+  .resetModal { padding: var(--space-5); }
 }
