@@ -107,6 +107,8 @@
   border-radius: var(--radius-full);
   border: 1px solid var(--border);
 }
+.filterButton:disabled,
+.filterActive:disabled { cursor: not-allowed; opacity: 0.5; }
 
 .filterActive {
   color: var(--accent-text);

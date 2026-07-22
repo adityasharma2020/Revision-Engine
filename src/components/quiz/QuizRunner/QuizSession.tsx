@@ -1,4 +1,4 @@
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import type { Chapter, PrelimsQuestion } from '../../../types';
 import { useElapsed } from '../../../hooks/useElapsed';
 import { useQuizSession } from '../../../hooks/useQuizSession';
@@ -15,14 +15,26 @@ interface QuizSessionProps {
   questions: readonly PrelimsQuestion[];
   onExit: () => void;
   onRetry: () => void;
+  onActiveChange?: (active: boolean) => void;
 }
 
 /** One live quiz run: active question flow → finished results. */
-export function QuizSession({ chapter, questions, onExit, onRetry }: QuizSessionProps) {
-  const { state, current, actions, summary } = useQuizSession(questions);
+export function QuizSession({ chapter, questions, onExit, onRetry, onActiveChange }: QuizSessionProps) {
+  const { state, current, actions, summary } = useQuizSession(questions, chapter.id);
   const running = state.status === 'active';
   const elapsedMs = useElapsed(state.startedAt, running);
   const { recordQuizResult } = useUserData();
+  const [fullscreen, setFullscreen] = useState(Boolean(document.fullscreenElement));
+
+  useEffect(() => {
+    onActiveChange?.(state.status === 'active');
+  }, [state.status, onActiveChange]);
+
+  useEffect(() => {
+    const update = () => setFullscreen(Boolean(document.fullscreenElement));
+    document.addEventListener('fullscreenchange', update);
+    return () => document.removeEventListener('fullscreenchange', update);
+  }, []);
 
   // Per-question timing: bank the elapsed segment whenever the active question
   // changes (including when the quiz finishes). Handles back/forward navigation.
@@ -97,6 +109,11 @@ export function QuizSession({ chapter, questions, onExit, onRetry }: QuizSession
     actions.finish();
   };
 
+  const toggleFullscreen = async () => {
+    if (document.fullscreenElement) await document.exitFullscreen();
+    else await document.documentElement.requestFullscreen();
+  };
+
   return (
     <div className={styles.session}>
       <div className={styles.sessionHead}>
@@ -106,10 +123,32 @@ export function QuizSession({ chapter, questions, onExit, onRetry }: QuizSession
           answered={answeredCount}
           elapsedMs={elapsedMs}
         />
-        <Button variant="secondary" size="sm" onClick={submit}>
-          Submit test
-        </Button>
+        <div className={styles.sessionActions}>
+          <Button variant="ghost" size="sm" onClick={() => void toggleFullscreen()}>
+            {fullscreen ? 'Exit full screen' : 'Full screen'}
+          </Button>
+          <Button variant="secondary" size="sm" onClick={submit}>Submit test</Button>
+        </div>
       </div>
+
+      <nav className={styles.questionNav} aria-label="Quiz questions">
+        {questions.map((question, questionIndex) => {
+          const answered = state.answers[question.id] != null;
+          const currentQuestion = questionIndex === index;
+          return (
+            <button
+              key={question.id}
+              type="button"
+              className={currentQuestion ? styles.navCurrent : answered ? styles.navAnswered : styles.navQuestion}
+              aria-label={`Question ${questionIndex + 1}${answered ? ', answered' : ', unanswered'}`}
+              aria-current={currentQuestion ? 'step' : undefined}
+              onClick={() => actions.goto(questionIndex)}
+            >
+              {questionIndex + 1}
+            </button>
+          );
+        })}
+      </nav>
 
       <QuizQuestion
         question={current}

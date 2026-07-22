@@ -4,16 +4,20 @@ import { useUserData } from '../../../context/UserDataContext';
 import { EmptyState } from '../../common/EmptyState';
 import { QuizIntro } from './QuizIntro';
 import { QuizSession } from './QuizSession';
+import { hasQuizDraft } from '../../../hooks/useQuizSession';
 
 interface QuizRunnerProps {
   chapter: Chapter;
   questions?: Chapter['prelims'];
+  onActiveChange?: (active: boolean) => void;
 }
 
 /** Entry point for Quiz mode: intro gate → a keyed, restartable session. */
-export function QuizRunner({ chapter, questions = chapter.prelims }: QuizRunnerProps) {
+export function QuizRunner({ chapter, questions = chapter.prelims, onActiveChange }: QuizRunnerProps) {
   const { quizResults } = useUserData();
-  const [phase, setPhase] = useState<'intro' | 'running'>('intro');
+  const [phase, setPhase] = useState<'intro' | 'running'>(() =>
+    hasQuizDraft(chapter.id) ? 'running' : 'intro',
+  );
   const [attempt, setAttempt] = useState(0);
 
   const lastScore = useMemo(() => {
@@ -49,7 +53,11 @@ export function QuizRunner({ chapter, questions = chapter.prelims }: QuizRunnerP
       key={attempt}
       chapter={chapter}
       questions={questions}
-      onExit={() => setPhase('intro')}
+      onActiveChange={onActiveChange}
+      onExit={() => {
+        onActiveChange?.(false);
+        setPhase('intro');
+      }}
       onRetry={() => setAttempt((a) => a + 1)}
     />
   );

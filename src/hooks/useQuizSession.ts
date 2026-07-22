@@ -1,4 +1,4 @@
-import { useCallback, useMemo, useReducer } from 'react';
+import { useCallback, useEffect, useMemo, useReducer } from 'react';
 import type { PrelimsQuestion, QuizAnswerMap } from '../types';
 
 export interface QuizSessionState {
@@ -28,6 +28,46 @@ function init(total: number): QuizSessionState {
     startedAt: Date.now(),
     finishedAt: null,
   };
+}
+
+interface StoredQuizDraft {
+  version: 1;
+  questionIds: string[];
+  state: QuizSessionState;
+}
+
+export function quizDraftKey(chapterId: string): string {
+  return `revision-engine:quiz-draft:${chapterId}`;
+}
+
+function restoreDraft(key: string, questions: readonly PrelimsQuestion[]): QuizSessionState {
+  try {
+    const raw = sessionStorage.getItem(key);
+    if (!raw) return init(questions.length);
+    const draft = JSON.parse(raw) as StoredQuizDraft;
+    const ids = questions.map((question) => question.id);
+    if (
+      draft.version !== 1 ||
+      draft.state.status !== 'active' ||
+      draft.state.total !== questions.length ||
+      draft.questionIds.join('\n') !== ids.join('\n')
+    ) {
+      sessionStorage.removeItem(key);
+      return init(questions.length);
+    }
+    return draft.state;
+  } catch {
+    sessionStorage.removeItem(key);
+    return init(questions.length);
+  }
+}
+
+export function hasQuizDraft(chapterId: string): boolean {
+  try {
+    return sessionStorage.getItem(quizDraftKey(chapterId)) !== null;
+  } catch {
+    return false;
+  }
 }
 
 function reducer(state: QuizSessionState, action: QuizAction): QuizSessionState {
@@ -93,8 +133,35 @@ export function summarize(
 }
 
 /** Reducer-driven state machine for one timed quiz over a set of prelims. */
-export function useQuizSession(questions: readonly PrelimsQuestion[]) {
-  const [state, dispatch] = useReducer(reducer, questions.length, init);
+export function useQuizSession(questions: readonly PrelimsQuestion[], chapterId: string) {
+  const draftKey = quizDraftKey(chapterId);
+  const [state, dispatch] = useReducer(
+    reducer,
+    undefined,
+    () => restoreDraft(draftKey, questions),
+  );
+
+  useEffect(() => {
+    if (state.status === 'finished') {
+      sessionStorage.removeItem(draftKey);
+      return;
+    }
+    const draft: StoredQuizDraft = {
+      version: 1,
+      questionIds: questions.map((question) => question.id),
+      state,
+    };
+    sessionStorage.setItem(draftKey, JSON.stringify(draft));
+  }, [draftKey, questions, state]);
+
+  useEffect(() => {
+    const warn = (event: BeforeUnloadEvent) => {
+      if (state.status !== 'active') return;
+      event.preventDefault();
+    };
+    window.addEventListener('beforeunload', warn);
+    return () => window.removeEventListener('beforeunload', warn);
+  }, [state.status]);
 
   const actions = useMemo(
     () => ({

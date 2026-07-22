@@ -42,6 +42,7 @@ function ChapterView({ chapter }: { chapter: ChapterModel }) {
     ? requestedTab
     : chapter.prelims.length > 0 ? 'prelims' : 'mains');
   const [origin, setOrigin] = useState<OriginFilter>('all');
+  const [quizActive, setQuizActive] = useState(false);
   const filteredPrelims = filterByOrigin(chapter.prelims, origin);
   const filteredMains = filterByOrigin(chapter.mains, origin);
   const availableOrigins = new Set(
@@ -49,6 +50,16 @@ function ChapterView({ chapter }: { chapter: ChapterModel }) {
       .filter((question) => question.origin)
       .map((question) => questionOriginKind(question.origin)),
   );
+
+  const changeMode = (next: Mode) => {
+    if (next === 'learning' && mode === 'quiz' && quizActive) {
+      const leave = window.confirm(
+        'Your quiz is still running. Leave Quiz mode? Your answers are saved and will resume when you return.',
+      );
+      if (!leave) return;
+    }
+    setMode(next);
+  };
 
   return (
     <>
@@ -71,7 +82,7 @@ function ChapterView({ chapter }: { chapter: ChapterModel }) {
         <Tabs<Mode>
           aria-label="Study mode"
           value={mode}
-          onChange={setMode}
+          onChange={changeMode}
           items={[
             { id: 'learning', label: 'Learning' },
             { id: 'quiz', label: 'Quiz' },
@@ -95,6 +106,8 @@ function ChapterView({ chapter }: { chapter: ChapterModel }) {
                   type="button"
                   className={origin === value ? styles.filterActive : styles.filterButton}
                   aria-pressed={origin === value}
+                  disabled={quizActive}
+                  title={quizActive ? 'Finish or leave the active quiz before changing its source.' : undefined}
                   onClick={() => setOrigin(value)}
                 >
                   {value === 'all' ? 'All' : value.toUpperCase()}
@@ -106,7 +119,7 @@ function ChapterView({ chapter }: { chapter: ChapterModel }) {
       )}
 
       {mode === 'quiz' ? (
-        <QuizRunner key={origin} chapter={chapter} questions={filteredPrelims} />
+        <QuizRunner key={origin} chapter={chapter} questions={filteredPrelims} onActiveChange={setQuizActive} />
       ) : (
         <LearningView
           chapter={chapter}
