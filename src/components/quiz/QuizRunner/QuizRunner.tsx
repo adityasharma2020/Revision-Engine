@@ -7,11 +7,11 @@ import { QuizSession } from './QuizSession';
 
 interface QuizRunnerProps {
   chapter: Chapter;
+  questions?: Chapter['prelims'];
 }
 
 /** Entry point for Quiz mode: intro gate → a keyed, restartable session. */
-export function QuizRunner({ chapter }: QuizRunnerProps) {
-  const questions = chapter.prelims;
+export function QuizRunner({ chapter, questions = chapter.prelims }: QuizRunnerProps) {
   const { quizResults } = useUserData();
   const [phase, setPhase] = useState<'intro' | 'running'>('intro');
   const [attempt, setAttempt] = useState(0);

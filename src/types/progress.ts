@@ -21,6 +21,8 @@ export interface QuestionAttempt {
   readonly confidence?: Confidence;
   /** Question difficulty snapshot, for accuracy-by-difficulty analytics. */
   readonly difficulty?: Difficulty;
+  /** Question provenance snapshot (FYQ/PYQ/etc.) for historical analytics. */
+  readonly origin?: string;
   /** Time spent on the question before answering, in milliseconds. */
   readonly timeMs?: number;
   /** Epoch milliseconds. */

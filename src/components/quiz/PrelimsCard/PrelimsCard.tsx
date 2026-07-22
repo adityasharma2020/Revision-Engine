@@ -5,6 +5,7 @@ import { QuestionAnnotations } from '../../annotations/QuestionAnnotations';
 import { Badge } from '../../common/Badge';
 import { Icon } from '../../common/Icon';
 import { cx } from '../../../utils/cx';
+import { formatQuestionOrigin } from '../../../utils/questionOrigin';
 import styles from './PrelimsCard.module.css';
 
 interface PrelimsCardProps {
@@ -57,6 +58,7 @@ export function PrelimsCard({
         selectedOption: optionId,
         correct,
         difficulty: question.difficulty,
+        origin: question.origin,
         timeMs: Date.now() - shownAt.current,
         attemptedAt: Date.now(),
       });
@@ -116,8 +118,13 @@ export function PrelimsCard({
         </div>
       )}
 
-      {(question.year || (!annotatable && question.tags?.length)) && (
+      {(question.origin || question.year || (!annotatable && question.tags?.length)) && (
         <footer className={styles.meta}>
+          {question.origin && (
+            <Badge tone={question.origin.toUpperCase().startsWith('PYQ') ? 'accent' : 'neutral'}>
+              {formatQuestionOrigin(question.origin)}
+            </Badge>
+          )}
           {question.year && <Badge tone="neutral">PYQ {question.year}</Badge>}
           {!annotatable &&
             question.tags?.map((tag) => (

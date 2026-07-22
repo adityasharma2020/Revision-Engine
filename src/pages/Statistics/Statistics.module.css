@@ -5,6 +5,42 @@
   margin-bottom: var(--space-6);
 }
 
+.timeFilter {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+  margin-bottom: var(--space-4);
+}
+
+.timeLabel {
+  font-size: var(--text-sm);
+  font-weight: var(--weight-medium);
+  color: var(--text-secondary);
+}
+
+.timeOptions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+}
+
+.timeButton,
+.timeActive {
+  height: 32px;
+  padding: 0 var(--space-3);
+  font-size: var(--text-sm);
+  color: var(--text-secondary);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-full);
+}
+
+.timeActive {
+  color: var(--accent-text);
+  background-color: var(--accent);
+  border-color: var(--accent);
+}
+
 .chartGrid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(min(340px, 100%), 1fr));
@@ -104,6 +140,10 @@
 }
 
 @media (max-width: 560px) {
+  .timeFilter {
+    align-items: flex-start;
+    flex-direction: column;
+  }
   .tiles {
     grid-template-columns: repeat(2, minmax(0, 1fr));
     gap: var(--space-3);

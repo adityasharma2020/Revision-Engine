@@ -4,6 +4,7 @@ import { useUserData } from '../../../context/UserDataContext';
 import { QuestionAnnotations } from '../../annotations/QuestionAnnotations';
 import { Badge } from '../../common/Badge';
 import { Button } from '../../common/Button';
+import { formatQuestionOrigin } from '../../../utils/questionOrigin';
 import styles from './MainsCard.module.css';
 
 interface MainsCardProps {
@@ -34,6 +35,7 @@ export function MainsCard({ question, index, chapterId }: MainsCardProps) {
         questionId: question.id,
         type: 'mains',
         difficulty: question.difficulty,
+        origin: question.origin,
         timeMs: Date.now() - shownAt.current,
         attemptedAt: Date.now(),
       });
@@ -47,6 +49,11 @@ export function MainsCard({ question, index, chapterId }: MainsCardProps) {
         <div className={styles.headText}>
           <p className={styles.question}>{question.question}</p>
           <div className={styles.meta}>
+            {question.origin && (
+              <Badge tone={question.origin.toUpperCase().startsWith('PYQ') ? 'accent' : 'neutral'}>
+                {formatQuestionOrigin(question.origin)}
+              </Badge>
+            )}
             {question.marks && <Badge tone="neutral">{question.marks} marks</Badge>}
             {question.wordLimit && (
               <Badge tone="neutral">{question.wordLimit} words</Badge>

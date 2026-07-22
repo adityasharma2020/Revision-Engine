@@ -51,6 +51,7 @@ function parsePrelims(raw: unknown, path: string): PrelimsQuestion {
     difficulty: optionalEnum(obj.difficulty, DIFFICULTIES, `${path}.difficulty`),
     tags: optionalStringArray(obj.tags, `${path}.tags`),
     source: optionalString(obj.source, `${path}.source`),
+    origin: optionalString(obj.origin, `${path}.origin`),
     year: optionalNumber(obj.year, `${path}.year`),
   };
 }
@@ -67,6 +68,7 @@ function parseMains(raw: unknown, path: string): MainsQuestion {
     marks: optionalNumber(obj.marks, `${path}.marks`),
     difficulty: optionalEnum(obj.difficulty, DIFFICULTIES, `${path}.difficulty`),
     tags: optionalStringArray(obj.tags, `${path}.tags`),
+    origin: optionalString(obj.origin, `${path}.origin`),
     year: optionalNumber(obj.year, `${path}.year`),
   };
 }

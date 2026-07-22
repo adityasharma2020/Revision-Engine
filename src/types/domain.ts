@@ -36,6 +36,8 @@ export interface PrelimsQuestion {
   readonly tags?: readonly string[];
   /** Coaching/source attribution for this specific question. */
   readonly source?: string;
+  /** Dataset provenance, e.g. FYQ_Pre_1 or PYQ_Pre_2024. */
+  readonly origin?: string;
   /** Previous-year-question year, if this is a PYQ. */
   readonly year?: number;
 }
@@ -52,6 +54,8 @@ export interface MainsQuestion {
   readonly marks?: number;
   readonly difficulty?: Difficulty;
   readonly tags?: readonly string[];
+  /** Dataset provenance, e.g. FYQ_M.1 or PYQ_M.2024. */
+  readonly origin?: string;
   readonly year?: number;
 }
 

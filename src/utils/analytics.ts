@@ -13,6 +13,7 @@ import type {
   ProgressMap,
   QuizResultList,
 } from '../types';
+import { questionOriginKind } from './questionOrigin';
 
 /** Chapter metadata used to label/aggregate analytics (from library summaries). */
 export interface ChapterMeta {
@@ -29,6 +30,7 @@ interface GradedAttempt {
   questionId: string;
   subject: string;
   difficulty?: Difficulty;
+  origin?: string;
   correct: boolean | null; // null = not graded (skipped / mains)
   timeMs: number;
   at: number;
@@ -62,6 +64,7 @@ function collectAttempts(
         questionId: a.questionId,
         subject: subjectOf(meta, a.chapterId),
         difficulty: a.difficulty,
+        origin: a.origin,
         correct: a.type === 'prelims' ? a.correct ?? null : null,
         timeMs: a.timeMs ?? 0,
         at: a.attemptedAt,
@@ -81,6 +84,7 @@ function collectAttempts(
         questionId: pq.questionId,
         subject: subjectOf(meta, r.chapterId, r.subject),
         difficulty: pq.difficulty,
+        origin: pq.origin,
         correct: pq.correct,
         timeMs: pq.timeMs,
         at: r.takenAt,
@@ -361,4 +365,56 @@ export function difficultyBreakdown(
       accuracy: graded.length === 0 ? 0 : Math.round((correct / graded.length) * 100),
     };
   }).filter((d) => d.attempts > 0);
+}
+
+// ---- Study mode + question provenance -------------------------------------
+export interface CategoryStat {
+  key: string;
+  attempts: number;
+  correct: number;
+  accuracy: number;
+}
+
+function categoryBreakdown(
+  attempts: readonly GradedAttempt[],
+  keyOf: (attempt: GradedAttempt) => string,
+): CategoryStat[] {
+  const groups = new Map<string, { attempts: number; correct: number }>();
+  for (const attempt of attempts) {
+    if (attempt.correct === null) continue;
+    const key = keyOf(attempt);
+    const group = groups.get(key) ?? { attempts: 0, correct: 0 };
+    group.attempts += 1;
+    if (attempt.correct) group.correct += 1;
+    groups.set(key, group);
+  }
+  return [...groups.entries()]
+    .map(([key, value]) => ({
+      key,
+      ...value,
+      accuracy: Math.round((value.correct / value.attempts) * 100),
+    }))
+    .sort((a, b) => b.attempts - a.attempts);
+}
+
+export function studyModeBreakdown(
+  quizResults: QuizResultList,
+  progress: ProgressMap,
+  meta: ChapterMetaMap,
+): CategoryStat[] {
+  return categoryBreakdown(collectAttempts(quizResults, progress, meta).attempts, (attempt) =>
+    attempt.source === 'quiz' ? 'Quiz' : 'Learning',
+  );
+}
+
+export function originBreakdown(
+  quizResults: QuizResultList,
+  progress: ProgressMap,
+  meta: ChapterMetaMap,
+): CategoryStat[] {
+  return categoryBreakdown(collectAttempts(quizResults, progress, meta).attempts, (attempt) => {
+    if (!attempt.origin) return 'Unclassified';
+    const kind = questionOriginKind(attempt.origin);
+    return kind === 'other' ? 'Other' : kind.toUpperCase();
+  });
 }

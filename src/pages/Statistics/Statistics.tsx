@@ -15,6 +15,8 @@ import {
   computeOverview,
   dailyActivity,
   difficultyBreakdown,
+  originBreakdown,
+  studyModeBreakdown,
   subjectAnalytics,
   type ChapterMetaMap,
 } from '../../utils/analytics';
@@ -27,10 +29,13 @@ const DIFFICULTY_LABEL: Record<string, string> = {
   hard: 'Hard',
 };
 
+type TimeRange = '7d' | '30d' | 'all';
+
 export function Statistics() {
   const { quizResults, progress, annotations } = useUserData();
   const library = useLibrary();
   const [selected, setSelected] = useState<Set<string>>(new Set());
+  const [timeRange, setTimeRange] = useState<TimeRange>('all');
 
   const summaries = library.status === 'success' ? library.data : [];
 
@@ -54,16 +59,24 @@ export function Statistics() {
 
   // Filter the source data to the selected scope (empty = all).
   const { fQuiz, fProgress } = useMemo(() => {
-    if (selected.size === 0) return { fQuiz: quizResults, fProgress: progress };
+    const days = timeRange === '7d' ? 7 : timeRange === '30d' ? 30 : null;
+    const cutoff = days ? Date.now() - days * 24 * 60 * 60 * 1000 : 0;
     const filteredProgress: ProgressMap = {};
     for (const [id, p] of Object.entries(progress)) {
-      if (selected.has(id)) filteredProgress[id] = p;
+      if (selected.size > 0 && !selected.has(id)) continue;
+      const attempts = Object.fromEntries(
+        Object.entries(p.attempts).filter(([, attempt]) => attempt.attemptedAt >= cutoff),
+      );
+      if (Object.keys(attempts).length > 0) filteredProgress[id] = { ...p, attempts };
     }
     return {
-      fQuiz: quizResults.filter((r) => selected.has(r.chapterId)),
+      fQuiz: quizResults.filter(
+        (result) =>
+          result.takenAt >= cutoff && (selected.size === 0 || selected.has(result.chapterId)),
+      ),
       fProgress: filteredProgress,
     };
-  }, [selected, quizResults, progress]);
+  }, [selected, timeRange, quizResults, progress]);
 
   const overview = useMemo(
     () => computeOverview(fQuiz, fProgress, annotations, meta),
@@ -78,6 +91,14 @@ export function Statistics() {
   const subjectStats = useMemo(() => subjectAnalytics(chapterStats), [chapterStats]);
   const difficulty = useMemo(
     () => difficultyBreakdown(fQuiz, fProgress, meta),
+    [fQuiz, fProgress, meta],
+  );
+  const origins = useMemo(
+    () => originBreakdown(fQuiz, fProgress, meta),
+    [fQuiz, fProgress, meta],
+  );
+  const studyModes = useMemo(
+    () => studyModeBreakdown(fQuiz, fProgress, meta),
     [fQuiz, fProgress, meta],
   );
 
@@ -102,6 +123,22 @@ export function Statistics() {
     caption: `${d.correct}/${d.attempts} correct`,
   }));
 
+  const originRows: BreakdownRow[] = origins.map((item) => ({
+    label: item.key,
+    value: item.accuracy,
+    max: 100,
+    display: `${item.accuracy}%`,
+    caption: `${item.correct}/${item.attempts} correct`,
+  }));
+
+  const modeRows: BreakdownRow[] = studyModes.map((item) => ({
+    label: item.key,
+    value: item.accuracy,
+    max: 100,
+    display: `${item.accuracy}%`,
+    caption: `${item.attempts} graded attempts`,
+  }));
+
   return (
     <Page>
       <PageHeader
@@ -118,6 +155,27 @@ export function Statistics() {
         />
       ) : (
         <>
+          <div className={styles.timeFilter} aria-label="Analytics time range">
+            <span className={styles.timeLabel}>Time range</span>
+            <div className={styles.timeOptions}>
+              {([
+                ['7d', 'Last 7 days'],
+                ['30d', 'Last 30 days'],
+                ['all', 'All time'],
+              ] as const).map(([value, label]) => (
+                <button
+                  key={value}
+                  type="button"
+                  className={timeRange === value ? styles.timeActive : styles.timeButton}
+                  aria-pressed={timeRange === value}
+                  onClick={() => setTimeRange(value)}
+                >
+                  {label}
+                </button>
+              ))}
+            </div>
+          </div>
+
           {scopeChapters.length > 0 && (
             <ScopeFilter chapters={scopeChapters} selected={selected} onChange={setSelected} />
           )}
@@ -217,6 +275,22 @@ export function Statistics() {
                       <h2 className={styles.cardTitle}>Accuracy by difficulty</h2>
                     </div>
                     <StatBreakdown rows={difficultyRows} />
+                  </section>
+                )}
+                {originRows.length > 0 && (
+                  <section className={styles.card}>
+                    <div className={styles.cardHead}>
+                      <h2 className={styles.cardTitle}>Accuracy by question source</h2>
+                    </div>
+                    <StatBreakdown rows={originRows} />
+                  </section>
+                )}
+                {modeRows.length > 0 && (
+                  <section className={styles.card}>
+                    <div className={styles.cardHead}>
+                      <h2 className={styles.cardTitle}>Learning vs quiz</h2>
+                    </div>
+                    <StatBreakdown rows={modeRows} />
                   </section>
                 )}
               </div>

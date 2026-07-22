@@ -8,11 +8,13 @@ import { QuizRunner } from '../../components/quiz/QuizRunner';
 import { Routes } from '../../constants/routes';
 import { subjectStyle } from '../../constants/subjects';
 import { useChapter } from '../../hooks/useChapters';
-import type { Chapter as ChapterModel } from '../../types';
+import type { Chapter as ChapterModel, MainsQuestion, PrelimsQuestion } from '../../types';
+import { questionOriginKind, type QuestionOriginKind } from '../../utils/questionOrigin';
 import styles from './Chapter.module.css';
 
 type Mode = 'learning' | 'quiz';
 type TabId = 'prelims' | 'mains';
+type OriginFilter = 'all' | QuestionOriginKind;
 
 export function Chapter() {
   const { chapterId = '' } = useParams();
@@ -36,6 +38,14 @@ function ChapterView({ chapter }: { chapter: ChapterModel }) {
   const [mode, setMode] = useState<Mode>('learning');
   const [tab, setTab] = useState<TabId>(
     chapter.prelims.length > 0 ? 'prelims' : 'mains',
+  );
+  const [origin, setOrigin] = useState<OriginFilter>('all');
+  const filteredPrelims = filterByOrigin(chapter.prelims, origin);
+  const filteredMains = filterByOrigin(chapter.mains, origin);
+  const availableOrigins = new Set(
+    [...chapter.prelims, ...chapter.mains]
+      .filter((question) => question.origin)
+      .map((question) => questionOriginKind(question.origin)),
   );
 
   return (
@@ -69,10 +79,37 @@ function ChapterView({ chapter }: { chapter: ChapterModel }) {
         </p>
       </div>
 
+      {availableOrigins.size > 0 && (
+        <div className={styles.originFilter} aria-label="Filter questions by origin">
+          <span className={styles.filterLabel}>Question source</span>
+          <div className={styles.filterOptions}>
+            {(['all', 'fyq', 'pyq', 'other'] as const).map((value) =>
+              value === 'all' || availableOrigins.has(value) ? (
+                <button
+                  key={value}
+                  type="button"
+                  className={origin === value ? styles.filterActive : styles.filterButton}
+                  aria-pressed={origin === value}
+                  onClick={() => setOrigin(value)}
+                >
+                  {value === 'all' ? 'All' : value.toUpperCase()}
+                </button>
+              ) : null,
+            )}
+          </div>
+        </div>
+      )}
+
       {mode === 'quiz' ? (
-        <QuizRunner chapter={chapter} />
+        <QuizRunner key={origin} chapter={chapter} questions={filteredPrelims} />
       ) : (
-        <LearningView chapter={chapter} tab={tab} onTab={setTab} />
+        <LearningView
+          chapter={chapter}
+          prelims={filteredPrelims}
+          mains={filteredMains}
+          tab={tab}
+          onTab={setTab}
+        />
       )}
     </>
   );
@@ -80,10 +117,14 @@ function ChapterView({ chapter }: { chapter: ChapterModel }) {
 
 function LearningView({
   chapter,
+  prelims,
+  mains,
   tab,
   onTab,
 }: {
   chapter: ChapterModel;
+  prelims: readonly PrelimsQuestion[];
+  mains: readonly MainsQuestion[];
   tab: TabId;
   onTab: (t: TabId) => void;
 }) {
@@ -95,27 +136,36 @@ function LearningView({
           value={tab}
           onChange={onTab}
           items={[
-            { id: 'prelims', label: 'Prelims', count: chapter.prelims.length },
-            { id: 'mains', label: 'Mains', count: chapter.mains.length },
+            { id: 'prelims', label: 'Prelims', count: prelims.length },
+            { id: 'mains', label: 'Mains', count: mains.length },
           ]}
         />
       </div>
 
       {tab === 'prelims' ? (
         <QuestionList empty="No prelims questions in this chapter.">
-          {chapter.prelims.map((q, i) => (
+          {prelims.map((q, i) => (
             <PrelimsCard key={q.id} question={q} index={i + 1} chapterId={chapter.id} />
           ))}
         </QuestionList>
       ) : (
         <QuestionList empty="No mains questions in this chapter.">
-          {chapter.mains.map((q, i) => (
+          {mains.map((q, i) => (
             <MainsCard key={q.id} question={q} index={i + 1} chapterId={chapter.id} />
           ))}
         </QuestionList>
       )}
     </>
   );
+}
+
+function filterByOrigin<T extends { readonly origin?: string }>(
+  questions: readonly T[],
+  filter: OriginFilter,
+): readonly T[] {
+  return filter === 'all'
+    ? questions
+    : questions.filter((question) => questionOriginKind(question.origin) === filter);
 }
 
 function QuestionList({

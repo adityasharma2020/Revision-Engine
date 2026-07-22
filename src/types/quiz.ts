@@ -20,6 +20,8 @@ export interface QuizQuestionResult {
   /** Time the user spent on this question, in milliseconds. */
   readonly timeMs: number;
   readonly difficulty?: Difficulty;
+  /** Question provenance snapshot (FYQ/PYQ/etc.) for historical analytics. */
+  readonly origin?: string;
 }
 
 export interface QuizResult {

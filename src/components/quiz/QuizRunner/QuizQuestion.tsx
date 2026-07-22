@@ -1,5 +1,7 @@
 import type { PrelimsQuestion } from '../../../types';
 import { cx } from '../../../utils/cx';
+import { Badge } from '../../common/Badge';
+import { formatQuestionOrigin } from '../../../utils/questionOrigin';
 import styles from './QuizRunner.module.css';
 
 interface QuizQuestionProps {
@@ -12,6 +14,13 @@ interface QuizQuestionProps {
 export function QuizQuestion({ question, selected, onSelect }: QuizQuestionProps) {
   return (
     <div className={styles.question}>
+      {question.origin && (
+        <div className={styles.questionMeta}>
+          <Badge tone={question.origin.toUpperCase().startsWith('PYQ') ? 'accent' : 'neutral'}>
+            {formatQuestionOrigin(question.origin)}
+          </Badge>
+        </div>
+      )}
       <p className={styles.questionStatement}>{question.statement}</p>
       <ul className={styles.questionOptions}>
         {question.options.map((option) => (

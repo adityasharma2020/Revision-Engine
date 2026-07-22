@@ -51,6 +51,7 @@ export function QuizSession({ chapter, questions, onExit, onRetry }: QuizSession
         correct: selected != null ? selected === q.answer : null,
         timeMs: times.current[q.id] ?? 0,
         difficulty: q.difficulty,
+        origin: q.origin,
       };
     });
     recordQuizResult({
