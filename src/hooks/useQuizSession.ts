@@ -10,24 +10,34 @@ export interface QuizSessionState {
   startedAt: number;
   finishedAt: number | null;
   pausedAt: number | null;
+  focusInterruptions: number[];
 }
 
 export interface QuizSettings {
   allowPause: boolean;
   lockNavigation: boolean;
   trackFocusLoss: boolean;
+  focusPenaltyEnabled: boolean;
+  focusLossGrace: number;
+  focusPenaltyPerLoss: number;
 }
 
 export const STANDARD_QUIZ_SETTINGS: QuizSettings = {
   allowPause: true,
   lockNavigation: true,
   trackFocusLoss: false,
+  focusPenaltyEnabled: false,
+  focusLossGrace: 3,
+  focusPenaltyPerLoss: 0.25,
 };
 
 export const STRICT_QUIZ_SETTINGS: QuizSettings = {
   allowPause: false,
   lockNavigation: true,
   trackFocusLoss: true,
+  focusPenaltyEnabled: false,
+  focusLossGrace: 3,
+  focusPenaltyPerLoss: 0.25,
 };
 
 type QuizAction =
@@ -39,6 +49,7 @@ type QuizAction =
   | { type: 'finish' }
   | { type: 'pause' }
   | { type: 'resume' }
+  | { type: 'recordFocusLoss'; at: number }
   | { type: 'restart' };
 
 function init(total: number, settings: QuizSettings): QuizSessionState {
@@ -51,6 +62,7 @@ function init(total: number, settings: QuizSettings): QuizSessionState {
     startedAt: Date.now(),
     finishedAt: null,
     pausedAt: null,
+    focusInterruptions: [],
   };
 }
 
@@ -99,7 +111,7 @@ export function announceQuizLock(chapterId: string | null, locked = false): void
 }
 
 function settingsFromDraft(state?: QuizSessionState & { policy?: 'standard' | 'strict' }): QuizSettings {
-  if (state?.settings) return state.settings;
+  if (state?.settings) return { ...STANDARD_QUIZ_SETTINGS, ...state.settings };
   return state?.policy === 'standard' ? STANDARD_QUIZ_SETTINGS : STRICT_QUIZ_SETTINGS;
 }
 
@@ -122,6 +134,7 @@ function restoreDraft(key: string, questions: readonly PrelimsQuestion[], settin
       ...draft.state,
       settings: settingsFromDraft(draft.state as QuizSessionState & { policy?: 'standard' | 'strict' }),
       pausedAt: draft.state.pausedAt ?? null,
+      focusInterruptions: draft.state.focusInterruptions ?? [],
     };
   } catch {
     sessionStorage.removeItem(key);
@@ -173,6 +186,12 @@ function reducer(state: QuizSessionState, action: QuizAction): QuizSessionState 
         status: 'active',
         startedAt: state.startedAt + (Date.now() - state.pausedAt),
         pausedAt: null,
+      };
+    case 'recordFocusLoss':
+      if (state.status !== 'active' || !state.settings.trackFocusLoss) return state;
+      return {
+        ...state,
+        focusInterruptions: [...state.focusInterruptions, action.at],
       };
     case 'restart':
       return init(state.total, state.settings);
@@ -260,6 +279,7 @@ export function useQuizSession(
       finish: () => dispatch({ type: 'finish' }),
       pause: () => dispatch({ type: 'pause' }),
       resume: () => dispatch({ type: 'resume' }),
+      recordFocusLoss: () => dispatch({ type: 'recordFocusLoss', at: Date.now() }),
       restart: () => dispatch({ type: 'restart' }),
     }),
     [],

@@ -50,9 +50,15 @@ export interface QuizResult {
     readonly allowPause: boolean;
     readonly lockNavigation: boolean;
     readonly trackFocusLoss: boolean;
+    readonly focusPenaltyEnabled: boolean;
+    readonly focusLossGrace: number;
+    readonly focusPenaltyPerLoss: number;
   };
   /** Number of detected tab/app focus interruptions during the attempt. */
   readonly focusLossCount?: number;
+  readonly focusInterruptions?: readonly number[];
+  readonly focusPenaltyTotal?: number;
+  readonly adjustedScore?: number;
 }
 
 export type QuizResultList = QuizResult[];

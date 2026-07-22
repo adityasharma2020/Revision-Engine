@@ -34,7 +34,9 @@ export function Settings() {
       await syncNow();
       setSyncMessage("Synced with Supabase just now.");
     } catch {
-      setSyncMessage("Sync failed. Your local data is safe; try again when online.");
+      setSyncMessage(
+        "Sync failed. Your local data is safe; try again when online."
+      );
     }
   };
 
@@ -55,10 +57,14 @@ export function Settings() {
           <AccountPanel />
           <div className={styles.syncPanel}>
             <div>
-              <strong>{cloudAvailable ? "Local + Supabase" : "Local storage only"}</strong>
-              <span>{cloudAvailable
-                ? "Quiz attempts and responses save locally first, then sync to your account."
-                : "Sign in to back up quiz history and use it across devices."}</span>
+              <strong>
+                {cloudAvailable ? "Local + Supabase" : "Local storage only"}
+              </strong>
+              <span>
+                {cloudAvailable
+                  ? "Quiz attempts and responses save locally first, then sync to your account."
+                  : "Sign in to back up quiz history and use it across devices."}
+              </span>
               {syncMessage && <small role='status'>{syncMessage}</small>}
             </div>
             <Button
@@ -91,17 +97,25 @@ export function Settings() {
           <div className={styles.rowText}>
             <h3 className={styles.rowTitle}>Reset all data</h3>
             <p className={styles.rowDesc}>
-              Clear progress, quiz history, responses, bookmarks, imports and preferences.
+              Clear progress, quiz history, responses, bookmarks, imports and
+              preferences.
             </p>
           </div>
-          <Button variant='danger' onClick={() => setResetOpen(true)} disabled={cleared}>
+          <Button
+            variant='danger'
+            onClick={() => setResetOpen(true)}
+            disabled={cleared}
+          >
             Reset data
           </Button>
         </div>
       </section>
 
       {resetOpen && (
-        <div className={styles.modalBackdrop} onMouseDown={() => setResetOpen(false)}>
+        <div
+          className={styles.modalBackdrop}
+          onMouseDown={() => setResetOpen(false)}
+        >
           <section
             className={styles.resetModal}
             role='dialog'
@@ -109,18 +123,23 @@ export function Settings() {
             aria-labelledby='reset-title'
             onMouseDown={(event) => event.stopPropagation()}
           >
-            <span className={styles.resetIcon}><Icon name='trash' size={20} /></span>
+            <span className={styles.resetIcon}>
+              <Icon name='trash' size={20} />
+            </span>
             <h2 id='reset-title'>Where should data disappear from?</h2>
             <p>
               Cloud removal is non-destructive: Supabase rows are marked as
-              deleted and excluded from the app, while their database history is retained.
+              deleted and excluded from the app, while their database history is
+              retained.
             </p>
             <div className={styles.resetChoices}>
               <button type='button' onClick={() => void clearDeviceOnly()}>
                 <strong>Clear this device</strong>
-                <span>{cloudAvailable
-                  ? "Signs you out and clears this browser. Supabase data remains available."
-                  : "Clears all data stored in this browser."}</span>
+                <span>
+                  {cloudAvailable
+                    ? "Signs you out and clears this browser. Supabase data remains available."
+                    : "Clears all data stored in this browser."}
+                </span>
               </button>
               {cloudAvailable && (
                 <button
@@ -128,7 +147,9 @@ export function Settings() {
                   className={styles.cloudDelete}
                   onClick={() => void clearDeviceAndArchiveCloud()}
                 >
-                  <strong>Clear device and remove cloud data from the app</strong>
+                  <strong>
+                    Clear device and remove cloud data from the app
+                  </strong>
                   <span>
                     Soft-deletes the active Supabase records. No database row or
                     previous version is physically deleted.
@@ -136,7 +157,9 @@ export function Settings() {
                 </button>
               )}
             </div>
-            <Button variant='ghost' onClick={() => setResetOpen(false)}>Cancel</Button>
+            <Button variant='ghost' onClick={() => setResetOpen(false)}>
+              Cancel
+            </Button>
           </section>
         </div>
       )}
@@ -151,7 +174,6 @@ export function Settings() {
             <code className={styles.version}>v{APP_VERSION}</code>
           </div>
           <div className={styles.responsibleUse} role='note'>
-            <h4>Learn responsibly</h4>
             <p>
               This is an educational study tool. Only import material you
               created, own, or have permission to use. Respect copyright,

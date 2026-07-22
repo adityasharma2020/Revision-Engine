@@ -32,12 +32,16 @@ export function QuizSession({ chapter, questions, onExit, onRetry, onActiveChang
   const resultId = useRef(createId());
   const [fullscreen, setFullscreen] = useState(Boolean(document.fullscreenElement));
   const [focusInterrupted, setFocusInterrupted] = useState(false);
-  const [focusLossCount, setFocusLossCount] = useState(0);
   const interruptionOpen = useRef(false);
   const paused = state.status === 'paused';
+  const focusLossCount = state.focusInterruptions.length;
+  const penalizedInterruptions = state.settings.focusPenaltyEnabled
+    ? Math.max(0, focusLossCount - state.settings.focusLossGrace)
+    : 0;
+  const focusPenaltyTotal = penalizedInterruptions * state.settings.focusPenaltyPerLoss;
 
   useEffect(() => {
-    onActiveChange?.(state.status === 'active' && state.settings.lockNavigation);
+    onActiveChange?.(state.status === 'active');
     announceQuizLock(
       state.status === 'finished' ? null : chapter.id,
       state.status === 'active' && state.settings.lockNavigation,
@@ -50,7 +54,7 @@ export function QuizSession({ chapter, questions, onExit, onRetry, onActiveChang
       if (interruptionOpen.current) return;
       interruptionOpen.current = true;
       setFocusInterrupted(true);
-      setFocusLossCount((count) => count + 1);
+      actions.recordFocusLoss();
     };
     const visibility = () => {
       if (document.hidden) recordInterruption();
@@ -72,7 +76,7 @@ export function QuizSession({ chapter, questions, onExit, onRetry, onActiveChang
       window.removeEventListener('blur', blur);
       window.removeEventListener('keydown', guardShortcuts, true);
     };
-  }, [state.settings.trackFocusLoss, state.status]);
+  }, [state.settings.trackFocusLoss, state.status, actions]);
 
   useEffect(() => {
     const update = () => setFullscreen(Boolean(document.fullscreenElement));
@@ -126,8 +130,11 @@ export function QuizSession({ chapter, questions, onExit, onRetry, onActiveChang
       includedInAnalytics: true,
       settings: state.settings,
       focusLossCount,
+      focusInterruptions: state.focusInterruptions,
+      focusPenaltyTotal,
+      adjustedScore: s.correct - focusPenaltyTotal,
     });
-  }, [state.status, state.answers, state.settings, summary, recordQuizResult, chapter.id, chapter.title, chapter.subject, questions, focusLossCount]);
+  }, [state.status, state.answers, state.settings, state.focusInterruptions, summary, recordQuizResult, chapter.id, chapter.title, chapter.subject, questions, focusLossCount, focusPenaltyTotal]);
 
   if (state.status === 'finished') {
     return (
@@ -137,6 +144,8 @@ export function QuizSession({ chapter, questions, onExit, onRetry, onActiveChang
         summary={summary()}
         includedInAnalytics
         focusLossCount={focusLossCount}
+        focusPenaltyTotal={focusPenaltyTotal}
+        adjustedScore={summary().correct - focusPenaltyTotal}
         onAnalyticsChange={(included) => setQuizResultAnalytics(resultId.current, included)}
         onRetry={onRetry}
         onExit={onExit}
@@ -217,7 +226,14 @@ export function QuizSession({ chapter, questions, onExit, onRetry, onActiveChang
               block system-level switching, but quiz controls stay locked until
               you acknowledge it.
             </p>
-            <div className={styles.focusMeta}>Interruption {focusLossCount}</div>
+            <div className={styles.focusMeta}>
+              Interruption {focusLossCount}
+              {state.settings.focusPenaltyEnabled && (
+                focusLossCount <= state.settings.focusLossGrace
+                  ? ` · Warning ${focusLossCount} of ${state.settings.focusLossGrace}`
+                  : ` · −${state.settings.focusPenaltyPerLoss} mark penalty`
+              )}
+            </div>
             <Button variant="primary" onClick={() => {
               interruptionOpen.current = false;
               setFocusInterrupted(false);

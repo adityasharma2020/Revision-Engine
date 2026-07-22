@@ -23,10 +23,6 @@ export function Chapter() {
 
   return (
     <Page narrow>
-      <Link to={Routes.dashboard} className={styles.back}>
-        <Icon name="arrowLeft" size={16} />
-        Library
-      </Link>
       <AsyncBoundary state={state} loadingLabel="Loading chapter…">
         {(chapter) => <ChapterView chapter={chapter} />}
       </AsyncBoundary>
@@ -64,22 +60,30 @@ function ChapterView({ chapter }: { chapter: ChapterModel }) {
 
   return (
     <>
-      <header className={styles.header}>
+      {!quizDraftPresent && (
+        <Link to={Routes.dashboard} className={styles.back}>
+          <Icon name="arrowLeft" size={16} />
+          Library
+        </Link>
+      )}
+      {!quizDraftPresent && <header className={styles.header}>
         <div className={styles.headTop}>
           <Badge hue={hue}>{label}</Badge>
           <span className={styles.chapterNo}>Chapter {chapter.chapterNumber}</span>
-          <Link to={`${Routes.search}?chapter=${encodeURIComponent(chapter.id)}`} className={styles.chapterSearch}>
-            <Icon name="search" size={15} /> Search chapter
-          </Link>
+          {!quizDraftPresent && (
+            <Link to={`${Routes.search}?chapter=${encodeURIComponent(chapter.id)}`} className={styles.chapterSearch}>
+              <Icon name="search" size={15} /> Search chapter
+            </Link>
+          )}
         </div>
         <h1 className={styles.title}>{chapter.title}</h1>
         {chapter.description && (
           <p className={styles.description}>{chapter.description}</p>
         )}
         {chapter.source && <p className={styles.source}>Source · {chapter.source}</p>}
-      </header>
+      </header>}
 
-      <div className={styles.modeRow}>
+      {!quizDraftPresent && <div className={styles.modeRow}>
         <button
           type="button"
           className={mode === 'learning' ? styles.modeActive : styles.modeOption}
@@ -99,9 +103,9 @@ function ChapterView({ chapter }: { chapter: ChapterModel }) {
           <span><strong>Take a quiz</strong><small>Timed attempt with results saved to history.</small></span>
           {quizDraftPresent && <em>{quizActive ? 'In progress' : 'Paused · resume'}</em>}
         </button>
-      </div>
+      </div>}
 
-      {availableOrigins.size > 0 && (
+      {!quizDraftPresent && availableOrigins.size > 0 && (
         <div className={styles.originFilter} aria-label="Filter questions by origin">
           <span className={styles.filterLabel}>Question source</span>
           <div className={styles.filterOptions}>

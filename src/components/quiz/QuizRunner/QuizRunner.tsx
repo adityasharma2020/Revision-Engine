@@ -108,6 +108,8 @@ export function QuizRunner({
           }}
           includedInAnalytics={reviewResult.includedInAnalytics !== false}
           focusLossCount={reviewResult.focusLossCount}
+          focusPenaltyTotal={reviewResult.focusPenaltyTotal}
+          adjustedScore={reviewResult.adjustedScore}
           onAnalyticsChange={(included) => {
             setQuizResultAnalytics(reviewResult.id, included);
             setReviewResult({ ...reviewResult, includedInAnalytics: included });
@@ -190,6 +192,7 @@ function AttemptHistory({
                   <span><strong>{accuracy}%</strong> accuracy</span>
                   <span><strong>{humanizeDuration(result.durationMs)}</strong> time</span>
                   <span><strong>{result.skipped}</strong> skipped</span>
+                  {(result.focusPenaltyTotal ?? 0) > 0 && <span><strong>−{result.focusPenaltyTotal}</strong> penalty</span>}
                   {result.includedInAnalytics === false && <span className={styles.excluded}>Excluded</span>}
                 </div>
                 <Icon name="chevronRight" size={17} className={styles.historyChevron} />

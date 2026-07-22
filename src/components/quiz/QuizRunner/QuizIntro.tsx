@@ -17,7 +17,10 @@ interface QuizIntroProps {
 const sameSettings = (left: QuizSettings, right: QuizSettings) =>
   left.allowPause === right.allowPause &&
   left.lockNavigation === right.lockNavigation &&
-  left.trackFocusLoss === right.trackFocusLoss;
+  left.trackFocusLoss === right.trackFocusLoss &&
+  left.focusPenaltyEnabled === right.focusPenaltyEnabled &&
+  left.focusLossGrace === right.focusLossGrace &&
+  left.focusPenaltyPerLoss === right.focusPenaltyPerLoss;
 
 export function QuizIntro({ questionCount, lastScore, onStart }: QuizIntroProps) {
   const [settings, setSettings] = useState<QuizSettings>(STANDARD_QUIZ_SETTINGS);
@@ -27,7 +30,7 @@ export function QuizIntro({ questionCount, lastScore, onStart }: QuizIntroProps)
       ? 'standard'
       : 'custom';
 
-  const toggle = (key: keyof QuizSettings) =>
+  const toggle = (key: 'allowPause' | 'lockNavigation' | 'trackFocusLoss' | 'focusPenaltyEnabled') =>
     setSettings((current) => ({ ...current, [key]: !current[key] }));
 
   const start = () => {
@@ -73,6 +76,45 @@ export function QuizIntro({ questionCount, lastScore, onStart }: QuizIntroProps)
         <ToggleRow label="Lock internal navigation" description="Prevent opening Library, Search, Settings, or Learning while running." checked={settings.lockNavigation} onChange={() => toggle('lockNavigation')} />
         <ToggleRow label="Track focus changes" description="Start fullscreen, deter common exit shortcuts, and record tab or app switching." checked={settings.trackFocusLoss} onChange={() => toggle('trackFocusLoss')} />
       </div>
+
+      {settings.trackFocusLoss && (
+        <div className={styles.penaltyPolicy}>
+          <ToggleRow
+            label="Negative marking for focus exits"
+            description="After the warning allowance, deduct marks for every additional interruption."
+            checked={settings.focusPenaltyEnabled}
+            onChange={() => toggle('focusPenaltyEnabled')}
+          />
+          {settings.focusPenaltyEnabled && (
+            <div className={styles.penaltyFields}>
+              <label>
+                <span>Warnings allowed</span>
+                <select
+                  value={settings.focusLossGrace}
+                  onChange={(event) => setSettings((current) => ({
+                    ...current,
+                    focusLossGrace: Number(event.target.value),
+                  }))}
+                >
+                  {[0, 1, 2, 3, 4, 5].map((value) => <option key={value} value={value}>{value}</option>)}
+                </select>
+              </label>
+              <label>
+                <span>Deduction per extra exit</span>
+                <select
+                  value={settings.focusPenaltyPerLoss}
+                  onChange={(event) => setSettings((current) => ({
+                    ...current,
+                    focusPenaltyPerLoss: Number(event.target.value),
+                  }))}
+                >
+                  {[0.25, 0.5, 1, 1.25].map((value) => <option key={value} value={value}>−{value} mark{value === 1 ? '' : 's'}</option>)}
+                </select>
+              </label>
+            </div>
+          )}
+        </div>
+      )}
 
       {preset === 'custom' && <p className={styles.customLabel}>Custom configuration</p>}
       {lastScore && <p className={styles.introLast}>Last attempt · {lastScore.correct}/{lastScore.total} correct</p>}

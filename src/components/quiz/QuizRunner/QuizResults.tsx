@@ -16,6 +16,8 @@ interface QuizResultsProps {
   onAnalyticsChange?: (included: boolean) => void;
   historical?: boolean;
   focusLossCount?: number;
+  focusPenaltyTotal?: number;
+  adjustedScore?: number;
 }
 
 type ReviewFilter = 'all' | 'incorrect' | 'skipped' | 'correct';
@@ -30,6 +32,8 @@ export function QuizResults({
   onAnalyticsChange,
   historical = false,
   focusLossCount = 0,
+  focusPenaltyTotal = 0,
+  adjustedScore,
 }: QuizResultsProps) {
   const [reviewFilter, setReviewFilter] = useState<ReviewFilter>('all');
   const [included, setIncluded] = useState(includedInAnalytics);
@@ -47,6 +51,12 @@ export function QuizResults({
     { label: 'Time', value: humanizeDuration(summary.durationMs) },
     ...(focusLossCount > 0
       ? [{ label: 'Focus exits', value: String(focusLossCount) }]
+      : []),
+    ...(focusPenaltyTotal > 0
+      ? [
+          { label: 'Focus penalty', value: `−${focusPenaltyTotal}` },
+          { label: 'Adjusted score', value: String(adjustedScore ?? summary.correct) },
+        ]
       : []),
   ];
 
