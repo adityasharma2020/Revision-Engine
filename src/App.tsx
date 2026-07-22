@@ -8,6 +8,7 @@ import { Dashboard } from './pages/Dashboard';
 import { Import } from './pages/Import';
 import { NotFound } from './pages/NotFound';
 import { Settings } from './pages/Settings';
+import { Search } from './pages/Search';
 import { Statistics } from './pages/Statistics';
 
 /** Route table. All app pages render inside the persistent AppShell. */
@@ -17,6 +18,7 @@ export function App() {
       <RouterRoutes>
         <Route element={<AppShell />}>
           <Route path={Routes.dashboard} element={<Dashboard />} />
+          <Route path={Routes.search} element={<Search />} />
           <Route path={Routes.chapter()} element={<Chapter />} />
           <Route path={Routes.import} element={<Import />} />
           <Route path={Routes.statistics} element={<Statistics />} />

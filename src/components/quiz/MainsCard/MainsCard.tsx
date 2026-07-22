@@ -12,6 +12,7 @@ interface MainsCardProps {
   index: number;
   /** When provided, enables progress + annotations for this question. */
   chapterId?: string;
+  elementId?: string;
 }
 
 /**
@@ -19,7 +20,7 @@ interface MainsCardProps {
  * mentally, then reveals the model answer, key points and any explanation —
  * the self-evaluation loop that drives mains revision.
  */
-export function MainsCard({ question, index, chapterId }: MainsCardProps) {
+export function MainsCard({ question, index, chapterId, elementId }: MainsCardProps) {
   const { recordAttempt } = useUserData();
   const [revealed, setRevealed] = useState(false);
   const shownAt = useRef(Date.now());
@@ -43,7 +44,7 @@ export function MainsCard({ question, index, chapterId }: MainsCardProps) {
   };
 
   return (
-    <article className={styles.card}>
+    <article id={elementId} className={styles.card}>
       <div className={styles.head}>
         <span className={styles.index}>{index}</span>
         <div className={styles.headText}>

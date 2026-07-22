@@ -21,6 +21,7 @@ interface PrelimsCardProps {
   /** When provided (interactive mode), enables progress + annotations. */
   chapterId?: string;
   onAnswered?: (correct: boolean, selectedOptionId: string) => void;
+  elementId?: string;
 }
 
 /**
@@ -35,6 +36,7 @@ export function PrelimsCard({
   selectedOptionId = null,
   chapterId,
   onAnswered,
+  elementId,
 }: PrelimsCardProps) {
   const { recordAttempt } = useUserData();
   const [picked, setPicked] = useState<string | null>(null);
@@ -66,7 +68,7 @@ export function PrelimsCard({
   };
 
   return (
-    <article className={styles.card}>
+    <article id={elementId} className={styles.card}>
       <div className={styles.head}>
         <span className={styles.index}>{index}</span>
         <p className={styles.statement}>{question.statement}</p>

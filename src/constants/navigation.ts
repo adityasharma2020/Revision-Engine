@@ -11,6 +11,7 @@ export interface NavItem {
 
 export const PRIMARY_NAV: readonly NavItem[] = [
   { to: Routes.dashboard, label: 'Library', icon: 'home', end: true },
+  { to: Routes.search, label: 'Search', icon: 'search' },
   { to: Routes.import, label: 'Import', icon: 'plus' },
   { to: Routes.statistics, label: 'Statistics', icon: 'chart' },
   { to: Routes.bookmarks, label: 'Bookmarks', icon: 'bookmark' },

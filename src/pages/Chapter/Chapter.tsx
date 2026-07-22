@@ -1,5 +1,5 @@
-import { useState } from 'react';
-import { Link, useParams } from 'react-router-dom';
+import { useEffect, useState } from 'react';
+import { Link, useParams, useSearchParams } from 'react-router-dom';
 import { AsyncBoundary, Badge, EmptyState, Icon, Tabs } from '../../components/common';
 import { Page } from '../../components/layout';
 import { MainsCard } from '../../components/quiz/MainsCard';
@@ -34,11 +34,13 @@ export function Chapter() {
 }
 
 function ChapterView({ chapter }: { chapter: ChapterModel }) {
+  const [searchParams] = useSearchParams();
   const { hue, label } = subjectStyle(chapter.subject);
   const [mode, setMode] = useState<Mode>('learning');
-  const [tab, setTab] = useState<TabId>(
-    chapter.prelims.length > 0 ? 'prelims' : 'mains',
-  );
+  const requestedTab = searchParams.get('tab');
+  const [tab, setTab] = useState<TabId>(requestedTab === 'mains' || requestedTab === 'prelims'
+    ? requestedTab
+    : chapter.prelims.length > 0 ? 'prelims' : 'mains');
   const [origin, setOrigin] = useState<OriginFilter>('all');
   const filteredPrelims = filterByOrigin(chapter.prelims, origin);
   const filteredMains = filterByOrigin(chapter.mains, origin);
@@ -54,6 +56,9 @@ function ChapterView({ chapter }: { chapter: ChapterModel }) {
         <div className={styles.headTop}>
           <Badge hue={hue}>{label}</Badge>
           <span className={styles.chapterNo}>Chapter {chapter.chapterNumber}</span>
+          <Link to={`${Routes.search}?chapter=${encodeURIComponent(chapter.id)}`} className={styles.chapterSearch}>
+            <Icon name="search" size={15} /> Search chapter
+          </Link>
         </div>
         <h1 className={styles.title}>{chapter.title}</h1>
         {chapter.description && (
@@ -128,6 +133,15 @@ function LearningView({
   tab: TabId;
   onTab: (t: TabId) => void;
 }) {
+  useEffect(() => {
+    if (!window.location.hash.startsWith('#question-')) return;
+    const frame = window.requestAnimationFrame(() => {
+      document.getElementById(decodeURIComponent(window.location.hash.slice(1)))
+        ?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    });
+    return () => window.cancelAnimationFrame(frame);
+  }, [tab, prelims, mains]);
+
   return (
     <>
       <div className={styles.tabsRow}>
@@ -145,13 +159,13 @@ function LearningView({
       {tab === 'prelims' ? (
         <QuestionList empty="No prelims questions in this chapter.">
           {prelims.map((q, i) => (
-            <PrelimsCard key={q.id} question={q} index={i + 1} chapterId={chapter.id} />
+            <PrelimsCard key={q.id} elementId={`question-${q.id}`} question={q} index={i + 1} chapterId={chapter.id} />
           ))}
         </QuestionList>
       ) : (
         <QuestionList empty="No mains questions in this chapter.">
           {mains.map((q, i) => (
-            <MainsCard key={q.id} question={q} index={i + 1} chapterId={chapter.id} />
+            <MainsCard key={q.id} elementId={`question-${q.id}`} question={q} index={i + 1} chapterId={chapter.id} />
           ))}
         </QuestionList>
       )}

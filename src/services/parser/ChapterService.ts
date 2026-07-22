@@ -82,4 +82,13 @@ export class ChapterService {
     this.chapters.set(id, chapter);
     return chapter;
   }
+
+  /** Load every built-in chapter for cross-library features such as search. */
+  async loadAllChapters(): Promise<Chapter[]> {
+    const manifest = await this.loadManifest();
+    const loaded = await Promise.allSettled(
+      manifest.chapters.filter((entry) => entry.file).map((entry) => this.loadChapter(entry.id)),
+    );
+    return loaded.flatMap((result) => (result.status === 'fulfilled' ? [result.value] : []));
+  }
 }
