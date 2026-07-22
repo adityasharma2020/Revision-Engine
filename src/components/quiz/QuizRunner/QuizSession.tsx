@@ -24,15 +24,39 @@ export function QuizSession({ chapter, questions, onExit, onRetry }: QuizSession
   const elapsedMs = useElapsed(state.startedAt, running);
   const { recordQuizResult } = useUserData();
 
+  // Per-question timing: bank the elapsed segment whenever the active question
+  // changes (including when the quiz finishes). Handles back/forward navigation.
+  const times = useRef<Record<string, number>>({});
+  const segStart = useRef(Date.now());
+  const activeQid = useRef<string | undefined>(questions[0]?.id);
+  useEffect(() => {
+    const now = Date.now();
+    const qid = activeQid.current;
+    if (qid) times.current[qid] = (times.current[qid] ?? 0) + (now - segStart.current);
+    segStart.current = now;
+    activeQid.current = current?.id;
+  }, [state.currentIndex, state.status, current]);
+
   // Persist the finished session exactly once.
   const recorded = useRef(false);
   useEffect(() => {
     if (state.status !== 'finished' || recorded.current) return;
     recorded.current = true;
     const s = summary();
+    const perQuestion = questions.map((q) => {
+      const selected = state.answers[q.id] ?? null;
+      return {
+        questionId: q.id,
+        selectedOption: selected,
+        correct: selected != null ? selected === q.answer : null,
+        timeMs: times.current[q.id] ?? 0,
+        difficulty: q.difficulty,
+      };
+    });
     recordQuizResult({
       id: createId(),
       chapterId: chapter.id,
+      subject: chapter.subject,
       totalQuestions: s.total,
       answered: s.answered,
       correct: s.correct,
@@ -40,8 +64,9 @@ export function QuizSession({ chapter, questions, onExit, onRetry }: QuizSession
       durationMs: s.durationMs,
       takenAt: Date.now(),
       answers: state.answers,
+      perQuestion,
     });
-  }, [state.status, state.answers, summary, recordQuizResult, chapter.id]);
+  }, [state.status, state.answers, summary, recordQuizResult, chapter.id, chapter.subject, questions]);
 
   if (state.status === 'finished') {
     return (

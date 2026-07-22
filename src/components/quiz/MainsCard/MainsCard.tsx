@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import type { MainsQuestion } from '../../../types';
 import { useUserData } from '../../../context/UserDataContext';
 import { QuestionAnnotations } from '../../annotations/QuestionAnnotations';
@@ -21,6 +21,7 @@ interface MainsCardProps {
 export function MainsCard({ question, index, chapterId }: MainsCardProps) {
   const { recordAttempt } = useUserData();
   const [revealed, setRevealed] = useState(false);
+  const shownAt = useRef(Date.now());
   const hasAnswer = Boolean(
     question.modelAnswer || question.keyPoints?.length || question.explanation,
   );
@@ -32,6 +33,8 @@ export function MainsCard({ question, index, chapterId }: MainsCardProps) {
         chapterId,
         questionId: question.id,
         type: 'mains',
+        difficulty: question.difficulty,
+        timeMs: Date.now() - shownAt.current,
         attemptedAt: Date.now(),
       });
     }

@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import type { PrelimsQuestion } from '../../../types';
 import { useUserData } from '../../../context/UserDataContext';
 import { QuestionAnnotations } from '../../annotations/QuestionAnnotations';
@@ -37,6 +37,7 @@ export function PrelimsCard({
 }: PrelimsCardProps) {
   const { recordAttempt } = useUserData();
   const [picked, setPicked] = useState<string | null>(null);
+  const shownAt = useRef(Date.now());
   const isReview = mode === 'review';
   const annotatable = !isReview && Boolean(chapterId);
   const selected = isReview ? selectedOptionId : picked;
@@ -55,6 +56,8 @@ export function PrelimsCard({
         type: 'prelims',
         selectedOption: optionId,
         correct,
+        difficulty: question.difficulty,
+        timeMs: Date.now() - shownAt.current,
         attemptedAt: Date.now(),
       });
     }

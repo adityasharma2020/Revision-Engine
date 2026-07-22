@@ -1,82 +1,271 @@
-import { useMemo } from 'react';
+import { useMemo, useState } from 'react';
 import { EmptyState } from '../../components/common';
 import { Page, PageHeader } from '../../components/layout';
-import { AccuracyChart } from '../../components/statistics/AccuracyChart';
+import { BarChart } from '../../components/statistics/BarChart';
+import { ScopeFilter } from '../../components/statistics/ScopeFilter';
+import { StatBreakdown, type BreakdownRow } from '../../components/statistics/StatBreakdown';
 import { StatTile } from '../../components/statistics/StatTile';
+import { subjectStyle } from '../../constants/subjects';
 import { useUserData } from '../../context/UserDataContext';
-import { accuracyTrend, computeOverall } from '../../utils/statistics';
+import { useLibrary } from '../../hooks/useChapters';
+import type { ProgressMap } from '../../types';
+import {
+  accuracyTrend,
+  chapterAnalytics,
+  computeOverview,
+  dailyActivity,
+  difficultyBreakdown,
+  subjectAnalytics,
+  type ChapterMetaMap,
+} from '../../utils/analytics';
 import { humanizeDuration } from '../../utils/time';
 import styles from './Statistics.module.css';
 
+const DIFFICULTY_LABEL: Record<string, string> = {
+  easy: 'Easy',
+  medium: 'Medium',
+  hard: 'Hard',
+};
+
 export function Statistics() {
-  const { quizResults, annotations, progress } = useUserData();
+  const { quizResults, progress, annotations } = useUserData();
+  const library = useLibrary();
+  const [selected, setSelected] = useState<Set<string>>(new Set());
 
-  const overall = useMemo(
-    () => computeOverall(quizResults, annotations, progress),
-    [quizResults, annotations, progress],
+  const summaries = library.status === 'success' ? library.data : [];
+
+  const meta = useMemo<ChapterMetaMap>(() => {
+    const map: ChapterMetaMap = {};
+    for (const s of summaries) {
+      map[s.id] = {
+        id: s.id,
+        title: s.title,
+        subject: s.subject,
+        totalQuestions: s.prelimsCount + s.mainsCount,
+      };
+    }
+    return map;
+  }, [summaries]);
+
+  const scopeChapters = useMemo(
+    () => summaries.map((s) => ({ id: s.id, title: s.title, subject: s.subject })),
+    [summaries],
   );
-  const trend = useMemo(() => accuracyTrend(quizResults), [quizResults]);
 
-  const hasActivity = overall.totalQuizzes > 0 || overall.questionsAnswered > 0;
+  // Filter the source data to the selected scope (empty = all).
+  const { fQuiz, fProgress } = useMemo(() => {
+    if (selected.size === 0) return { fQuiz: quizResults, fProgress: progress };
+    const filteredProgress: ProgressMap = {};
+    for (const [id, p] of Object.entries(progress)) {
+      if (selected.has(id)) filteredProgress[id] = p;
+    }
+    return {
+      fQuiz: quizResults.filter((r) => selected.has(r.chapterId)),
+      fProgress: filteredProgress,
+    };
+  }, [selected, quizResults, progress]);
+
+  const overview = useMemo(
+    () => computeOverview(fQuiz, fProgress, annotations, meta),
+    [fQuiz, fProgress, annotations, meta],
+  );
+  const trend = useMemo(() => accuracyTrend(fQuiz), [fQuiz]);
+  const activity = useMemo(() => dailyActivity(fQuiz, fProgress, meta), [fQuiz, fProgress, meta]);
+  const chapterStats = useMemo(
+    () => chapterAnalytics(fQuiz, fProgress, meta),
+    [fQuiz, fProgress, meta],
+  );
+  const subjectStats = useMemo(() => subjectAnalytics(chapterStats), [chapterStats]);
+  const difficulty = useMemo(
+    () => difficultyBreakdown(fQuiz, fProgress, meta),
+    [fQuiz, fProgress, meta],
+  );
+
+  const hasAnyActivity =
+    quizResults.length > 0 || Object.keys(progress).length > 0;
+  const scopeHasData = overview.answered > 0 || overview.quizzes > 0 || overview.chaptersRevised > 0;
+
+  const subjectRows: BreakdownRow[] = subjectStats.map((s) => ({
+    label: subjectStyle(s.subject).label,
+    value: s.accuracy,
+    max: 100,
+    display: `${s.accuracy}%`,
+    caption: `${s.attempts} attempts · ${s.chapters} chapter${s.chapters === 1 ? '' : 's'}`,
+    hue: subjectStyle(s.subject).hue,
+  }));
+
+  const difficultyRows: BreakdownRow[] = difficulty.map((d) => ({
+    label: DIFFICULTY_LABEL[d.difficulty] ?? d.difficulty,
+    value: d.accuracy,
+    max: 100,
+    display: `${d.accuracy}%`,
+    caption: `${d.correct}/${d.attempts} correct`,
+  }));
 
   return (
     <Page>
       <PageHeader
         eyebrow="Statistics"
         title="Your progress"
-        description="Accuracy, coverage and time invested across your revision."
+        description="Accuracy, coverage, timing and streaks — for everything, a subject, or any set of chapters."
       />
 
-      {!hasActivity ? (
+      {!hasAnyActivity ? (
         <EmptyState
           icon="chart"
           title="No data yet"
-          description="Take a quiz or revise a few questions and your statistics will build up here."
+          description="Take a quiz or revise a few questions and your analytics will build up here."
         />
       ) : (
         <>
-          <div className={styles.tiles}>
-            <StatTile
-              icon="target"
-              label="Overall accuracy"
-              value={`${overall.accuracy}%`}
-              sublabel={`${overall.correct}/${overall.questionsAnswered} correct`}
-            />
-            <StatTile
-              icon="check"
-              label="Questions answered"
-              value={String(overall.questionsAnswered)}
-            />
-            <StatTile
-              icon="sparkle"
-              label="Quizzes taken"
-              value={String(overall.totalQuizzes)}
-            />
-            <StatTile
-              icon="clock"
-              label="Time studied"
-              value={humanizeDuration(overall.timeStudiedMs)}
-            />
-            <StatTile
-              icon="book"
-              label="Chapters revised"
-              value={String(overall.chaptersRevised)}
-            />
-            <StatTile
-              icon="bookmark"
-              label="Bookmarks"
-              value={String(overall.bookmarks)}
-            />
-          </div>
+          {scopeChapters.length > 0 && (
+            <ScopeFilter chapters={scopeChapters} selected={selected} onChange={setSelected} />
+          )}
 
-          {trend.length > 0 && (
-            <section className={styles.card}>
-              <div className={styles.cardHead}>
-                <h2 className={styles.cardTitle}>Accuracy over time</h2>
-                <span className={styles.cardHint}>Last {trend.length} quizzes</span>
+          {!scopeHasData ? (
+            <EmptyState
+              icon="chart"
+              title="No activity in this selection"
+              description="Try a different chapter or subject, or clear the filter."
+            />
+          ) : (
+            <>
+              <div className={styles.tiles}>
+                <StatTile
+                  icon="target"
+                  label="Accuracy"
+                  value={`${overview.accuracy}%`}
+                  sublabel={`${overview.correct}/${overview.answered} correct`}
+                />
+                <StatTile icon="check" label="Answered" value={String(overview.answered)} />
+                <StatTile icon="sparkle" label="Quizzes" value={String(overview.quizzes)} />
+                <StatTile
+                  icon="clock"
+                  label="Avg / question"
+                  value={
+                    overview.avgTimePerQuestionMs
+                      ? humanizeDuration(overview.avgTimePerQuestionMs)
+                      : '—'
+                  }
+                />
+                <StatTile
+                  icon="clock"
+                  label="Time studied"
+                  value={humanizeDuration(overview.timeStudiedMs)}
+                />
+                <StatTile
+                  icon="flame"
+                  label="Current streak"
+                  value={`${overview.currentStreak}d`}
+                  sublabel={`longest ${overview.longestStreak}d`}
+                />
+                <StatTile icon="chart" label="Active days" value={String(overview.activeDays)} />
+                <StatTile
+                  icon="book"
+                  label="Chapters revised"
+                  value={String(overview.chaptersRevised)}
+                />
               </div>
-              <AccuracyChart data={trend} />
-            </section>
+
+              <div className={styles.chartGrid}>
+                <section className={styles.card}>
+                  <div className={styles.cardHead}>
+                    <h2 className={styles.cardTitle}>Daily activity</h2>
+                    <span className={styles.cardHint}>Questions · last 14 days</span>
+                  </div>
+                  <BarChart
+                    data={activity.map((d) => ({
+                      label: d.label,
+                      value: d.questions,
+                      tooltip: `${d.label}: ${d.questions} questions · ${humanizeDuration(d.timeMs)}`,
+                    }))}
+                  />
+                </section>
+
+                {trend.length > 0 && (
+                  <section className={styles.card}>
+                    <div className={styles.cardHead}>
+                      <h2 className={styles.cardTitle}>Accuracy over time</h2>
+                      <span className={styles.cardHint}>Last {trend.length} quizzes</span>
+                    </div>
+                    <BarChart
+                      data={trend.map((t) => ({
+                        label: t.label,
+                        value: t.accuracy,
+                        tooltip: `${t.label}: ${t.correct}/${t.total} · ${t.accuracy}%`,
+                      }))}
+                      max={100}
+                      valueSuffix="%"
+                      gridValues={[0, 50, 100]}
+                    />
+                  </section>
+                )}
+              </div>
+
+              <div className={styles.breakdownGrid}>
+                {subjectRows.length > 0 && (
+                  <section className={styles.card}>
+                    <div className={styles.cardHead}>
+                      <h2 className={styles.cardTitle}>Accuracy by subject</h2>
+                    </div>
+                    <StatBreakdown rows={subjectRows} />
+                  </section>
+                )}
+                {difficultyRows.length > 0 && (
+                  <section className={styles.card}>
+                    <div className={styles.cardHead}>
+                      <h2 className={styles.cardTitle}>Accuracy by difficulty</h2>
+                    </div>
+                    <StatBreakdown rows={difficultyRows} />
+                  </section>
+                )}
+              </div>
+
+              {chapterStats.length > 0 && (
+                <section className={styles.card}>
+                  <div className={styles.cardHead}>
+                    <h2 className={styles.cardTitle}>Chapter breakdown</h2>
+                    <span className={styles.cardHint}>{chapterStats.length} chapters</span>
+                  </div>
+                  <div className={styles.tableWrap}>
+                    <table className={styles.table}>
+                      <thead>
+                        <tr>
+                          <th>Chapter</th>
+                          <th className={styles.num}>Accuracy</th>
+                          <th className={styles.num}>Attempts</th>
+                          <th className={styles.num}>Avg time</th>
+                          <th className={styles.num}>Coverage</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {chapterStats.map((c) => (
+                          <tr key={c.chapterId}>
+                            <td>
+                              <span className={styles.chapterCell}>
+                                <span
+                                  className={styles.subjectDot}
+                                  style={{
+                                    backgroundColor: `hsl(${subjectStyle(c.subject).hue} 60% 55%)`,
+                                  }}
+                                />
+                                {c.title}
+                              </span>
+                            </td>
+                            <td className={styles.num}>{c.accuracy}%</td>
+                            <td className={styles.num}>{c.attempts}</td>
+                            <td className={styles.num}>
+                              {c.avgTimeMs ? humanizeDuration(c.avgTimeMs) : '—'}
+                            </td>
+                            <td className={styles.num}>{c.coverage}%</td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                </section>
+              )}
+            </>
           )}
         </>
       )}

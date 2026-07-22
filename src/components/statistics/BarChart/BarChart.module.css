@@ -2,34 +2,28 @@
   width: 100%;
   overflow-x: auto;
 }
-
 .svg {
   width: 100%;
   min-width: 320px;
   height: auto;
   display: block;
 }
-
 .grid {
   stroke: var(--border);
   stroke-width: 1;
 }
-
 .axisLabel {
   fill: var(--text-tertiary);
   font-size: 10px;
   font-family: var(--font-sans);
 }
-
 .fill {
   fill: var(--accent);
   transition: opacity var(--duration-fast) var(--ease-out);
 }
-
 .bar:hover .fill {
   opacity: 0.82;
 }
-
 .valueLabel {
   fill: var(--text-secondary);
   font-size: 11px;
@@ -38,10 +32,9 @@
   font-variant-numeric: tabular-nums;
   font-family: var(--font-sans);
 }
-
 .xLabel {
   fill: var(--text-tertiary);
-  font-size: 10px;
+  font-size: 9px;
   text-anchor: middle;
   font-family: var(--font-sans);
 }

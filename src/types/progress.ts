@@ -6,7 +6,7 @@
  * backend — localStorage today, Supabase tomorrow — can persist it unchanged.
  */
 
-import type { QuestionType } from './domain';
+import type { Difficulty, QuestionType } from './domain';
 
 /** One recorded interaction with a single question. */
 export interface QuestionAttempt {
@@ -19,6 +19,10 @@ export interface QuestionAttempt {
   readonly correct?: boolean;
   /** Self-graded confidence for mains / spaced-repetition. */
   readonly confidence?: Confidence;
+  /** Question difficulty snapshot, for accuracy-by-difficulty analytics. */
+  readonly difficulty?: Difficulty;
+  /** Time spent on the question before answering, in milliseconds. */
+  readonly timeMs?: number;
   /** Epoch milliseconds. */
   readonly attemptedAt: number;
 }
