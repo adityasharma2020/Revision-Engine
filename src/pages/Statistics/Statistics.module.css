@@ -254,7 +254,8 @@
   }
   .secondaryMetrics { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .filters { padding: var(--space-3); }
-  .timeOptions { display: grid; width: 100%; grid-template-columns: repeat(3, minmax(0, 1fr)); }
+  .timeOptions { display: grid; width: 100%; grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .timeOptions > :last-child:nth-child(odd) { grid-column: 1 / -1; }
   .timeButton, .timeActive { padding-inline: var(--space-1); }
 
   .card {

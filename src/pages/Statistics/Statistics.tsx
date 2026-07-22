@@ -20,10 +20,33 @@ import { humanizeDuration } from '../../utils/time';
 import styles from './Statistics.module.css';
 import { Routes } from '../../constants/routes';
 
-type TimeRange = '7d' | '30d' | 'all';
+type TimeRange = 'today' | 'week' | 'month' | 'year' | 'all';
 type QuestionView = 'all' | 'weak' | 'mastered' | 'skipped';
 type QuestionSort = 'attempts' | 'wrong' | 'accuracy' | 'reviews' | 'recent';
 type AnalyticsTab = 'overview' | 'questions';
+
+function startOfRange(range: TimeRange, now = new Date()): number {
+  if (range === 'all') return 0;
+  const start = new Date(now);
+  start.setHours(0, 0, 0, 0);
+  if (range === 'week') {
+    const daysSinceMonday = (start.getDay() + 6) % 7;
+    start.setDate(start.getDate() - daysSinceMonday);
+  } else if (range === 'month') {
+    start.setDate(1);
+  } else if (range === 'year') {
+    start.setMonth(0, 1);
+  }
+  return start.getTime();
+}
+
+const TIME_RANGE_LABELS: Record<TimeRange, string> = {
+  today: 'Today',
+  week: 'This week',
+  month: 'This month',
+  year: 'This year',
+  all: 'All time',
+};
 
 interface QuestionStat {
   questionId: string;
@@ -45,7 +68,7 @@ export function Statistics() {
   const { quizResults, progress, annotations, questionAttemptLog } = useUserData();
   const library = useLibrary();
   const [selected, setSelected] = useState<Set<string>>(new Set());
-  const [timeRange, setTimeRange] = useState<TimeRange>('30d');
+  const [timeRange, setTimeRange] = useState<TimeRange>('month');
   const [questionSearch, setQuestionSearch] = useState('');
   const [questionView, setQuestionView] = useState<QuestionView>('all');
   const [questionDifficulty, setQuestionDifficulty] = useState('all');
@@ -81,8 +104,7 @@ export function Statistics() {
 
   // Filter the source data to the selected scope (empty = all).
   const { fQuiz, fProgress } = useMemo(() => {
-    const days = timeRange === '7d' ? 7 : timeRange === '30d' ? 30 : null;
-    const cutoff = days ? Date.now() - days * 24 * 60 * 60 * 1000 : 0;
+    const cutoff = startOfRange(timeRange);
     const filteredProgress: ProgressMap = {};
     for (const [id, p] of Object.entries(progress)) {
       if (selected.size > 0 && !selected.has(id)) continue;
@@ -106,8 +128,9 @@ export function Statistics() {
   );
   const trend = useMemo(() => accuracyTrend(fQuiz), [fQuiz]);
   const activityDays = useMemo(() => {
-    if (timeRange === '7d') return 7;
-    if (timeRange === '30d') return 30;
+    if (timeRange !== 'all') {
+      return Math.max(1, Math.floor((Date.now() - startOfRange(timeRange)) / 86_400_000) + 1);
+    }
     const timestamps = [
       ...fQuiz.map((result) => result.takenAt),
       ...Object.values(fProgress).flatMap((chapter) =>
@@ -127,8 +150,7 @@ export function Statistics() {
     [fQuiz, fProgress, meta],
   );
   const dailyQuizResults = useMemo(() => {
-    const days = timeRange === '7d' ? 7 : timeRange === '30d' ? 30 : null;
-    const cutoff = days ? Date.now() - days * 86_400_000 : 0;
+    const cutoff = startOfRange(timeRange);
     return quizResults
       .filter((result) => {
         if (result.takenAt < cutoff) return false;
@@ -138,8 +160,7 @@ export function Statistics() {
       .sort((left, right) => right.takenAt - left.takenAt);
   }, [quizResults, selected, timeRange]);
   const questionStats = useMemo(() => {
-    const days = timeRange === '7d' ? 7 : timeRange === '30d' ? 30 : null;
-    const cutoff = days ? Date.now() - days * 86_400_000 : 0;
+    const cutoff = startOfRange(timeRange);
     const monthCutoff = Date.now() - 30 * 86_400_000;
     const stats = new Map<string, QuestionStat>();
     for (const result of quizResults) {
@@ -259,8 +280,10 @@ export function Statistics() {
               </div>
               <div className={styles.timeOptions} aria-label="Analytics time range">
               {([
-                ['7d', 'Last 7 days'],
-                ['30d', 'Last 30 days'],
+                ['today', 'Today'],
+                ['week', 'This week'],
+                ['month', 'This month'],
+                ['year', 'This year'],
                 ['all', 'All time'],
               ] as const).map(([value, label]) => (
                 <button
@@ -364,7 +387,7 @@ export function Statistics() {
                   <div className={styles.cardHead}>
                     <h2 className={styles.cardTitle}>Daily activity</h2>
                     <span className={styles.cardHint}>
-                      Questions · {timeRange === 'all' ? 'all recorded days' : `last ${activityDays} days`}
+                      Questions · {TIME_RANGE_LABELS[timeRange].toLowerCase()}
                     </span>
                   </div>
                   <BarChart
