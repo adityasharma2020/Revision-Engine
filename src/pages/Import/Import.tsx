@@ -29,6 +29,65 @@ const TEMPLATE = `{
   "mains": []
 }`;
 
+const AI_PROMPT = `Convert my study material into one valid Revision Engine chapter JSON object.
+
+Important content rules:
+- Use only the material I provide. Do not invent facts, questions, answers, explanations, or citations.
+- I confirm that I created, own, or have permission to use the supplied material.
+- Return raw JSON only: no Markdown fences, introduction, comments, or trailing commas.
+- Use a unique kebab-case chapter id and unique question ids across both arrays.
+- Every prelims answer must exactly match one of that question's option ids.
+- Allowed difficulty values are "easy", "medium", or "hard".
+- If a field is unknown, omit optional fields instead of guessing.
+
+Required structure:
+{
+  "id": "subject-topic-ch01",
+  "subject": "Subject name",
+  "title": "Chapter title",
+  "chapterNumber": 1,
+  "source": "Optional source attribution",
+  "description": "Optional short summary",
+  "tags": ["optional", "chapter-level", "tags"],
+  "prelims": [
+    {
+      "id": "pre-001",
+      "statement": "Complete multiple-choice question",
+      "options": [
+        { "id": "a", "text": "Option A" },
+        { "id": "b", "text": "Option B" }
+      ],
+      "answer": "a",
+      "explanation": "Optional explanation grounded in the supplied material",
+      "difficulty": "medium",
+      "tags": ["topic"],
+      "source": "Optional question source",
+      "origin": "FYQ_Pre_1 or PYQ_Pre_2024 when known",
+      "year": 2024
+    }
+  ],
+  "mains": [
+    {
+      "id": "main-001",
+      "question": "Complete descriptive question",
+      "modelAnswer": "Optional model answer grounded in the supplied material",
+      "keyPoints": ["Point one", "Point two"],
+      "explanation": "Optional examiner guidance",
+      "wordLimit": 250,
+      "marks": 15,
+      "difficulty": "medium",
+      "tags": ["topic"],
+      "origin": "FYQ_M.1 or PYQ_M.2024 when known",
+      "year": 2024
+    }
+  ]
+}
+
+Keep "prelims" and "mains" as arrays even when either is empty. Validate the final JSON and its answer-option matches before responding.
+
+SOURCE MATERIAL:
+[Paste the authorised study material here]`;
+
 export function Import() {
   const navigate = useNavigate();
   const { userChapters, addUserChapter, removeUserChapter } = useUserData();
@@ -37,6 +96,17 @@ export function Import() {
   const [raw, setRaw] = useState('');
   const [parsed, setParsed] = useState<Chapter | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [promptCopied, setPromptCopied] = useState(false);
+
+  const copyPrompt = async () => {
+    try {
+      await navigator.clipboard.writeText(AI_PROMPT);
+      setPromptCopied(true);
+      window.setTimeout(() => setPromptCopied(false), 2000);
+    } catch {
+      setPromptCopied(false);
+    }
+  };
 
   const validate = (text: string) => {
     setRaw(text);
@@ -80,6 +150,32 @@ export function Import() {
         title="Add your own chapter"
         description="Upload or paste a chapter JSON. It's validated, saved to your library, and synced to your account."
       />
+
+      <section className={styles.aiGuide} aria-labelledby="ai-import-title">
+        <div className={styles.guideHeader}>
+          <div>
+            <h2 id="ai-import-title">Create JSON with an AI assistant</h2>
+            <p>Claude, ChatGPT, or another capable tool can format your notes for import.</p>
+          </div>
+          <Button variant="secondary" size="sm" onClick={copyPrompt}>
+            <Icon name={promptCopied ? 'check' : 'copy'} size={16} />
+            {promptCopied ? 'Copied' : 'Copy prompt'}
+          </Button>
+        </div>
+        <ol className={styles.steps}>
+          <li>Copy the prompt, open your preferred AI assistant, and paste it.</li>
+          <li>Replace the final placeholder with material you are authorised to use.</li>
+          <li>Paste its raw JSON response below; the app will validate it before saving.</li>
+        </ol>
+        <details className={styles.promptDetails}>
+          <summary>Preview the prompt and JSON format</summary>
+          <pre>{AI_PROMPT}</pre>
+        </details>
+        <p className={styles.importNote}>
+          AI output can be inaccurate. Review every question and answer, preserve source
+          attribution, and never submit copyrighted or private material without permission.
+        </p>
+      </section>
 
       <div className={styles.dropzone}>
         <input

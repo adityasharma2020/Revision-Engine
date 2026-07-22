@@ -1,10 +1,10 @@
-import { useState } from 'react';
-import { Button, ThemeToggle } from '../../components/common';
-import { AccountPanel } from '../../components/auth/AccountPanel';
-import { Page, PageHeader } from '../../components/layout';
-import { useStorage } from '../../context/StorageContext';
-import { APP_NAME, APP_VERSION } from '../../constants/app';
-import styles from './Settings.module.css';
+import { useState } from "react";
+import { Button, Icon, ThemeToggle } from "../../components/common";
+import { AccountPanel } from "../../components/auth/AccountPanel";
+import { Page, PageHeader } from "../../components/layout";
+import { useStorage } from "../../context/StorageContext";
+import { APP_NAME, APP_VERSION } from "../../constants/app";
+import styles from "./Settings.module.css";
 
 export function Settings() {
   const { storage } = useStorage();
@@ -12,7 +12,7 @@ export function Settings() {
 
   const resetAll = async () => {
     const confirmed = window.confirm(
-      'This permanently deletes all revision progress, bookmarks and preferences on this device. Continue?',
+      "This permanently deletes all revision progress, bookmarks and preferences on this device. Continue?"
     );
     if (!confirmed) return;
     await storage.resetAll();
@@ -23,18 +23,16 @@ export function Settings() {
   return (
     <Page narrow>
       <PageHeader
-        eyebrow="Settings"
-        title="Preferences"
-        description="Personalise the app. Everything is stored locally on this device."
+        eyebrow='Settings'
+        title='Preferences'
+        description='Personalise the app. Everything is stored locally on this device.'
       />
 
       <section className={styles.group}>
         <div className={styles.stack}>
           <div className={styles.rowText}>
             <h3 className={styles.rowTitle}>Account &amp; sync</h3>
-            <p className={styles.rowDesc}>
-              Sign in to continue on any device.
-            </p>
+            <p className={styles.rowDesc}>Sign in to continue on any device.</p>
           </div>
           <AccountPanel />
         </div>
@@ -44,7 +42,9 @@ export function Settings() {
         <div className={styles.row}>
           <div className={styles.rowText}>
             <h3 className={styles.rowTitle}>Appearance</h3>
-            <p className={styles.rowDesc}>Choose light, dark, or follow your system.</p>
+            <p className={styles.rowDesc}>
+              Choose light, dark, or follow your system.
+            </p>
           </div>
           <ThemeToggle />
         </div>
@@ -58,19 +58,35 @@ export function Settings() {
               Clear progress, bookmarks and preferences from this browser.
             </p>
           </div>
-          <Button variant="danger" onClick={resetAll} disabled={cleared}>
+          <Button variant='danger' onClick={resetAll} disabled={cleared}>
             Reset data
           </Button>
         </div>
       </section>
 
       <section className={styles.group}>
-        <div className={styles.row}>
-          <div className={styles.rowText}>
-            <h3 className={styles.rowTitle}>About</h3>
-            <p className={styles.rowDesc}>{APP_NAME} application version.</p>
+        <div className={styles.about}>
+          <div className={styles.row}>
+            <div className={styles.rowText}>
+              <h3 className={styles.rowTitle}>About</h3>
+              <p className={styles.rowDesc}>{APP_NAME} application version.</p>
+            </div>
+            <code className={styles.version}>v{APP_VERSION}</code>
           </div>
-          <code className={styles.version}>v{APP_VERSION}</code>
+          <div className={styles.responsibleUse} role='note'>
+            <h4>Learn responsibly</h4>
+            <p>
+              This is an educational study tool. Only import material you
+              created, own, or have permission to use. Respect copyright,
+              licences, privacy, and source terms; do not upload or share
+              pirated, confidential, or unlawfully copied content. You are
+              responsible for the content you import and how you use it.
+            </p>
+          </div>
+          <p className={styles.credit}>
+            Made with <Icon name='heart' size={15} className={styles.heart} />{" "}
+            by Aditya Sharma.
+          </p>
         </div>
       </section>
     </Page>

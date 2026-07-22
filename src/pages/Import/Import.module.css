@@ -1,3 +1,77 @@
+.aiGuide {
+  margin-bottom: var(--space-5);
+  padding: var(--space-5);
+  background-color: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+}
+
+.guideHeader {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--space-4);
+}
+
+.guideHeader h2 {
+  font-size: var(--text-md);
+  font-weight: var(--weight-semibold);
+}
+
+.guideHeader p {
+  margin-top: var(--space-1);
+  font-size: var(--text-sm);
+  color: var(--text-secondary);
+}
+
+.guideHeader button {
+  flex-shrink: 0;
+}
+
+.steps {
+  display: grid;
+  gap: var(--space-2);
+  margin: var(--space-4) 0;
+  padding-left: var(--space-5);
+  font-size: var(--text-sm);
+  line-height: var(--leading-normal);
+  color: var(--text-secondary);
+}
+
+.promptDetails {
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  overflow: hidden;
+}
+
+.promptDetails summary {
+  padding: var(--space-3) var(--space-4);
+  font-size: var(--text-sm);
+  font-weight: var(--weight-medium);
+  color: var(--text-primary);
+  cursor: pointer;
+  background-color: var(--bg-sunken);
+}
+
+.promptDetails pre {
+  max-height: 320px;
+  padding: var(--space-4);
+  overflow: auto;
+  font-family: var(--font-mono);
+  font-size: var(--text-xs);
+  line-height: var(--leading-normal);
+  color: var(--text-secondary);
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+.importNote {
+  margin-top: var(--space-3);
+  font-size: var(--text-xs);
+  line-height: var(--leading-normal);
+  color: var(--text-tertiary);
+}
+
 .dropzone {
   margin-bottom: var(--space-5);
 }
@@ -164,6 +238,14 @@
 }
 
 @media (max-width: 480px) {
+  .aiGuide {
+    padding: var(--space-4);
+  }
+
+  .guideHeader {
+    flex-direction: column;
+  }
+
   .dropInner,
   .preview {
     padding: var(--space-4);
