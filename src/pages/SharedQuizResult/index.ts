@@ -1,0 +1,1 @@
+export { SharedQuizResultPage } from './SharedQuizResult';

@@ -8,9 +8,16 @@
   color: var(--text-secondary);
 }
 .back:hover { color: var(--text-primary); }
-.header { margin-bottom: var(--space-6); }
+.header { display: flex; align-items: flex-start; justify-content: space-between; gap: var(--space-4); margin-bottom: var(--space-6); }
 .header > span { font-size: var(--text-xs); font-weight: var(--weight-semibold); color: var(--accent); text-transform: uppercase; letter-spacing: var(--tracking-wide); }
 .header h1 { margin-top: var(--space-2); font-size: var(--text-2xl); }
 .header p { margin-top: var(--space-1); font-size: var(--text-sm); color: var(--text-secondary); }
 .loading { padding: var(--space-8); text-align: center; color: var(--text-secondary); }
 .action { display: inline-flex; padding: var(--space-2) var(--space-4); color: var(--accent-text); background-color: var(--accent); border-radius: var(--radius-md); }
+.shareActions { display: flex; align-items: center; justify-content: flex-end; gap: var(--space-2); flex-wrap: wrap; }
+.shareActions small { width: 100%; text-align: right; color: var(--danger); }
+@media (max-width: 620px) {
+  .header { flex-direction: column; }
+  .shareActions { width: 100%; justify-content: flex-start; }
+  .shareActions small { text-align: left; }
+}

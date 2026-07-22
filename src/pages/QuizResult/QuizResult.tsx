@@ -1,11 +1,19 @@
+import { useEffect, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import { AsyncBoundary, EmptyState, Icon } from '../../components/common';
+import { Button } from '../../components/common';
 import { Page } from '../../components/layout';
 import { QuizResults } from '../../components/quiz/QuizRunner/QuizResults';
 import { Routes } from '../../constants/routes';
 import { useUserData } from '../../context/UserDataContext';
 import { useChapter } from '../../hooks/useChapters';
 import type { QuizResult } from '../../types';
+import {
+  createQuizShare,
+  getActiveQuizShare,
+  revokeQuizShare,
+} from '../../services/supabase/quizShares';
+import { useAuth } from '../../context/AuthContext';
 import styles from './QuizResult.module.css';
 
 export function QuizResultPage() {
@@ -35,6 +43,16 @@ function LoadedResult({ result }: { result: QuizResult }) {
   const chapterState = useChapter(result.chapterId);
   const navigate = useNavigate();
   const { setQuizResultAnalytics } = useUserData();
+  const { status } = useAuth();
+  const [shareToken, setShareToken] = useState<string | null>(null);
+  const [shareStatus, setShareStatus] = useState<'idle' | 'working' | 'copied' | 'error'>('idle');
+
+  useEffect(() => {
+    if (status !== 'authenticated') return;
+    void getActiveQuizShare(result.id)
+      .then(setShareToken)
+      .catch(() => setShareStatus('error'));
+  }, [result.id, status]);
 
   return (
     <>
@@ -42,14 +60,6 @@ function LoadedResult({ result }: { result: QuizResult }) {
         <Icon name="arrowLeft" size={16} />
         Quiz history
       </Link>
-      <header className={styles.header}>
-        <span>Saved result</span>
-        <h1>{result.chapterTitle ?? 'Quiz attempt'}</h1>
-        <p>{new Intl.DateTimeFormat(undefined, {
-          dateStyle: 'long',
-          timeStyle: 'short',
-        }).format(result.takenAt)}</p>
-      </header>
       <AsyncBoundary state={chapterState} loadingLabel="Loading result details…">
         {(chapter) => {
           const reviewedIds = result.perQuestion?.length
@@ -59,7 +69,64 @@ function LoadedResult({ result }: { result: QuizResult }) {
             ? chapter.prelims.filter((question) => reviewedIds.has(question.id))
             : chapter.prelims;
           return (
-            <QuizResults
+            <>
+              <header className={styles.header}>
+                <div>
+                  <span>Saved result</span>
+                  <h1>{result.chapterTitle ?? 'Quiz attempt'}</h1>
+                  <p>{new Intl.DateTimeFormat(undefined, {
+                    dateStyle: 'long',
+                    timeStyle: 'short',
+                  }).format(result.takenAt)}</p>
+                </div>
+                {status === 'authenticated' && (
+                  <div className={styles.shareActions}>
+                    <Button
+                      variant="secondary"
+                      size="sm"
+                      disabled={shareStatus === 'working'}
+                      onClick={async () => {
+                        setShareStatus('working');
+                        try {
+                          const token = await createQuizShare(result, questions);
+                          setShareToken(token);
+                          await navigator.clipboard.writeText(
+                            `${window.location.origin}${Routes.sharedQuizResult(token)}`,
+                          );
+                          setShareStatus('copied');
+                        } catch {
+                          setShareStatus('error');
+                        }
+                      }}
+                    >
+                      <Icon name={shareStatus === 'copied' ? 'check' : 'share'} size={15} />
+                      {shareStatus === 'working'
+                        ? 'Preparing…'
+                        : shareStatus === 'copied' ? 'Link copied' : 'Share result'}
+                    </Button>
+                    {shareToken && (
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={async () => {
+                          setShareStatus('working');
+                          try {
+                            await revokeQuizShare(shareToken);
+                            setShareToken(null);
+                            setShareStatus('idle');
+                          } catch {
+                            setShareStatus('error');
+                          }
+                        }}
+                      >
+                        Stop sharing
+                      </Button>
+                    )}
+                    {shareStatus === 'error' && <small>Sharing failed. Check Supabase setup.</small>}
+                  </div>
+                )}
+              </header>
+              <QuizResults
               historical
               questions={questions}
               answers={result.answers}
@@ -80,7 +147,8 @@ function LoadedResult({ result }: { result: QuizResult }) {
               onAnalyticsChange={(included) => setQuizResultAnalytics(result.id, included)}
               onRetry={() => navigate(Routes.chapter(result.chapterId))}
               onExit={() => navigate(Routes.chapter(result.chapterId))}
-            />
+              />
+            </>
           );
         }}
       </AsyncBoundary>

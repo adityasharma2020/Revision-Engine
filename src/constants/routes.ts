@@ -5,6 +5,7 @@ export const Routes = {
   chapter: (chapterId: string = ':chapterId') => `/chapter/${chapterId}`,
   quiz: (chapterId: string = ':chapterId') => `/chapter/${chapterId}/revise`,
   quizResult: (resultId: string = ':resultId') => `/results/${resultId}`,
+  sharedQuizResult: (shareToken: string = ':shareToken') => `/shared/${shareToken}`,
   statistics: '/statistics',
   bookmarks: '/bookmarks',
   import: '/import',

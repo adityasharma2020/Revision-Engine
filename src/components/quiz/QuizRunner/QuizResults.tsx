@@ -18,6 +18,7 @@ interface QuizResultsProps {
   focusLossCount?: number;
   focusPenaltyTotal?: number;
   adjustedScore?: number;
+  exitLabel?: string;
 }
 
 type ReviewFilter = 'all' | 'incorrect' | 'skipped' | 'correct';
@@ -34,6 +35,7 @@ export function QuizResults({
   focusLossCount = 0,
   focusPenaltyTotal = 0,
   adjustedScore,
+  exitLabel,
 }: QuizResultsProps) {
   const [reviewFilter, setReviewFilter] = useState<ReviewFilter>('all');
   const [included, setIncluded] = useState(includedInAnalytics);
@@ -80,7 +82,7 @@ export function QuizResults({
           <div className={styles.scoreActions}>
             {!historical && <Button variant="primary" onClick={onRetry}>Retry quiz</Button>}
             <Button variant="ghost" onClick={onExit}>
-              {historical ? 'Back to history' : 'Back to learning'}
+              {exitLabel ?? (historical ? 'Back to history' : 'Back to learning')}
             </Button>
           </div>
           {onAnalyticsChange && (

@@ -11,6 +11,7 @@ import { Settings } from './pages/Settings';
 import { Search } from './pages/Search';
 import { Statistics } from './pages/Statistics';
 import { QuizResultPage } from './pages/QuizResult';
+import { SharedQuizResultPage } from './pages/SharedQuizResult';
 
 /** Route table. All app pages render inside the persistent AppShell. */
 export function App() {
@@ -22,6 +23,7 @@ export function App() {
           <Route path={Routes.search} element={<Search />} />
           <Route path={Routes.chapter()} element={<Chapter />} />
           <Route path={Routes.quizResult()} element={<QuizResultPage />} />
+          <Route path={Routes.sharedQuizResult()} element={<SharedQuizResultPage />} />
           <Route path={Routes.import} element={<Import />} />
           <Route path={Routes.statistics} element={<Statistics />} />
           <Route path={Routes.bookmarks} element={<Bookmarks />} />
