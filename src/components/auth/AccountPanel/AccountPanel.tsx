@@ -3,7 +3,12 @@ import { useAuth } from '../../../context/AuthContext';
 import { useStorage } from '../../../context/StorageContext';
 import { Button } from '../../common/Button';
 import { Icon } from '../../common/Icon';
+import { UserAvatar } from '../../common/UserAvatar';
 import styles from './AccountPanel.module.css';
+
+// Keep passwordless email authentication implemented, but out of the primary
+// sign-in experience until it is intentionally enabled again.
+const SHOW_EMAIL_LINK_SIGN_IN = false;
 
 /**
  * Account + sync surface for Settings. Handles all auth states: signed in,
@@ -33,13 +38,13 @@ export function AccountPanel() {
     return (
       <div className={styles.account}>
         <div className={styles.identity}>
-          {user.avatarUrl ? (
-            <img src={user.avatarUrl} alt="" className={styles.avatar} />
-          ) : (
-            <span className={styles.avatarFallback}>
-              {(user.displayName ?? user.email ?? '?').charAt(0).toUpperCase()}
-            </span>
-          )}
+          <UserAvatar
+            src={user.avatarUrl}
+            name={user.displayName}
+            email={user.email}
+            className={styles.avatar}
+            fallbackClassName={styles.avatarFallback}
+          />
           <div className={styles.identityText}>
             <span className={styles.name}>{user.displayName ?? 'Signed in'}</span>
             {user.email && <span className={styles.email}>{user.email}</span>}
@@ -69,7 +74,7 @@ export function AccountPanel() {
     else setError(res.error ?? 'Could not send the link.');
   };
 
-  if (sentTo) {
+  if (SHOW_EMAIL_LINK_SIGN_IN && sentTo) {
     return (
       <div className={styles.note}>
         <Icon name="check" size={16} /> Magic link sent to <strong>{sentTo}</strong>.
@@ -84,26 +89,30 @@ export function AccountPanel() {
         Sign in to sync your progress, bookmarks and uploads across devices. Your
         current local data merges into your account.
       </p>
-      <Button variant="secondary" fullWidth onClick={() => void signInWithGoogle()}>
+      <Button variant="secondary" fullWidth className={styles.googleSignIn} onClick={() => void signInWithGoogle()}>
         <Icon name="sparkle" size={16} /> Continue with Google
       </Button>
-      <div className={styles.divider}>
-        <span>or</span>
-      </div>
-      <form className={styles.emailForm} onSubmit={submitEmail}>
-        <input
-          type="email"
-          required
-          className={styles.emailInput}
-          placeholder="you@example.com"
-          value={email}
-          onChange={(e) => setEmail(e.target.value)}
-        />
-        <Button variant="primary" type="submit" disabled={sending}>
-          {sending ? 'Sending…' : 'Email me a link'}
-        </Button>
-      </form>
-      {error && <p className={styles.error}>{error}</p>}
+      {SHOW_EMAIL_LINK_SIGN_IN && (
+        <>
+          <div className={styles.divider}>
+            <span>or</span>
+          </div>
+          <form className={styles.emailForm} onSubmit={submitEmail}>
+            <input
+              type="email"
+              required
+              className={styles.emailInput}
+              placeholder="you@example.com"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+            />
+            <Button variant="primary" type="submit" disabled={sending}>
+              {sending ? 'Sending…' : 'Email me a link'}
+            </Button>
+          </form>
+          {error && <p className={styles.error}>{error}</p>}
+        </>
+      )}
     </div>
   );
 }

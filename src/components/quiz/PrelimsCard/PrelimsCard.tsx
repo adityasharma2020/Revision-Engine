@@ -23,6 +23,8 @@ interface PrelimsCardProps {
   chapterId?: string;
   onAnswered?: (correct: boolean, selectedOptionId: string) => void;
   elementId?: string;
+  focusLabel?: string;
+  highlighted?: boolean;
 }
 
 /**
@@ -38,12 +40,14 @@ export function PrelimsCard({
   chapterId,
   onAnswered,
   elementId,
+  focusLabel = 'Search match',
+  highlighted = false,
 }: PrelimsCardProps) {
   const { recordAttempt } = useUserData();
   const [picked, setPicked] = useState<string | null>(null);
   const shownAt = useRef(Date.now());
   const isReview = mode === 'review';
-  const annotatable = !isReview && Boolean(chapterId);
+  const annotatable = Boolean(chapterId);
   const selected = isReview ? selectedOptionId : picked;
   const revealed = isReview || picked !== null;
   const locked = isReview || picked !== null;
@@ -69,7 +73,7 @@ export function PrelimsCard({
   };
 
   return (
-    <article id={elementId} className={styles.card}>
+    <article id={elementId} data-focus-label={focusLabel} className={cx(styles.card, highlighted && styles.highlighted)}>
       <div className={styles.head}>
         <span className={styles.index}>{index}</span>
         <QuestionStem question={question} className={styles.statement} />

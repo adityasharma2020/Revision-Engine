@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Link, useParams, useSearchParams } from 'react-router-dom';
+import { Link, useLocation, useParams, useSearchParams } from 'react-router-dom';
 import { AsyncBoundary, Badge, Button, EmptyState, Icon, Tabs } from '../../components/common';
 import { Page } from '../../components/layout';
 import { MainsCard } from '../../components/quiz/MainsCard';
@@ -24,7 +24,7 @@ export function Chapter() {
   return (
     <Page narrow>
       <AsyncBoundary state={state} loadingLabel="Loading chapter…">
-        {(chapter) => <ChapterView chapter={chapter} />}
+        {(chapter) => <ChapterView key={chapter.id} chapter={chapter} />}
       </AsyncBoundary>
     </Page>
   );
@@ -32,13 +32,28 @@ export function Chapter() {
 
 function ChapterView({ chapter }: { chapter: ChapterModel }) {
   const [searchParams] = useSearchParams();
+  const location = useLocation();
   const { hue, label } = subjectStyle(chapter.subject);
-  const [mode, setMode] = useState<Mode>('quiz');
   const requestedTab = searchParams.get('tab');
+  const requestedMode = searchParams.get('mode');
+  const hasQuestionTarget = location.hash.startsWith('#question-');
+  const focusLabel = searchParams.get('focus') === 'bookmark'
+    ? 'Bookmarked question'
+    : 'Search match';
+  const [mode, setMode] = useState<Mode>(() => {
+    if (requestedTab || hasQuestionTarget) return 'learning';
+    if (requestedMode === 'quiz') return 'quiz';
+    if (hasQuizDraft(chapter.id)) return 'quiz';
+    return 'quiz';
+  });
   const [tab, setTab] = useState<TabId>(requestedTab === 'mains' || requestedTab === 'prelims'
     ? requestedTab
     : chapter.prelims.length > 0 ? 'prelims' : 'mains');
-  const [origin, setOrigin] = useState<OriginFilter>('all');
+  const [origins, setOrigins] = useState<Record<Mode, OriginFilter>>({
+    quiz: 'all',
+    learning: 'all',
+  });
+  const origin = origins[mode];
   const [quizActive, setQuizActive] = useState(false);
   const [quizImmersive, setQuizImmersive] = useState(false);
   const [leaveQuizOpen, setLeaveQuizOpen] = useState(false);
@@ -50,7 +65,20 @@ function ChapterView({ chapter }: { chapter: ChapterModel }) {
       .map((question) => questionOriginKind(question.origin)),
   );
   const quizDraftPresent = hasQuizDraft(chapter.id);
-  const hideStudyChrome = quizDraftPresent || quizImmersive;
+  const hideStudyChrome = mode === 'quiz' && (quizDraftPresent || quizImmersive);
+
+  useEffect(() => {
+    if (!hasQuestionTarget) return;
+    setMode('learning');
+    if (requestedTab === 'prelims' || requestedTab === 'mains') setTab(requestedTab);
+    setOrigins((current) => current.learning === 'all'
+      ? current
+      : { ...current, learning: 'all' });
+  }, [hasQuestionTarget, location.hash, requestedTab]);
+
+  useEffect(() => {
+    if (requestedMode === 'quiz' && hasQuizDraft(chapter.id)) setMode('quiz');
+  }, [chapter.id, requestedMode]);
 
   const changeMode = (next: Mode) => {
     if (next === 'learning' && mode === 'quiz' && (quizActive || hasQuizDraft(chapter.id))) {
@@ -73,8 +101,8 @@ function ChapterView({ chapter }: { chapter: ChapterModel }) {
           <Badge hue={hue}>{label}</Badge>
           <span className={styles.chapterNo}>Chapter {chapter.chapterNumber}</span>
           {!hideStudyChrome && (
-            <Link to={`${Routes.search}?chapter=${encodeURIComponent(chapter.id)}`} className={styles.chapterSearch}>
-              <Icon name="search" size={15} /> Search chapter
+            <Link to={Routes.search} className={styles.chapterSearch}>
+              <Icon name="search" size={15} /> Global search
             </Link>
           )}
         </div>
@@ -107,9 +135,9 @@ function ChapterView({ chapter }: { chapter: ChapterModel }) {
         </button>
       </div>}
 
-      {!hideStudyChrome && availableOrigins.size > 0 && (
-        <div className={styles.originFilter} aria-label="Filter questions by origin">
-          <span className={styles.filterLabel}>Question source</span>
+      {!hideStudyChrome && mode === 'quiz' && availableOrigins.size > 0 && (
+        <div className={styles.originFilter} aria-label={`Filter ${mode} questions by origin`}>
+          <span className={styles.filterLabel}>Quiz source</span>
           <div className={styles.filterOptions}>
             {(['all', 'fyq', 'pyq', 'other'] as const).map((value) =>
               value === 'all' || availableOrigins.has(value) ? (
@@ -118,9 +146,9 @@ function ChapterView({ chapter }: { chapter: ChapterModel }) {
                   type="button"
                   className={origin === value ? styles.filterActive : styles.filterButton}
                   aria-pressed={origin === value}
-                  disabled={quizActive || quizDraftPresent}
+                  disabled={mode === 'quiz' && (quizActive || quizDraftPresent)}
                   title={quizActive ? 'Finish or leave the active quiz before changing its source.' : undefined}
-                  onClick={() => setOrigin(value)}
+                  onClick={() => setOrigins((current) => ({ ...current, [mode]: value }))}
                 >
                   {value === 'all' ? 'All' : value.toUpperCase()}
                 </button>
@@ -145,6 +173,11 @@ function ChapterView({ chapter }: { chapter: ChapterModel }) {
           mains={filteredMains}
           tab={tab}
           onTab={setTab}
+          origin={origins.learning}
+          availableOrigins={availableOrigins}
+          onOrigin={(value) => setOrigins((current) => ({ ...current, learning: value }))}
+          targetHash={location.hash}
+          focusLabel={focusLabel}
         />
       )}
 
@@ -178,21 +211,35 @@ function LearningView({
   mains,
   tab,
   onTab,
+  origin,
+  availableOrigins,
+  onOrigin,
+  targetHash,
+  focusLabel,
 }: {
   chapter: ChapterModel;
   prelims: readonly PrelimsQuestion[];
   mains: readonly MainsQuestion[];
   tab: TabId;
   onTab: (t: TabId) => void;
+  origin: OriginFilter;
+  availableOrigins: ReadonlySet<QuestionOriginKind>;
+  onOrigin: (origin: OriginFilter) => void;
+  targetHash: string;
+  focusLabel: string;
 }) {
+  const targetElementId = targetHash.startsWith('#question-')
+    ? decodeURIComponent(targetHash.slice(1))
+    : '';
+
   useEffect(() => {
-    if (!window.location.hash.startsWith('#question-')) return;
+    if (!targetHash.startsWith('#question-')) return;
     const frame = window.requestAnimationFrame(() => {
-      document.getElementById(decodeURIComponent(window.location.hash.slice(1)))
+      document.getElementById(decodeURIComponent(targetHash.slice(1)))
         ?.scrollIntoView({ behavior: 'smooth', block: 'center' });
     });
     return () => window.cancelAnimationFrame(frame);
-  }, [tab, prelims, mains]);
+  }, [tab, prelims, mains, targetHash]);
 
   return (
     <>
@@ -208,16 +255,37 @@ function LearningView({
         />
       </div>
 
+      {availableOrigins.size > 0 && (
+        <div className={styles.originFilter} aria-label="Filter learning questions by origin">
+          <span className={styles.filterLabel}>Learning source</span>
+          <div className={styles.filterOptions}>
+            {(['all', 'fyq', 'pyq', 'other'] as const).map((value) =>
+              value === 'all' || availableOrigins.has(value) ? (
+                <button
+                  key={value}
+                  type="button"
+                  className={origin === value ? styles.filterActive : styles.filterButton}
+                  aria-pressed={origin === value}
+                  onClick={() => onOrigin(value)}
+                >
+                  {value === 'all' ? 'All' : value.toUpperCase()}
+                </button>
+              ) : null,
+            )}
+          </div>
+        </div>
+      )}
+
       {tab === 'prelims' ? (
         <QuestionList empty="No prelims questions in this chapter.">
           {prelims.map((q, i) => (
-            <PrelimsCard key={q.id} elementId={`question-${q.id}`} question={q} index={i + 1} chapterId={chapter.id} />
+            <PrelimsCard key={q.id} elementId={`question-${q.id}`} highlighted={targetElementId === `question-${q.id}`} focusLabel={focusLabel} question={q} index={i + 1} chapterId={chapter.id} />
           ))}
         </QuestionList>
       ) : (
         <QuestionList empty="No mains questions in this chapter.">
           {mains.map((q, i) => (
-            <MainsCard key={q.id} elementId={`question-${q.id}`} question={q} index={i + 1} chapterId={chapter.id} />
+            <MainsCard key={q.id} elementId={`question-${q.id}`} highlighted={targetElementId === `question-${q.id}`} focusLabel={focusLabel} question={q} index={i + 1} chapterId={chapter.id} />
           ))}
         </QuestionList>
       )}

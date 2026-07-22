@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useReducer } from 'react';
-import type { PrelimsQuestion, QuizAnswerMap } from '../types';
+import type { PrelimsQuestion, QuizAnswerMap, QuizQuestionSet } from '../types';
 
 export interface QuizSessionState {
   status: 'active' | 'paused' | 'finished';
@@ -70,8 +70,9 @@ function init(total: number, settings: QuizSettings): QuizSessionState {
 }
 
 interface StoredQuizDraft {
-  version: 1 | 2;
+  version: 1 | 2 | 3;
   questionIds: string[];
+  questionSet?: QuizQuestionSet;
   state: QuizSessionState;
 }
 
@@ -86,25 +87,43 @@ export function findActiveQuizDraft(): {
   status: 'active' | 'paused';
   settings: QuizSettings;
   questionIds: readonly string[];
+  questionSet?: QuizQuestionSet;
 } | null {
+  let latest: ({
+    chapterId: string;
+    status: 'active' | 'paused';
+    settings: QuizSettings;
+    questionIds: readonly string[];
+    questionSet?: QuizQuestionSet;
+  } & { startedAt: number }) | null = null;
   try {
     for (let index = 0; index < sessionStorage.length; index += 1) {
       const key = sessionStorage.key(index);
       if (key?.startsWith(QUIZ_DRAFT_PREFIX)) {
-        const raw = sessionStorage.getItem(key);
-        const draft = raw ? JSON.parse(raw) as StoredQuizDraft : null;
-        return {
-          chapterId: key.slice(QUIZ_DRAFT_PREFIX.length),
-          status: draft?.state.status === 'paused' ? 'paused' : 'active',
-          settings: settingsFromDraft(draft?.state),
-          questionIds: draft?.questionIds ?? [],
-        };
+        try {
+          const raw = sessionStorage.getItem(key);
+          const draft = raw ? JSON.parse(raw) as StoredQuizDraft : null;
+          if (!draft || !['active', 'paused'].includes(draft.state.status)) continue;
+          const candidate = {
+            chapterId: key.slice(QUIZ_DRAFT_PREFIX.length),
+            status: draft.state.status as 'active' | 'paused',
+            settings: settingsFromDraft(draft.state),
+            questionIds: draft.questionIds ?? [],
+            questionSet: draft.questionSet,
+            startedAt: draft.state.startedAt ?? 0,
+          };
+          if (!latest || candidate.startedAt > latest.startedAt) latest = candidate;
+        } catch {
+          // Ignore a corrupt/stale entry and continue looking for a valid run.
+        }
       }
     }
   } catch {
     // Storage can be unavailable in hardened/private browser contexts.
   }
-  return null;
+  if (!latest) return null;
+  const { startedAt: _startedAt, ...draft } = latest;
+  return draft;
 }
 
 export function announceQuizLock(chapterId: string | null, locked = false): void {
@@ -133,7 +152,7 @@ function restoreDraft(key: string, questions: readonly PrelimsQuestion[], settin
     const draft = JSON.parse(raw) as StoredQuizDraft;
     const ids = questions.map((question) => question.id);
     if (
-      ![1, 2].includes(draft.version) ||
+      ![1, 2, 3].includes(draft.version) ||
       draft.state.status === 'finished' ||
       draft.state.total !== questions.length ||
       draft.questionIds.join('\n') !== ids.join('\n')
@@ -155,7 +174,10 @@ function restoreDraft(key: string, questions: readonly PrelimsQuestion[], settin
 
 export function hasQuizDraft(chapterId: string): boolean {
   try {
-    return sessionStorage.getItem(quizDraftKey(chapterId)) !== null;
+    const raw = sessionStorage.getItem(quizDraftKey(chapterId));
+    if (!raw) return false;
+    const draft = JSON.parse(raw) as StoredQuizDraft;
+    return draft.state.status === 'active' || draft.state.status === 'paused';
   } catch {
     return false;
   }
@@ -249,6 +271,7 @@ export function useQuizSession(
   questions: readonly PrelimsQuestion[],
   chapterId: string,
   settings: QuizSettings,
+  questionSet: QuizQuestionSet,
 ) {
   const draftKey = quizDraftKey(chapterId);
   const [state, dispatch] = useReducer(
@@ -263,17 +286,19 @@ export function useQuizSession(
       return;
     }
     const draft: StoredQuizDraft = {
-      version: 2,
+      version: 3,
       questionIds: questions.map((question) => question.id),
+      questionSet,
       state,
     };
     sessionStorage.setItem(draftKey, JSON.stringify(draft));
-  }, [draftKey, questions, state]);
+  }, [draftKey, questionSet, questions, state]);
 
   useEffect(() => {
     const warn = (event: BeforeUnloadEvent) => {
       if (state.status !== 'active' || !state.settings.lockNavigation) return;
       event.preventDefault();
+      event.returnValue = true;
     };
     window.addEventListener('beforeunload', warn);
     return () => window.removeEventListener('beforeunload', warn);

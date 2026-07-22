@@ -4,6 +4,7 @@ import type { QuizSummary } from '../../../hooks/useQuizSession';
 import { Button } from '../../common/Button';
 import { humanizeDuration } from '../../../utils/time';
 import { PrelimsCard } from '../PrelimsCard';
+import type { QuestionAttemptStats } from '../../../utils/questionStats';
 import styles from './QuizRunner.module.css';
 
 interface QuizResultsProps {
@@ -24,6 +25,8 @@ interface QuizResultsProps {
     warningsAllowed: number;
     deductionPerExit: number;
   };
+  questionHistory?: ReadonlyMap<string, QuestionAttemptStats>;
+  chapterId?: string;
 }
 
 type ReviewFilter = 'all' | 'incorrect' | 'skipped' | 'correct';
@@ -42,6 +45,8 @@ export function QuizResults({
   adjustedScore,
   exitLabel,
   focusPenaltyPolicy,
+  questionHistory,
+  chapterId,
 }: QuizResultsProps) {
   const [reviewFilter, setReviewFilter] = useState<ReviewFilter>('all');
   const [included, setIncluded] = useState(includedInAnalytics);
@@ -157,15 +162,28 @@ export function QuizResults({
         </div>
       </div>
       <div className={styles.reviewList}>
-        {visibleQuestions.map((q) => (
-          <PrelimsCard
-            key={q.id}
-            question={q}
-            index={questions.indexOf(q) + 1}
-            mode="review"
-            selectedOptionId={answers[q.id] ?? null}
-          />
-        ))}
+        {visibleQuestions.map((q) => {
+          const history = questionHistory?.get(q.id);
+          return (
+            <div key={q.id} className={styles.reviewQuestion}>
+              {history && (
+                <div className={styles.reviewQuestionHistory}>
+                  <strong>Lifetime · {history.attempts} attempt{history.attempts === 1 ? '' : 's'}</strong>
+                  <span className={styles.statCorrect}>{history.correct} correct</span>
+                  <span className={styles.statIncorrect}>{history.incorrect} wrong</span>
+                  <span>{history.skipped} skipped</span>
+                </div>
+              )}
+              <PrelimsCard
+                question={q}
+                index={questions.indexOf(q) + 1}
+                mode="review"
+                selectedOptionId={answers[q.id] ?? null}
+                chapterId={chapterId}
+              />
+            </div>
+          );
+        })}
         {visibleQuestions.length === 0 && (
           <p className={styles.reviewEmpty}>No responses match this filter.</p>
         )}

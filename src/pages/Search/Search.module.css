@@ -25,6 +25,7 @@
 }
 .submit:hover { background-color: var(--accent-hover); }
 .searchError { margin-top: var(--space-2); font-size: var(--text-sm); color: var(--danger); }
+.overlayContent { padding: var(--space-5) var(--space-6) var(--space-6); }
 
 .filters {
   display: grid;
@@ -59,6 +60,7 @@
 
 @media (max-width: 800px) { .filters { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
 @media (max-width: 480px) {
+  .overlayContent { padding: var(--space-4); }
   .filters { grid-template-columns: 1fr; }
   .result { padding: var(--space-4); }
   .searchBox { gap: var(--space-2); padding-inline: var(--space-3); }

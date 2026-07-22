@@ -3,7 +3,6 @@ import { EmptyState } from '../../components/common';
 import { Page, PageHeader } from '../../components/layout';
 import { BarChart } from '../../components/statistics/BarChart';
 import { ScopeFilter } from '../../components/statistics/ScopeFilter';
-import { StatBreakdown, type BreakdownRow } from '../../components/statistics/StatBreakdown';
 import { StatTile } from '../../components/statistics/StatTile';
 import { subjectStyle } from '../../constants/subjects';
 import { useUserData } from '../../context/UserDataContext';
@@ -14,20 +13,10 @@ import {
   chapterAnalytics,
   computeOverview,
   dailyActivity,
-  difficultyBreakdown,
-  originBreakdown,
-  studyModeBreakdown,
-  subjectAnalytics,
   type ChapterMetaMap,
 } from '../../utils/analytics';
 import { humanizeDuration } from '../../utils/time';
 import styles from './Statistics.module.css';
-
-const DIFFICULTY_LABEL: Record<string, string> = {
-  easy: 'Easy',
-  medium: 'Medium',
-  hard: 'Hard',
-};
 
 type TimeRange = '7d' | '30d' | 'all';
 
@@ -35,9 +24,12 @@ export function Statistics() {
   const { quizResults, progress, annotations } = useUserData();
   const library = useLibrary();
   const [selected, setSelected] = useState<Set<string>>(new Set());
-  const [timeRange, setTimeRange] = useState<TimeRange>('all');
+  const [timeRange, setTimeRange] = useState<TimeRange>('30d');
 
-  const summaries = library.status === 'success' ? library.data : [];
+  const summaries = useMemo(
+    () => library.status === 'success' ? library.data : [],
+    [library],
+  );
 
   const meta = useMemo<ChapterMetaMap>(() => {
     const map: ChapterMetaMap = {};
@@ -83,22 +75,25 @@ export function Statistics() {
     [fQuiz, fProgress, annotations, meta],
   );
   const trend = useMemo(() => accuracyTrend(fQuiz), [fQuiz]);
-  const activity = useMemo(() => dailyActivity(fQuiz, fProgress, meta), [fQuiz, fProgress, meta]);
+  const activityDays = useMemo(() => {
+    if (timeRange === '7d') return 7;
+    if (timeRange === '30d') return 30;
+    const timestamps = [
+      ...fQuiz.map((result) => result.takenAt),
+      ...Object.values(fProgress).flatMap((chapter) =>
+        Object.values(chapter.attempts).map((attempt) => attempt.attemptedAt),
+      ),
+    ];
+    if (timestamps.length === 0) return 7;
+    const first = Math.min(...timestamps);
+    return Math.max(7, Math.ceil((Date.now() - first) / (24 * 60 * 60 * 1000)) + 1);
+  }, [fProgress, fQuiz, timeRange]);
+  const activity = useMemo(
+    () => dailyActivity(fQuiz, fProgress, meta, activityDays),
+    [activityDays, fQuiz, fProgress, meta],
+  );
   const chapterStats = useMemo(
     () => chapterAnalytics(fQuiz, fProgress, meta),
-    [fQuiz, fProgress, meta],
-  );
-  const subjectStats = useMemo(() => subjectAnalytics(chapterStats), [chapterStats]);
-  const difficulty = useMemo(
-    () => difficultyBreakdown(fQuiz, fProgress, meta),
-    [fQuiz, fProgress, meta],
-  );
-  const origins = useMemo(
-    () => originBreakdown(fQuiz, fProgress, meta),
-    [fQuiz, fProgress, meta],
-  );
-  const studyModes = useMemo(
-    () => studyModeBreakdown(fQuiz, fProgress, meta),
     [fQuiz, fProgress, meta],
   );
 
@@ -106,45 +101,12 @@ export function Statistics() {
     quizResults.length > 0 || Object.keys(progress).length > 0;
   const scopeHasData = overview.answered > 0 || overview.quizzes > 0 || overview.chaptersRevised > 0;
 
-  const subjectRows: BreakdownRow[] = subjectStats.map((s) => ({
-    label: subjectStyle(s.subject).label,
-    value: s.accuracy,
-    max: 100,
-    display: `${s.accuracy}%`,
-    caption: `${s.attempts} attempts · ${s.chapters} chapter${s.chapters === 1 ? '' : 's'}`,
-    hue: subjectStyle(s.subject).hue,
-  }));
-
-  const difficultyRows: BreakdownRow[] = difficulty.map((d) => ({
-    label: DIFFICULTY_LABEL[d.difficulty] ?? d.difficulty,
-    value: d.accuracy,
-    max: 100,
-    display: `${d.accuracy}%`,
-    caption: `${d.correct}/${d.attempts} correct`,
-  }));
-
-  const originRows: BreakdownRow[] = origins.map((item) => ({
-    label: item.key,
-    value: item.accuracy,
-    max: 100,
-    display: `${item.accuracy}%`,
-    caption: `${item.correct}/${item.attempts} correct`,
-  }));
-
-  const modeRows: BreakdownRow[] = studyModes.map((item) => ({
-    label: item.key,
-    value: item.accuracy,
-    max: 100,
-    display: `${item.accuracy}%`,
-    caption: `${item.attempts} graded attempts`,
-  }));
-
   return (
     <Page>
       <PageHeader
         eyebrow="Statistics"
         title="Your progress"
-        description="Accuracy, coverage, timing and streaks — for everything, a subject, or any set of chapters."
+        description="A focused view of your daily activity, accuracy and study time."
       />
 
       {!hasAnyActivity ? (
@@ -155,9 +117,13 @@ export function Statistics() {
         />
       ) : (
         <>
-          <div className={styles.timeFilter} aria-label="Analytics time range">
-            <span className={styles.timeLabel}>Time range</span>
-            <div className={styles.timeOptions}>
+          <section className={styles.filters} aria-label="Analytics filters">
+            <div className={styles.filterHead}>
+              <div>
+                <strong>Filter your statistics</strong>
+                <span>The range and chapter selection apply to everything below.</span>
+              </div>
+              <div className={styles.timeOptions} aria-label="Analytics time range">
               {([
                 ['7d', 'Last 7 days'],
                 ['30d', 'Last 30 days'],
@@ -173,12 +139,13 @@ export function Statistics() {
                   {label}
                 </button>
               ))}
+              </div>
             </div>
-          </div>
 
-          {scopeChapters.length > 0 && (
-            <ScopeFilter chapters={scopeChapters} selected={selected} onChange={setSelected} />
-          )}
+            {scopeChapters.length > 0 && (
+              <ScopeFilter chapters={scopeChapters} selected={selected} onChange={setSelected} />
+            )}
+          </section>
 
           {!scopeHasData ? (
             <EmptyState
@@ -188,59 +155,56 @@ export function Statistics() {
             />
           ) : (
             <>
-              <div className={styles.tiles}>
+              <div className={styles.primaryTiles}>
                 <StatTile
                   icon="target"
                   label="Accuracy"
                   value={`${overview.accuracy}%`}
                   sublabel={`${overview.correct}/${overview.answered} correct`}
                 />
-                <StatTile icon="check" label="Answered" value={String(overview.answered)} />
-                <StatTile icon="sparkle" label="Quizzes" value={String(overview.quizzes)} />
-                <StatTile
-                  icon="clock"
-                  label="Avg / question"
-                  value={
-                    overview.avgTimePerQuestionMs
-                      ? humanizeDuration(overview.avgTimePerQuestionMs)
-                      : '—'
-                  }
-                />
+                <StatTile icon="check" label="Questions answered" value={String(overview.answered)} />
                 <StatTile
                   icon="clock"
                   label="Time studied"
                   value={humanizeDuration(overview.timeStudiedMs)}
                 />
-                <StatTile
-                  icon="flame"
-                  label="Current streak"
-                  value={`${overview.currentStreak}d`}
-                  sublabel={`longest ${overview.longestStreak}d`}
-                />
-                <StatTile icon="chart" label="Active days" value={String(overview.activeDays)} />
-                <StatTile
-                  icon="book"
-                  label="Chapters revised"
-                  value={String(overview.chaptersRevised)}
-                />
               </div>
 
-              <div className={styles.chartGrid}>
-                <section className={styles.card}>
+              <div className={styles.secondaryMetrics} aria-label="Additional statistics">
+                <CompactMetric value={String(overview.quizzes)} label="Quizzes" />
+                <CompactMetric
+                  value={overview.avgTimePerQuestionMs
+                    ? humanizeDuration(overview.avgTimePerQuestionMs)
+                    : '—'}
+                  label="Average per question"
+                />
+                <CompactMetric
+                  value={`${overview.currentStreak}d`}
+                  label="Current streak"
+                  detail={`Best ${overview.longestStreak}d`}
+                />
+                <CompactMetric value={String(overview.activeDays)} label="Active days" />
+                <CompactMetric value={String(overview.chaptersRevised)} label="Chapters revised" />
+              </div>
+
+              <div className={styles.charts}>
+                <section className={`${styles.card} ${styles.activityCard}`}>
                   <div className={styles.cardHead}>
                     <h2 className={styles.cardTitle}>Daily activity</h2>
-                    <span className={styles.cardHint}>Questions · last 14 days</span>
+                    <span className={styles.cardHint}>
+                      Questions · {timeRange === 'all' ? 'all recorded days' : `last ${activityDays} days`}
+                    </span>
                   </div>
                   <BarChart
                     data={activity.map((d) => ({
                       label: d.label,
                       value: d.questions,
-                      tooltip: `${d.label}: ${d.questions} questions · ${humanizeDuration(d.timeMs)}`,
+                      tooltip: `${new Date(d.at).toLocaleDateString(undefined, { weekday: 'short', day: 'numeric', month: 'short', year: 'numeric' })} · ${d.questions} question${d.questions === 1 ? '' : 's'} · ${humanizeDuration(d.timeMs)}`,
                     }))}
                   />
                 </section>
 
-                {trend.length > 0 && (
+                {trend.length > 1 && (
                   <section className={styles.card}>
                     <div className={styles.cardHead}>
                       <h2 className={styles.cardTitle}>Accuracy over time</h2>
@@ -260,42 +224,7 @@ export function Statistics() {
                 )}
               </div>
 
-              <div className={styles.breakdownGrid}>
-                {subjectRows.length > 0 && (
-                  <section className={styles.card}>
-                    <div className={styles.cardHead}>
-                      <h2 className={styles.cardTitle}>Accuracy by subject</h2>
-                    </div>
-                    <StatBreakdown rows={subjectRows} />
-                  </section>
-                )}
-                {difficultyRows.length > 0 && (
-                  <section className={styles.card}>
-                    <div className={styles.cardHead}>
-                      <h2 className={styles.cardTitle}>Accuracy by difficulty</h2>
-                    </div>
-                    <StatBreakdown rows={difficultyRows} />
-                  </section>
-                )}
-                {originRows.length > 0 && (
-                  <section className={styles.card}>
-                    <div className={styles.cardHead}>
-                      <h2 className={styles.cardTitle}>Accuracy by question source</h2>
-                    </div>
-                    <StatBreakdown rows={originRows} />
-                  </section>
-                )}
-                {modeRows.length > 0 && (
-                  <section className={styles.card}>
-                    <div className={styles.cardHead}>
-                      <h2 className={styles.cardTitle}>Learning vs quiz</h2>
-                    </div>
-                    <StatBreakdown rows={modeRows} />
-                  </section>
-                )}
-              </div>
-
-              {chapterStats.length > 0 && (
+              {chapterStats.length > 1 && (
                 <section className={styles.card}>
                   <div className={styles.cardHead}>
                     <h2 className={styles.cardTitle}>Chapter breakdown</h2>
@@ -344,5 +273,19 @@ export function Statistics() {
         </>
       )}
     </Page>
+  );
+}
+
+function CompactMetric({ value, label, detail }: {
+  value: string;
+  label: string;
+  detail?: string;
+}) {
+  return (
+    <div className={styles.compactMetric}>
+      <strong>{value}</strong>
+      <span>{label}</span>
+      {detail && <small>{detail}</small>}
+    </div>
   );
 }

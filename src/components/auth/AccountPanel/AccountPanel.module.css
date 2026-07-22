@@ -90,6 +90,14 @@
   line-height: var(--leading-normal);
   color: var(--text-secondary);
 }
+.googleSignIn.googleSignIn {
+  margin-top: var(--space-1);
+  color: var(--text-primary);
+  background-color: var(--accent-subtle);
+  border-color: color-mix(in srgb, var(--accent) 45%, var(--border));
+  box-shadow: none;
+}
+.googleSignIn.googleSignIn:hover { border-color: var(--accent); }
 .divider {
   display: flex;
   align-items: center;

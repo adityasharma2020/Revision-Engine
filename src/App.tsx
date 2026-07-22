@@ -1,3 +1,4 @@
+import { lazy, Suspense } from 'react';
 import { Route, Routes as RouterRoutes } from 'react-router-dom';
 import { ErrorBoundary } from './components/common';
 import { AppShell } from './components/layout';
@@ -9,10 +10,13 @@ import { Import } from './pages/Import';
 import { NotFound } from './pages/NotFound';
 import { Settings } from './pages/Settings';
 import { Search } from './pages/Search';
-import { Statistics } from './pages/Statistics';
 import { QuizResultPage } from './pages/QuizResult';
 import { SharedQuizResultPage } from './pages/SharedQuizResult';
 import { Library } from './pages/Library';
+
+const Statistics = lazy(() =>
+  import('./pages/Statistics').then((module) => ({ default: module.Statistics })),
+);
 
 /** Route table. All app pages render inside the persistent AppShell. */
 export function App() {
@@ -27,7 +31,10 @@ export function App() {
           <Route path={Routes.quizResult()} element={<QuizResultPage />} />
           <Route path={Routes.sharedQuizResult()} element={<SharedQuizResultPage />} />
           <Route path={Routes.import} element={<Import />} />
-          <Route path={Routes.statistics} element={<Statistics />} />
+          <Route
+            path={Routes.statistics}
+            element={<Suspense fallback={null}><Statistics /></Suspense>}
+          />
           <Route path={Routes.bookmarks} element={<Bookmarks />} />
           <Route path={Routes.settings} element={<Settings />} />
           <Route path="*" element={<NotFound />} />

@@ -1,22 +1,72 @@
-.tiles {
+.primaryTiles {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(min(170px, 100%), 1fr));
+  grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: var(--space-4);
   margin-bottom: var(--space-6);
 }
 
-.timeFilter {
+.secondaryMetrics {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: var(--space-2);
+  margin: calc(-1 * var(--space-2)) 0 var(--space-6);
+}
+.compactMetric {
   display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: var(--space-3);
-  margin-bottom: var(--space-4);
+  min-width: 0;
+  min-height: 76px;
+  flex-direction: column;
+  justify-content: center;
+  padding: var(--space-3) var(--space-4);
+  background-color: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+}
+.compactMetric strong {
+  font-size: var(--text-lg);
+  line-height: 1.15;
+  font-variant-numeric: tabular-nums;
+}
+.compactMetric span {
+  margin-top: 3px;
+  overflow: hidden;
+  font-size: var(--text-xs);
+  color: var(--text-secondary);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.compactMetric small {
+  margin-top: 1px;
+  font-size: var(--text-xs);
+  color: var(--text-tertiary);
 }
 
-.timeLabel {
+.filters {
+  margin-bottom: var(--space-6);
+  padding: var(--space-4);
+  background-color: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+}
+.filterHead {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--space-4);
+  margin-bottom: var(--space-4);
+}
+.filterHead > div:first-child {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.filterHead strong {
   font-size: var(--text-sm);
-  font-weight: var(--weight-medium);
-  color: var(--text-secondary);
+  font-weight: var(--weight-semibold);
+}
+.filterHead span {
+  font-size: var(--text-sm);
+  color: var(--text-tertiary);
 }
 
 .timeOptions {
@@ -41,16 +91,9 @@
   border-color: var(--accent);
 }
 
-.chartGrid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(min(340px, 100%), 1fr));
-  gap: var(--space-4);
-  margin-bottom: var(--space-4);
-}
-
-.breakdownGrid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(min(320px, 100%), 1fr));
+.charts {
+  display: flex;
+  flex-direction: column;
   gap: var(--space-4);
   margin-bottom: var(--space-4);
 }
@@ -60,6 +103,9 @@
   background-color: var(--surface);
   border: 1px solid var(--border);
   border-radius: var(--radius-lg);
+}
+.activityCard {
+  min-height: 320px;
 }
 
 .cardHead {
@@ -140,14 +186,15 @@
 }
 
 @media (max-width: 560px) {
-  .timeFilter {
+  .filterHead {
     align-items: flex-start;
     flex-direction: column;
   }
-  .tiles {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
+  .primaryTiles {
+    grid-template-columns: 1fr;
     gap: var(--space-3);
   }
+  .secondaryMetrics { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 
   .card {
     padding: var(--space-4);
@@ -158,4 +205,9 @@
     flex-direction: column;
     gap: var(--space-1);
   }
+}
+
+@media (min-width: 561px) and (max-width: 860px) {
+  .primaryTiles { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+  .secondaryMetrics { grid-template-columns: repeat(3, minmax(0, 1fr)); }
 }

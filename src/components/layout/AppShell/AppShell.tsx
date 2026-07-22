@@ -7,8 +7,31 @@ import { cx } from '../../../utils/cx';
 import { abandonQuizDraft, findActiveQuizDraft } from '../../../hooks/useQuizSession';
 import { Button } from '../../common/Button';
 import { Icon } from '../../common/Icon';
+import { Search } from '../../../pages/Search';
 
 const SIDEBAR_KEY = 'revision-engine:sidebar-collapsed';
+const QUIZ_HISTORY_GUARD = '__revisionEngineQuizGuard';
+
+function isQuizGuardState(state: unknown): boolean {
+  return Boolean(
+    state
+    && typeof state === 'object'
+    && QUIZ_HISTORY_GUARD in state
+    && (state as Record<string, unknown>)[QUIZ_HISTORY_GUARD] === true,
+  );
+}
+
+function armQuizHistoryGuard(): void {
+  if (isQuizGuardState(window.history.state)) return;
+  const state = window.history.state && typeof window.history.state === 'object'
+    ? window.history.state as Record<string, unknown>
+    : {};
+  window.history.pushState(
+    { ...state, [QUIZ_HISTORY_GUARD]: true },
+    '',
+    window.location.href,
+  );
+}
 
 /** Top-level chrome: persistent sidebar + scrollable routed content. */
 export function AppShell() {
@@ -28,6 +51,7 @@ export function AppShell() {
   );
   const [navigationBlocked, setNavigationBlocked] = useState(false);
   const [blockedDestination, setBlockedDestination] = useState<string | null>(null);
+  const [searchOpen, setSearchOpen] = useState(false);
 
   useEffect(() => {
     const update = (event: Event) => {
@@ -46,6 +70,43 @@ export function AppShell() {
     return () => document.removeEventListener('fullscreenchange', update);
   }, []);
 
+  useEffect(() => {
+    const guardPageExit = (event: BeforeUnloadEvent) => {
+      const draft = findActiveQuizDraft();
+      if (draft?.status !== 'active' || !draft.settings.lockNavigation) return;
+      event.preventDefault();
+      // A truthy returnValue is still required by some browser versions.
+      event.returnValue = true;
+    };
+
+    // Keep this listener mounted for the lifetime of the app. Reading the
+    // draft at event time avoids a stale React-state window during navigation.
+    window.addEventListener('beforeunload', guardPageExit, { capture: true });
+    return () => window.removeEventListener('beforeunload', guardPageExit, { capture: true });
+  }, []);
+
+  useEffect(() => {
+    if (!activeQuizChapter || !quizNavigationLocked) return;
+
+    armQuizHistoryGuard();
+
+    const guardBrowserHistory = (event: PopStateEvent) => {
+      // history.forward() below returns to our sentinel and emits popstate.
+      if (isQuizGuardState(event.state)) return;
+
+      const attemptedDestination = `${window.location.pathname}${window.location.search}${window.location.hash}`;
+      setBlockedDestination(attemptedDestination);
+      setNavigationBlocked(true);
+
+      // popstate itself cannot be cancelled. The sentinel guarantees that the
+      // previous entry is still this quiz document, so moving forward restores
+      // the protected entry before another app route can become active.
+      window.history.forward();
+    };
+    window.addEventListener('popstate', guardBrowserHistory, { capture: true });
+    return () => window.removeEventListener('popstate', guardBrowserHistory, { capture: true });
+  }, [activeQuizChapter, quizNavigationLocked]);
+
   const setCollapsed = (collapsed: boolean) => {
     setUserCollapsed(collapsed);
     localStorage.setItem(SIDEBAR_KEY, String(collapsed));
@@ -54,41 +115,116 @@ export function AppShell() {
   const collapsed = userCollapsed || fullscreen;
 
   useEffect(() => {
+    if (!searchOpen) return;
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+    const closeOnEscape = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') setSearchOpen(false);
+    };
+    window.addEventListener('keydown', closeOnEscape, { capture: true });
+    return () => {
+      document.body.style.overflow = previousOverflow;
+      window.removeEventListener('keydown', closeOnEscape, { capture: true });
+    };
+  }, [searchOpen]);
+
+  const resumeActiveQuiz = () => {
+    const draft = findActiveQuizDraft();
+    const chapterId = draft?.chapterId ?? activeQuizChapter;
+    setNavigationBlocked(false);
+    setBlockedDestination(null);
+    if (chapterId) {
+      navigate(Routes.quiz(chapterId), { replace: true });
+      window.setTimeout(armQuizHistoryGuard, 0);
+    }
+  };
+
+  useEffect(() => {
     const openSearch = (event: KeyboardEvent) => {
       const target = event.target as HTMLElement | null;
       const editing = target?.matches('input, textarea, select, [contenteditable="true"]');
-      if (editing) return;
-      if (event.key === '/' || ((event.metaKey || event.ctrlKey) && event.key.toLowerCase() === 'k')) {
-        event.preventDefault();
-        navigate(Routes.search);
+      const commandKey = event.metaKey || event.ctrlKey;
+      const commandSearch = commandKey && (
+        (!event.shiftKey && event.key.toLowerCase() === 'k')
+        || (event.shiftKey && event.key.toLowerCase() === 'p')
+      );
+      const slashSearch = !editing && !commandKey && event.key === '/';
+
+      if (!commandSearch && !slashSearch) return;
+
+      event.preventDefault();
+      if (activeQuizChapter && quizNavigationLocked) {
+        setBlockedDestination(Routes.search);
+        setNavigationBlocked(true);
+        return;
       }
+      setSearchOpen(true);
     };
     window.addEventListener('keydown', openSearch);
     return () => window.removeEventListener('keydown', openSearch);
-  }, [navigate]);
+  }, [activeQuizChapter, navigate, quizNavigationLocked]);
 
   return (
     <div
       className={cx(styles.shell, collapsed && styles.collapsed)}
       onClickCapture={(event) => {
-        if (!activeQuizChapter || !quizNavigationLocked) return;
         const target = event.target as HTMLElement;
         const link = target.closest('a[href]');
         if (!link) return;
+        const href = link.getAttribute('href');
+        const searchLink = href?.split(/[?#]/)[0] === Routes.search;
+        if (searchLink) {
+          event.preventDefault();
+          event.stopPropagation();
+          if (activeQuizChapter && quizNavigationLocked) {
+            setBlockedDestination(href);
+            setNavigationBlocked(true);
+          } else {
+            setSearchOpen(true);
+          }
+          return;
+        }
+        if (!activeQuizChapter || !quizNavigationLocked) return;
         event.preventDefault();
         event.stopPropagation();
-        setBlockedDestination(link.getAttribute('href'));
+        setBlockedDestination(href);
         setNavigationBlocked(true);
       }}
     >
       <Sidebar
         collapsed={collapsed}
         collapseLocked={fullscreen}
+        searchOpen={searchOpen}
         onToggle={() => setCollapsed(!userCollapsed)}
       />
       <main className={styles.main}>
         <Outlet />
       </main>
+      {searchOpen && (
+        <div className={styles.searchBackdrop} onMouseDown={() => setSearchOpen(false)}>
+          <section
+            className={styles.searchDialog}
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="global-search-title"
+            onMouseDown={(event) => event.stopPropagation()}
+          >
+            <header className={styles.searchHeader}>
+              <div>
+                <span>Knowledge search</span>
+                <h2 id="global-search-title">Search your library</h2>
+                <p>Find chapters, questions, answers, explanations and tags.</p>
+              </div>
+              <button type="button" onClick={() => setSearchOpen(false)} aria-label="Close search">
+                <Icon name="close" size={20} />
+              </button>
+            </header>
+            <div className={styles.searchBody}>
+              <Search overlay onNavigate={() => setSearchOpen(false)} />
+            </div>
+          </section>
+        </div>
+      )}
       {navigationBlocked && (
         <div className={styles.guardBackdrop} onMouseDown={() => setNavigationBlocked(false)}>
           <section
@@ -105,7 +241,7 @@ export function AppShell() {
               prevents overlapping attempts and inaccurate timing.
             </p>
             <div className={styles.guardActions}>
-              <Button variant="primary" onClick={() => setNavigationBlocked(false)}>Continue quiz</Button>
+              <Button variant="primary" onClick={resumeActiveQuiz}>Continue quiz</Button>
               {findActiveQuizDraft()?.settings.allowQuit && activeQuizChapter && (
                 <Button
                   variant="secondary"

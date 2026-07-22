@@ -13,3 +13,4 @@ export { Tabs } from './Tabs';
 export type { TabItem } from './Tabs';
 export { ThemeToggle } from './ThemeToggle';
 export { ErrorBoundary } from './ErrorBoundary';
+export { UserAvatar } from './UserAvatar';

@@ -5,6 +5,7 @@ import { QuestionAnnotations } from '../../annotations/QuestionAnnotations';
 import { Badge } from '../../common/Badge';
 import { Button } from '../../common/Button';
 import { formatQuestionOrigin } from '../../../utils/questionOrigin';
+import { cx } from '../../../utils/cx';
 import styles from './MainsCard.module.css';
 
 interface MainsCardProps {
@@ -13,6 +14,8 @@ interface MainsCardProps {
   /** When provided, enables progress + annotations for this question. */
   chapterId?: string;
   elementId?: string;
+  focusLabel?: string;
+  highlighted?: boolean;
 }
 
 /**
@@ -20,7 +23,7 @@ interface MainsCardProps {
  * mentally, then reveals the model answer, key points and any explanation —
  * the self-evaluation loop that drives mains revision.
  */
-export function MainsCard({ question, index, chapterId, elementId }: MainsCardProps) {
+export function MainsCard({ question, index, chapterId, elementId, focusLabel = 'Search match', highlighted = false }: MainsCardProps) {
   const { recordAttempt } = useUserData();
   const [revealed, setRevealed] = useState(false);
   const shownAt = useRef(Date.now());
@@ -44,7 +47,7 @@ export function MainsCard({ question, index, chapterId, elementId }: MainsCardPr
   };
 
   return (
-    <article id={elementId} className={styles.card}>
+    <article id={elementId} data-focus-label={focusLabel} className={cx(styles.card, highlighted && styles.highlighted)}>
       <div className={styles.head}>
         <span className={styles.index}>{index}</span>
         <div className={styles.headText}>

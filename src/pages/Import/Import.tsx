@@ -1,13 +1,13 @@
-import { useRef, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { Badge, Button, EmptyState, Icon } from '../../components/common';
-import { Page, PageHeader } from '../../components/layout';
-import { Routes } from '../../constants/routes';
-import { subjectStyle } from '../../constants/subjects';
-import { useUserData } from '../../context/UserDataContext';
-import { ChapterParseError, parseChapter } from '../../services/parser';
-import type { Chapter } from '../../types';
-import styles from './Import.module.css';
+import { useRef, useState } from "react";
+import { useNavigate } from "react-router-dom";
+import { Badge, Button, EmptyState, Icon } from "../../components/common";
+import { Page, PageHeader } from "../../components/layout";
+import { Routes } from "../../constants/routes";
+import { subjectStyle } from "../../constants/subjects";
+import { useUserData } from "../../context/UserDataContext";
+import { ChapterParseError, parseChapter } from "../../services/parser";
+import type { Chapter } from "../../types";
+import styles from "./Import.module.css";
 
 const TEMPLATE = `{
   "id": "my-subject-ch01",
@@ -112,7 +112,7 @@ export function Import() {
   const { userChapters, addUserChapter, removeUserChapter } = useUserData();
   const fileInput = useRef<HTMLInputElement>(null);
 
-  const [raw, setRaw] = useState('');
+  const [raw, setRaw] = useState("");
   const [parsed, setParsed] = useState<Chapter | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [promptCopied, setPromptCopied] = useState(false);
@@ -131,31 +131,34 @@ export function Import() {
     setRaw(text);
     setParsed(null);
     setError(null);
-    if (text.trim() === '') return;
+    if (text.trim() === "") return;
     try {
       const chapter = parseChapter(JSON.parse(text));
       setParsed(chapter);
     } catch (err) {
       if (err instanceof ChapterParseError) {
-        setError(`${err.message}${err.path ? ` — at ${err.path}` : ''}`);
+        setError(`${err.message}${err.path ? ` — at ${err.path}` : ""}`);
       } else if (err instanceof SyntaxError) {
         setError(`Invalid JSON — ${err.message}`);
       } else {
-        setError('Could not read this file.');
+        setError("Could not read this file.");
       }
     }
   };
 
   const onFile = (file: File) => {
     const reader = new FileReader();
-    reader.onload = () => validate(String(reader.result ?? ''));
+    reader.onload = () => validate(String(reader.result ?? ""));
     reader.readAsText(file);
   };
 
   const save = () => {
     if (!parsed) return;
     const clash = userChapters.some((c) => c.id === parsed.id);
-    if (clash && !window.confirm(`A chapter with id "${parsed.id}" exists. Replace it?`)) {
+    if (
+      clash &&
+      !window.confirm(`A chapter with id "${parsed.id}" exists. Replace it?`)
+    ) {
       return;
     }
     addUserChapter(parsed);
@@ -165,50 +168,64 @@ export function Import() {
   return (
     <Page narrow>
       <PageHeader
-        eyebrow="Import"
-        title="Add your own chapter"
+        eyebrow='Import'
+        title='Add your own chapter'
         description="Upload or paste a chapter JSON. It's validated, saved to your library, and synced to your account."
       />
 
-      <section className={styles.aiGuide} aria-labelledby="ai-import-title">
+      <section className={styles.aiGuide} aria-labelledby='ai-import-title'>
         <div className={styles.guideHeader}>
           <div>
-            <h2 id="ai-import-title">Create JSON with an AI assistant</h2>
-            <p>Claude, ChatGPT, or another capable tool can format your notes for import.</p>
+            <h2 id='ai-import-title'>Create JSON with an AI assistant</h2>
+            <p>
+              Claude, ChatGPT, or another capable tool can format your notes for
+              import.
+            </p>
           </div>
-          <Button variant="secondary" size="sm" onClick={copyPrompt}>
-            <Icon name={promptCopied ? 'check' : 'copy'} size={16} />
-            {promptCopied ? 'Copied' : 'Copy prompt'}
+          <Button variant='secondary' size='sm' onClick={copyPrompt}>
+            <Icon name={promptCopied ? "check" : "copy"} size={16} />
+            {promptCopied ? "Copied" : "Copy prompt"}
           </Button>
         </div>
         <ol className={styles.steps}>
-          <li>Copy the prompt, open your preferred AI assistant, and paste it.</li>
-          <li>Replace the final placeholder with material you are authorised to use.</li>
-          <li>Paste its raw JSON response below; the app will validate it before saving.</li>
+          <li>
+            Copy the prompt, open your preferred AI assistant, and paste it.
+          </li>
+          <li>
+            Replace the final placeholder with material you are authorised to
+            use.
+          </li>
+          <li>
+            Paste its raw JSON response below; the app will validate it before
+            saving.
+          </li>
         </ol>
         <details className={styles.promptDetails}>
           <summary>Preview the prompt and JSON format</summary>
           <pre>{AI_PROMPT}</pre>
         </details>
         <p className={styles.importNote}>
-          AI output can be inaccurate. Review every question and answer, preserve source
-          attribution, and never submit copyrighted or private material without permission.
+          AI output can be inaccurate. Review every question and answer,
+          preserve source attribution, and never submit copyrighted or private
+          material without permission.
         </p>
       </section>
 
-      <div className={styles.importCaution} role="note">
-        <Badge tone="warning">Advanced import</Badge>
+      <div className={styles.importCaution} role='note'>
+        <Badge tone='warning'>Note: </Badge>
         <p>
-          Continue only if you understand the JSON you are importing. Review its questions,
-          answers, sources, and permissions before saving it to your library.
+          Continue only if you understand what you are doing with the JSON.
+          <br />
+          Review its questions, answers, sources, and permissions before saving
+          it to your library.
         </p>
       </div>
 
       <div className={styles.dropzone}>
         <input
           ref={fileInput}
-          type="file"
-          accept="application/json,.json"
+          type='file'
+          accept='application/json,.json'
           className={styles.hiddenInput}
           onChange={(e) => {
             const file = e.target.files?.[0];
@@ -216,9 +233,14 @@ export function Import() {
           }}
         />
         <div className={styles.dropInner}>
-          <Icon name="plus" size={22} />
-          <p>Choose a <code>.json</code> file, or paste below.</p>
-          <Button variant="secondary" onClick={() => fileInput.current?.click()}>
+          <Icon name='plus' size={22} />
+          <p>
+            Choose a <code>.json</code> file, or paste below.
+          </p>
+          <Button
+            variant='secondary'
+            onClick={() => fileInput.current?.click()}
+          >
             Choose file
           </Button>
         </div>
@@ -227,7 +249,7 @@ export function Import() {
       <label className={styles.pasteLabel}>
         <span>Or paste JSON</span>
         <button
-          type="button"
+          type='button'
           className={styles.templateBtn}
           onClick={() => validate(TEMPLATE)}
         >
@@ -239,13 +261,13 @@ export function Import() {
         value={raw}
         rows={12}
         spellCheck={false}
-        placeholder="Paste chapter JSON here…"
+        placeholder='Paste chapter JSON here…'
         onChange={(e) => validate(e.target.value)}
       />
 
       {error && (
         <div className={styles.error}>
-          <Icon name="close" size={16} />
+          <Icon name='close' size={16} />
           <span>{error}</span>
         </div>
       )}
@@ -256,14 +278,14 @@ export function Import() {
             <Badge hue={subjectStyle(parsed.subject).hue}>
               {subjectStyle(parsed.subject).label}
             </Badge>
-            <Icon name="check" size={18} className={styles.validIcon} />
+            <Icon name='check' size={18} className={styles.validIcon} />
           </div>
           <h3 className={styles.previewTitle}>{parsed.title}</h3>
           <p className={styles.previewMeta}>
-            Chapter {parsed.chapterNumber} · {parsed.prelims.length} prelims ·{' '}
+            Chapter {parsed.chapterNumber} · {parsed.prelims.length} prelims ·{" "}
             {parsed.mains.length} mains
           </p>
-          <Button variant="primary" onClick={save}>
+          <Button variant='primary' onClick={save}>
             Add to library
           </Button>
         </div>
@@ -273,36 +295,38 @@ export function Import() {
         <h2 className={styles.existingTitle}>Your uploads</h2>
         {userChapters.length === 0 ? (
           <EmptyState
-            icon="book"
-            title="No uploads yet"
-            description="Chapters you import appear here and in your library."
+            icon='book'
+            title='No uploads yet'
+            description='Chapters you import appear here and in your library.'
           />
         ) : (
           <ul className={styles.list}>
             {userChapters.map((c) => (
               <li key={c.id} className={styles.item}>
                 <button
-                  type="button"
+                  type='button'
                   className={styles.itemMain}
                   onClick={() => navigate(Routes.chapter(c.id))}
                 >
                   <span className={styles.itemTitle}>{c.title}</span>
                   <span className={styles.itemMeta}>
-                    {subjectStyle(c.subject).label} · {c.prelims.length}P ·{' '}
+                    {subjectStyle(c.subject).label} · {c.prelims.length}P ·{" "}
                     {c.mains.length}M
                   </span>
                 </button>
                 <button
-                  type="button"
+                  type='button'
                   className={styles.remove}
-                  title="Remove"
+                  title='Remove'
                   onClick={() => {
-                    if (window.confirm(`Remove "${c.title}" from your library?`)) {
+                    if (
+                      window.confirm(`Remove "${c.title}" from your library?`)
+                    ) {
                       removeUserChapter(c.id);
                     }
                   }}
                 >
-                  <Icon name="trash" size={16} />
+                  <Icon name='trash' size={16} />
                 </button>
               </li>
             ))}

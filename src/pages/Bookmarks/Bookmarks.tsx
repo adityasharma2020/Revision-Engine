@@ -76,7 +76,7 @@ function BookmarksList({ bookmarks }: { bookmarks: ResolvedBookmark[] }) {
               {group.items.map((item) => (
                 <Link
                   key={item.questionId}
-                  to={Routes.chapter(item.chapterId)}
+                  to={`${Routes.chapter(item.chapterId)}?tab=${item.type}&focus=bookmark#question-${encodeURIComponent(item.questionId)}`}
                   className={styles.item}
                 >
                   <span className={styles.itemType}>{item.type}</span>

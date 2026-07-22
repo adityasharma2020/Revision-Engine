@@ -5,16 +5,18 @@ import { Routes } from '../../../constants/routes';
 import { useAuth } from '../../../context/AuthContext';
 import { Icon } from '../../common/Icon';
 import { ThemeToggle } from '../../common/ThemeToggle';
+import { UserAvatar } from '../../common/UserAvatar';
 import { cx } from '../../../utils/cx';
 import styles from './Sidebar.module.css';
 
 interface SidebarProps {
   collapsed: boolean;
   collapseLocked?: boolean;
+  searchOpen?: boolean;
   onToggle: () => void;
 }
 
-export function Sidebar({ collapsed, collapseLocked = false, onToggle }: SidebarProps) {
+export function Sidebar({ collapsed, collapseLocked = false, searchOpen = false, onToggle }: SidebarProps) {
   const { status, user } = useAuth();
   const signedIn = status === 'authenticated' && user;
 
@@ -44,8 +46,12 @@ export function Sidebar({ collapsed, collapseLocked = false, onToggle }: Sidebar
             to={item.to}
             end={item.end}
             aria-label={item.label}
-            title={item.label}
-            className={({ isActive }) => cx(styles.link, isActive && styles.active)}
+            aria-keyshortcuts={item.to === Routes.search ? 'Meta+Shift+P Control+Shift+P' : undefined}
+            title={item.to === Routes.search ? 'Search (⌘⇧P or Ctrl⇧P)' : item.label}
+            className={({ isActive }) => cx(
+              styles.link,
+              (isActive || (item.to === Routes.search && searchOpen)) && styles.active,
+            )}
           >
             <Icon name={item.icon} size={18} />
             <span>{item.label}</span>
@@ -55,15 +61,17 @@ export function Sidebar({ collapsed, collapseLocked = false, onToggle }: Sidebar
 
       <div className={styles.footer}>
         <Link to={Routes.settings} className={styles.account}>
-          {signedIn && user.avatarUrl ? (
-            <img src={user.avatarUrl} alt="" className={styles.accountAvatar} />
+          {signedIn ? (
+            <UserAvatar
+              src={user.avatarUrl}
+              name={user.displayName}
+              email={user.email}
+              className={styles.accountAvatar}
+              fallbackClassName={styles.accountAvatarFallback}
+            />
           ) : (
             <span className={styles.accountAvatarFallback}>
-              {signedIn ? (
-                (user.displayName ?? user.email ?? '?').charAt(0).toUpperCase()
-              ) : (
-                <Icon name="user" size={15} />
-              )}
+              <Icon name="user" size={15} />
             </span>
           )}
           <span className={styles.accountText}>

@@ -30,12 +30,32 @@
   background-color: var(--surface-hover);
   color: var(--text-primary);
 }
+.action:disabled { cursor: not-allowed; opacity: .5; }
 .bookmarked {
   color: var(--accent);
 }
 .filled {
   fill: currentColor;
 }
+
+.bookmarkIcon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  width: 34px;
+  height: 34px;
+  color: var(--text-secondary);
+  border-radius: var(--radius-sm);
+  transition:
+    background-color var(--duration-fast) var(--ease-out),
+    color var(--duration-fast) var(--ease-out);
+}
+.bookmarkIcon:hover {
+  color: var(--text-primary);
+  background-color: var(--surface-hover);
+}
+.bookmarkIcon:disabled { cursor: not-allowed; opacity: .5; }
 
 .tags {
   display: flex;

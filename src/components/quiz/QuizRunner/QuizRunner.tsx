@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import type { Chapter } from '../../../types';
+import type { Chapter, QuizQuestionSet } from '../../../types';
 import { useUserData } from '../../../context/UserDataContext';
 import { EmptyState } from '../../common/EmptyState';
 import { QuizIntro } from './QuizIntro';
@@ -41,13 +41,22 @@ export function QuizRunner({
   const [settings, setSettings] = useState<QuizSettings>(
     () => activeDraft?.settings ?? STANDARD_QUIZ_SETTINGS,
   );
+  const [questionSet, setQuestionSet] = useState<QuizQuestionSet>(() => activeDraft?.questionSet ?? {
+    type: activeDraft?.questionIds.length ? 'custom' : 'full',
+    label: activeDraft?.questionIds.length ? 'Saved selection' : 'All questions',
+    questionIds: activeDraft?.questionIds.length
+      ? activeDraft.questionIds
+      : questions.map((question) => question.id),
+    sourceQuestionCount: questions.length,
+  });
   const sessionQuestions = useMemo(() => {
-    if (activeDraft?.chapterId !== chapter.id || activeDraft.questionIds.length === 0) {
-      return questions;
-    }
-    const ids = new Set(activeDraft.questionIds);
+    const selectedIds = activeDraft?.chapterId === chapter.id && activeDraft.questionIds.length > 0
+      ? activeDraft.questionIds
+      : questionSet.questionIds;
+    if (selectedIds.length === 0) return questions;
+    const ids = new Set(selectedIds);
     return chapter.prelims.filter((question) => ids.has(question.id));
-  }, [activeDraft, chapter.id, chapter.prelims, questions]);
+  }, [activeDraft, chapter.id, chapter.prelims, questionSet.questionIds, questions]);
   const chapterHistory = useMemo(
     () => quizResults.filter((result) => result.chapterId === chapter.id),
     [quizResults, chapter.id],
@@ -70,7 +79,7 @@ export function QuizRunner({
         title="Another quiz is active"
         description="Finish your active timed quiz before starting a quiz from another chapter."
         action={
-          <Button variant="primary" onClick={() => navigate(Routes.chapter(activeDraft.chapterId))}>
+          <Button variant="primary" onClick={() => navigate(Routes.quiz(activeDraft.chapterId), { replace: true })}>
             Return to active quiz
           </Button>
         }
@@ -91,10 +100,13 @@ export function QuizRunner({
   if (phase === 'intro') {
     return <>
       <QuizIntro
-        questionCount={sessionQuestions.length}
+        chapterId={chapter.id}
+        questions={questions}
+        results={quizResults}
         lastScore={lastScore}
-        onStart={(selectedSettings) => {
+        onStart={(selectedSettings, selectedQuestionSet) => {
           setSettings(selectedSettings);
+          setQuestionSet(selectedQuestionSet);
           setAttempt((a) => a + 1);
           setPhase('running');
         }}
@@ -112,6 +124,7 @@ export function QuizRunner({
       chapter={chapter}
       questions={sessionQuestions}
       settings={settings}
+      questionSet={activeDraft?.questionSet ?? questionSet}
       onActiveChange={onActiveChange}
       onComplete={(resultId) => navigate(Routes.quizResult(resultId), { replace: true })}
     />
@@ -155,6 +168,9 @@ function AttemptHistory({
                     dateStyle: 'medium',
                     timeStyle: 'short',
                   }).format(result.takenAt)}</span>
+                  {result.questionSet && result.questionSet.type !== 'full' && (
+                    <em>{result.questionSet.label} · targeted quiz</em>
+                  )}
                 </div>
                 <div className={styles.attemptStats}>
                   <span><strong>{accuracy}%</strong> accuracy</span>

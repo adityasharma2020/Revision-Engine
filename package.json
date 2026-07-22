@@ -1,7 +1,7 @@
 {
   "name": "engine",
   "private": true,
-  "version": "1.2.8",
+  "version": "2.0.0",
   "type": "module",
   "scripts": {
     "manifest": "node scripts/generate-manifest.mjs",
@@ -20,7 +20,9 @@
     "@supabase/supabase-js": "^2.110.8",
     "react": "^19.2.7",
     "react-dom": "^19.2.7",
-    "react-router-dom": "^7.18.1"
+    "react-is": "^19.2.8",
+    "react-router-dom": "^7.18.1",
+    "recharts": "^3.10.0"
   },
   "devDependencies": {
     "@types/node": "^24.13.2",

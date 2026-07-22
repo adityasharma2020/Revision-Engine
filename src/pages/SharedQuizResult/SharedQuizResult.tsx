@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
-import { EmptyState, Icon } from '../../components/common';
+import { EmptyState, Icon, UserAvatar } from '../../components/common';
 import { Page } from '../../components/layout';
 import { QuizResults } from '../../components/quiz/QuizRunner/QuizResults';
 import { Routes } from '../../constants/routes';
@@ -54,8 +54,13 @@ export function SharedQuizResultPage() {
   return (
     <Page narrow>
       <header className={styles.header}>
-        {owner?.avatarUrl ? (
-          <img className={styles.avatar} src={owner.avatarUrl} alt="" />
+        {owner ? (
+          <UserAvatar
+            src={owner.avatarUrl}
+            name={owner.name}
+            className={styles.avatar}
+            fallbackClassName={styles.avatarFallback}
+          />
         ) : (
           <span className={styles.mark}><Icon name="share" size={17} /></span>
         )}
@@ -66,6 +71,10 @@ export function SharedQuizResultPage() {
             dateStyle: 'long',
             timeStyle: 'short',
           }).format(result.takenAt)}</small>
+          <div className={styles.resultContext}>
+            <span>{result.questionSet?.label ?? 'Full chapter'}</span>
+            <span>{result.totalQuestions}/{result.questionSet?.sourceQuestionCount ?? result.totalQuestions} questions</span>
+          </div>
         </div>
       </header>
       <QuizResults

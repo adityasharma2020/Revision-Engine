@@ -4,25 +4,36 @@ import { Badge } from '../../common/Badge';
 import { formatQuestionOrigin } from '../../../utils/questionOrigin';
 import styles from './QuizRunner.module.css';
 import { QuestionStem } from '../QuestionStem';
+import { QuestionAnnotations } from '../../annotations/QuestionAnnotations';
 
 interface QuizQuestionProps {
   question: PrelimsQuestion;
   selected: string | null;
   onSelect: (optionId: string) => void;
   disabled?: boolean;
+  chapterId: string;
 }
 
 /** A quiz question in-flight: selectable, but never reveals the answer. */
-export function QuizQuestion({ question, selected, onSelect, disabled = false }: QuizQuestionProps) {
+export function QuizQuestion({ question, selected, onSelect, disabled = false, chapterId }: QuizQuestionProps) {
   return (
     <div className={styles.question}>
-      {question.origin && (
-        <div className={styles.questionMeta}>
+      <div className={styles.questionMeta}>
+        <div className={styles.questionMetaBadges}>
+          {question.origin && (
           <Badge tone={question.origin.toUpperCase().startsWith('PYQ') ? 'accent' : 'neutral'}>
             {formatQuestionOrigin(question.origin)}
           </Badge>
+          )}
         </div>
-      )}
+        <QuestionAnnotations
+          chapterId={chapterId}
+          questionId={question.id}
+          type="prelims"
+          variant="bookmark-icon"
+          disabled={disabled}
+        />
+      </div>
       <QuestionStem question={question} className={styles.questionStatement} />
       <ul className={styles.questionOptions}>
         {question.options.map((option) => (

@@ -1,7 +1,8 @@
 import { useEffect, useRef, useState, type FormEvent } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 import { AsyncBoundary, Badge, EmptyState, Icon } from '../../components/common';
-import { Page, PageHeader } from '../../components/layout';
+import { Page } from '../../components/layout/Page/Page';
+import { PageHeader } from '../../components/layout/PageHeader/PageHeader';
 import { Routes } from '../../constants/routes';
 import { useSearchIndex } from '../../hooks/useSearchIndex';
 import { formatQuestionOrigin } from '../../utils/questionOrigin';
@@ -14,9 +15,16 @@ const TYPE_LABEL: Record<SearchDocumentType, string> = {
   mains: 'Mains',
 };
 
-export function Search() {
+interface SearchProps {
+  overlay?: boolean;
+  onNavigate?: () => void;
+}
+
+export function Search({ overlay = false, onNavigate }: SearchProps = {}) {
   const state = useSearchIndex();
-  const [params, setParams] = useSearchParams();
+  const [routeParams, setRouteParams] = useSearchParams();
+  const [overlayParams, setOverlayParams] = useState(() => new URLSearchParams());
+  const params = overlay ? overlayParams : routeParams;
   const query = params.get('q') ?? '';
   const [draft, setDraft] = useState(query);
   const [searchError, setSearchError] = useState('');
@@ -30,7 +38,8 @@ export function Search() {
     const next = new URLSearchParams(params);
     if (!value || value === 'all') next.delete(key);
     else next.set(key, value);
-    setParams(next, { replace: true });
+    if (overlay) setOverlayParams(next);
+    else setRouteParams(next, { replace: true });
   };
 
   useEffect(() => setDraft(query), [query]);
@@ -54,13 +63,8 @@ export function Search() {
     inputRef.current?.focus();
   };
 
-  return (
-    <Page>
-      <PageHeader
-        eyebrow="Knowledge search"
-        title="Search your library"
-        description="Search chapters, questions, answers, explanations, tags, FYQs and PYQs—even offline."
-      />
+  const content = (
+    <>
       <form className={styles.searchBox} onSubmit={submitSearch}>
         <Icon name="search" size={20} />
         <input
@@ -154,7 +158,7 @@ export function Search() {
                         ? Routes.chapter(hit.chapterId)
                         : `${Routes.chapter(hit.chapterId)}?tab=${hit.type}#question-${questionId}`;
                       return (
-                        <Link key={hit.id} to={destination} className={styles.result}>
+                        <Link key={hit.id} to={destination} className={styles.result} onClick={onNavigate}>
                           <div className={styles.resultMeta}>
                             <Badge tone="neutral">{TYPE_LABEL[hit.type]}</Badge>
                             {hit.origin && <Badge tone={hit.origin.toUpperCase().startsWith('PYQ') ? 'accent' : 'neutral'}>{formatQuestionOrigin(hit.origin)}</Badge>}
@@ -176,6 +180,19 @@ export function Search() {
           );
         }}
       </AsyncBoundary>
+    </>
+  );
+
+  if (overlay) return <div className={styles.overlayContent}>{content}</div>;
+
+  return (
+    <Page>
+      <PageHeader
+        eyebrow="Knowledge search"
+        title="Search your library"
+        description="Search chapters, questions, answers, explanations, tags, FYQs and PYQs—even offline."
+      />
+      {content}
     </Page>
   );
 }

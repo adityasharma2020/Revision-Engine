@@ -7,14 +7,17 @@
   scroll-margin-top: 100px;
 }
 
-.card:target {
+.card:target,
+.highlighted {
   border-color: var(--accent);
-  box-shadow: 0 0 0 3px var(--accent-subtle), var(--shadow-md);
+  background-image: linear-gradient(90deg, var(--accent-subtle), transparent 42%);
+  box-shadow: 0 0 0 4px var(--accent-subtle), var(--shadow-md);
   animation: searchMatch 1.4s var(--ease-out);
 }
 
-.card:target::before {
-  content: 'Search match';
+.card:target::before,
+.highlighted::before {
+  content: attr(data-focus-label);
   position: absolute;
   top: 0;
   right: var(--space-4);

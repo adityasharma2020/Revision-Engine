@@ -12,6 +12,8 @@ interface QuestionAnnotationsProps {
   type: QuestionType;
   /** Tags baked into the question JSON (read-only). */
   baseTags?: readonly string[];
+  variant?: 'full' | 'bookmark-only' | 'bookmark-icon';
+  disabled?: boolean;
 }
 
 /**
@@ -23,6 +25,8 @@ export function QuestionAnnotations({
   questionId,
   type,
   baseTags = [],
+  variant = 'full',
+  disabled = false,
 }: QuestionAnnotationsProps) {
   const { getAnnotation, toggleBookmark, setNote, addTag, removeTag } = useUserData();
   const annotation = getAnnotation(chapterId, questionId);
@@ -48,6 +52,22 @@ export function QuestionAnnotations({
     setTagDraft('');
   };
 
+  if (variant === 'bookmark-icon') {
+    return (
+      <button
+        type="button"
+        className={cx(styles.bookmarkIcon, bookmarked && styles.bookmarked)}
+        onClick={() => toggleBookmark(chapterId, questionId, type)}
+        aria-label={bookmarked ? 'Remove bookmark' : 'Bookmark question'}
+        aria-pressed={bookmarked}
+        title={bookmarked ? 'Remove bookmark' : 'Bookmark question'}
+        disabled={disabled}
+      >
+        <Icon name="bookmark" size={17} className={bookmarked ? styles.filled : undefined} />
+      </button>
+    );
+  }
+
   return (
     <div className={styles.root}>
       <div className={styles.bar}>
@@ -56,18 +76,21 @@ export function QuestionAnnotations({
           className={cx(styles.action, bookmarked && styles.bookmarked)}
           onClick={() => toggleBookmark(chapterId, questionId, type)}
           aria-pressed={bookmarked}
+          disabled={disabled}
         >
           <Icon name="bookmark" size={15} className={bookmarked ? styles.filled : undefined} />
           {bookmarked ? 'Saved' : 'Bookmark'}
         </button>
 
-        <button type="button" className={styles.action} onClick={openNote}>
-          <Icon name="pencil" size={15} />
-          {note ? 'Edit note' : 'Add note'}
-        </button>
+        {variant === 'full' && (
+          <button type="button" className={styles.action} onClick={openNote}>
+            <Icon name="pencil" size={15} />
+            {note ? 'Edit note' : 'Add note'}
+          </button>
+        )}
       </div>
 
-      <div className={styles.tags}>
+      {variant === 'full' && <div className={styles.tags}>
         {baseTags.map((tag) => (
           <Badge key={`base-${tag}`} tone="neutral">
             {tag}
@@ -99,9 +122,9 @@ export function QuestionAnnotations({
           onBlur={commitTag}
           aria-label="Add a tag"
         />
-      </div>
+      </div>}
 
-      {editingNote ? (
+      {variant === 'full' && (editingNote ? (
         <div className={styles.noteEditor}>
           <textarea
             className={styles.noteField}
@@ -131,7 +154,7 @@ export function QuestionAnnotations({
             <span>{note}</span>
           </button>
         )
-      )}
+      ))}
     </div>
   );
 }

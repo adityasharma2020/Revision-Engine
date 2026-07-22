@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import type { Chapter, PrelimsQuestion } from '../../../types';
+import type { Chapter, PrelimsQuestion, QuizQuestionSet } from '../../../types';
 import { useElapsed } from '../../../hooks/useElapsed';
 import { announceQuizLock, useQuizSession, type QuizSettings } from '../../../hooks/useQuizSession';
 import { useUserData } from '../../../context/UserDataContext';
@@ -16,11 +16,12 @@ interface QuizSessionProps {
   onComplete: (resultId: string) => void;
   onActiveChange?: (active: boolean) => void;
   settings: QuizSettings;
+  questionSet: QuizQuestionSet;
 }
 
 /** One live quiz run: active question flow → finished results. */
-export function QuizSession({ chapter, questions, onComplete, onActiveChange, settings }: QuizSessionProps) {
-  const { state, current, actions, summary } = useQuizSession(questions, chapter.id, settings);
+export function QuizSession({ chapter, questions, onComplete, onActiveChange, settings, questionSet }: QuizSessionProps) {
+  const { state, current, actions, summary } = useQuizSession(questions, chapter.id, settings, questionSet);
   const running = state.status === 'active';
   const liveElapsedMs = useElapsed(state.startedAt, running);
   const elapsedMs = state.status === 'paused' && state.pausedAt
@@ -30,6 +31,7 @@ export function QuizSession({ chapter, questions, onComplete, onActiveChange, se
   const resultId = useRef(createId());
   const [fullscreen, setFullscreen] = useState(Boolean(document.fullscreenElement));
   const [focusInterrupted, setFocusInterrupted] = useState(false);
+  const [submitOpen, setSubmitOpen] = useState(false);
   const interruptionOpen = useRef(false);
   const paused = state.status === 'paused';
   const focusLossCount = state.focusInterruptions.length;
@@ -82,6 +84,37 @@ export function QuizSession({ chapter, questions, onComplete, onActiveChange, se
     return () => document.removeEventListener('fullscreenchange', update);
   }, []);
 
+  useEffect(() => {
+    if (!submitOpen) return;
+    const closeOnEscape = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') setSubmitOpen(false);
+    };
+    window.addEventListener('keydown', closeOnEscape);
+    return () => window.removeEventListener('keydown', closeOnEscape);
+  }, [submitOpen]);
+
+  useEffect(() => {
+    const moveBetweenQuestions = (event: KeyboardEvent) => {
+      if (state.status !== 'active' || focusInterrupted) return;
+      if (event.metaKey || event.ctrlKey || event.altKey || event.shiftKey) return;
+
+      const target = event.target as HTMLElement | null;
+      if (target?.matches('input, textarea, select, [contenteditable="true"]')) return;
+
+      if (event.key === 'ArrowLeft' && state.currentIndex > 0) {
+        event.preventDefault();
+        actions.prev();
+      }
+      if (event.key === 'ArrowRight' && state.currentIndex < state.total - 1) {
+        event.preventDefault();
+        actions.next();
+      }
+    };
+
+    window.addEventListener('keydown', moveBetweenQuestions);
+    return () => window.removeEventListener('keydown', moveBetweenQuestions);
+  }, [actions, focusInterrupted, state.currentIndex, state.status, state.total]);
+
   // Per-question timing: bank the elapsed segment whenever the active question
   // changes (including when the quiz finishes). Handles back/forward navigation.
   const times = useRef<Record<string, number>>({});
@@ -125,6 +158,7 @@ export function QuizSession({ chapter, questions, onComplete, onActiveChange, se
       takenAt: Date.now(),
       answers: state.answers,
       perQuestion,
+      questionSet,
       includedInAnalytics: true,
       settings: state.settings,
       focusLossCount,
@@ -133,7 +167,7 @@ export function QuizSession({ chapter, questions, onComplete, onActiveChange, se
       adjustedScore: s.correct - focusPenaltyTotal,
     });
     onComplete(resultId.current);
-  }, [state.status, state.answers, state.settings, state.focusInterruptions, summary, recordQuizResult, onComplete, chapter.id, chapter.title, chapter.subject, questions, focusLossCount, focusPenaltyTotal]);
+  }, [state.status, state.answers, state.settings, state.focusInterruptions, summary, recordQuizResult, onComplete, chapter.id, chapter.title, chapter.subject, questions, questionSet, focusLossCount, focusPenaltyTotal]);
 
   if (state.status === 'finished') {
     return <p className={styles.savingResult}>Saving your result…</p>;
@@ -145,13 +179,11 @@ export function QuizSession({ chapter, questions, onComplete, onActiveChange, se
   const answeredCount = Object.values(state.answers).filter((v) => v != null).length;
 
   const submit = () => {
-    const remaining = state.total - answeredCount;
-    if (remaining > 0) {
-      const ok = window.confirm(
-        `${remaining} question${remaining === 1 ? '' : 's'} unanswered. Submit anyway?`,
-      );
-      if (!ok) return;
-    }
+    setSubmitOpen(true);
+  };
+
+  const confirmSubmit = () => {
+    setSubmitOpen(false);
     actions.finish();
   };
 
@@ -190,7 +222,7 @@ export function QuizSession({ chapter, questions, onComplete, onActiveChange, se
               ? 'Strict full screen'
               : fullscreen ? 'Exit full screen' : 'Full screen'}
           </Button>
-          <Button variant="secondary" size="sm" onClick={submit} disabled={paused}>Submit test</Button>
+          <Button variant="secondary" size="sm" onClick={submit} disabled={paused}>Submit quiz</Button>
         </div>
       </div>
 
@@ -232,6 +264,36 @@ export function QuizSession({ chapter, questions, onComplete, onActiveChange, se
           </section>
         </div>
       )}
+      {submitOpen && (
+        <div className={styles.submitGuard} onMouseDown={() => setSubmitOpen(false)}>
+          <section
+            className={styles.submitDialog}
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="submit-quiz-title"
+            onMouseDown={(event) => event.stopPropagation()}
+          >
+            <span className={styles.submitIcon}><Icon name="check" size={22} /></span>
+            <h2 id="submit-quiz-title">Submit this quiz?</h2>
+            <p>
+              {answeredCount === state.total
+                ? 'You have answered every question. Your result will be saved to quiz history.'
+                : `${state.total - answeredCount} question${state.total - answeredCount === 1 ? '' : 's'} will be marked as skipped.`}
+            </p>
+            <div className={styles.submitStats}>
+              <span><strong>{state.total}</strong><small>Total</small></span>
+              <span><strong>{answeredCount}</strong><small>Answered</small></span>
+              <span className={state.total === answeredCount ? undefined : styles.submitSkipped}>
+                <strong>{state.total - answeredCount}</strong><small>Skipped</small>
+              </span>
+            </div>
+            <div className={styles.submitActions}>
+              <Button variant="secondary" onClick={() => setSubmitOpen(false)}>Keep reviewing</Button>
+              <Button variant="primary" onClick={confirmSubmit} autoFocus>Submit quiz</Button>
+            </div>
+          </section>
+        </div>
+      )}
 
       <nav className={styles.questionNav} aria-label="Quiz questions">
         {questions.map((question, questionIndex) => {
@@ -254,6 +316,7 @@ export function QuizSession({ chapter, questions, onComplete, onActiveChange, se
       </nav>
 
       <QuizQuestion
+        chapterId={chapter.id}
         question={current}
         selected={state.answers[current.id] ?? null}
         onSelect={(optionId) => actions.answer(current.id, optionId)}
@@ -261,16 +324,29 @@ export function QuizSession({ chapter, questions, onComplete, onActiveChange, se
       />
 
       <div className={styles.controls}>
-        <Button variant="ghost" onClick={actions.prev} disabled={paused || index === 0}>
+        <Button
+          variant="ghost"
+          onClick={actions.prev}
+          disabled={paused || index === 0}
+          aria-keyshortcuts="ArrowLeft"
+          title="Previous question (←)"
+        >
           Previous
         </Button>
+        <span className={styles.shortcutHint} aria-hidden="true">← / → to move</span>
         <div className={styles.controlsRight}>
           {!answeredCurrent && !isLast && (
             <Button variant="ghost" onClick={actions.next} disabled={paused}>
               Skip
             </Button>
           )}
-          <Button variant="primary" onClick={isLast ? submit : actions.next} disabled={paused}>
+          <Button
+            variant="primary"
+            onClick={isLast ? submit : actions.next}
+            disabled={paused}
+            aria-keyshortcuts={isLast ? undefined : 'ArrowRight'}
+            title={isLast ? 'Finish quiz' : 'Next question (→)'}
+          >
             {isLast ? 'Finish' : 'Next'}
           </Button>
         </div>

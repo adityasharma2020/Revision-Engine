@@ -10,7 +10,7 @@ import styles from "./Settings.module.css";
 
 export function Settings() {
   const { storage, cloudAvailable, online, syncing, syncNow } = useStorage();
-  const { signOut } = useAuth();
+  const { status, signOut } = useAuth();
   const [cleared, setCleared] = useState(false);
   const [resetOpen, setResetOpen] = useState(false);
   const [syncMessage, setSyncMessage] = useState<string | null>(null);
@@ -55,28 +55,24 @@ export function Settings() {
             <p className={styles.rowDesc}>Sign in to continue on any device.</p>
           </div>
           <AccountPanel />
-          <div className={styles.syncPanel}>
-            <div>
-              <strong>
-                {cloudAvailable ? "Local + Supabase" : "Local storage only"}
-              </strong>
-              <span>
-                {cloudAvailable
-                  ? "Quiz attempts and responses save locally first, then sync to your account."
-                  : "Sign in to back up quiz history and use it across devices."}
-              </span>
-              {syncMessage && <small role='status'>{syncMessage}</small>}
+          {status === "authenticated" && cloudAvailable && (
+            <div className={styles.syncPanel}>
+              <div>
+                <strong>Local + Supabase</strong>
+                <span>Quiz attempts and responses save locally first, then sync to your account.</span>
+                {syncMessage && <small role='status'>{syncMessage}</small>}
+              </div>
+              <Button
+                variant='secondary'
+                size='sm'
+                disabled={!online || syncing}
+                onClick={() => void manualSync()}
+              >
+                <Icon name='sync' size={15} />
+                {syncing ? "Syncing…" : "Sync now"}
+              </Button>
             </div>
-            <Button
-              variant='secondary'
-              size='sm'
-              disabled={!cloudAvailable || !online || syncing}
-              onClick={() => void manualSync()}
-            >
-              <Icon name='sync' size={15} />
-              {syncing ? "Syncing…" : "Sync now"}
-            </Button>
-          </div>
+          )}
         </div>
       </section>
 

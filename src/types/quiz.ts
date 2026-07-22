@@ -11,6 +11,24 @@ import type { Difficulty } from './domain';
 /** Which option the user chose for a question, or null if skipped/unanswered. */
 export type QuizAnswerMap = Record<string, string | null>;
 
+export type QuizQuestionSetType =
+  | 'full'
+  | 'correct-last'
+  | 'missed-last'
+  | 'incorrect-last'
+  | 'skipped-last'
+  | 'needs-review'
+  | 'custom';
+
+/** Snapshot of how a quiz's question set was assembled. */
+export interface QuizQuestionSet {
+  readonly type: QuizQuestionSetType;
+  readonly label: string;
+  readonly questionIds: readonly string[];
+  /** Eligible questions before a targeted/custom subset was applied. */
+  readonly sourceQuestionCount: number;
+}
+
 /** Per-question outcome + timing within a quiz session — the granular record. */
 export interface QuizQuestionResult {
   readonly questionId: string;
@@ -43,6 +61,8 @@ export interface QuizResult {
   readonly answers: QuizAnswerMap;
   /** Granular per-question timing + outcome (added for deep analytics). */
   readonly perQuestion?: readonly QuizQuestionResult[];
+  /** Selection snapshot retained for history, sharing, and analytics. */
+  readonly questionSet?: QuizQuestionSet;
   /** False keeps the attempt in history/review but excludes it from analytics. */
   readonly includedInAnalytics?: boolean;
   /** Session policy snapshot for attempt history. */

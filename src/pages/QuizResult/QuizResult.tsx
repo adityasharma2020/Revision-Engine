@@ -15,6 +15,7 @@ import {
 } from '../../services/supabase/quizShares';
 import { useAuth } from '../../context/AuthContext';
 import styles from './QuizResult.module.css';
+import { questionAttemptStats } from '../../utils/questionStats';
 
 export function QuizResultPage() {
   const { resultId = '' } = useParams();
@@ -42,7 +43,7 @@ export function QuizResultPage() {
 function LoadedResult({ result }: { result: QuizResult }) {
   const chapterState = useChapter(result.chapterId);
   const navigate = useNavigate();
-  const { setQuizResultAnalytics } = useUserData();
+  const { quizResults, setQuizResultAnalytics } = useUserData();
   const { status } = useAuth();
   const [shareToken, setShareToken] = useState<string | null>(null);
   const [showOwner, setShowOwner] = useState(true);
@@ -82,6 +83,13 @@ function LoadedResult({ result }: { result: QuizResult }) {
                     dateStyle: 'long',
                     timeStyle: 'short',
                   }).format(result.takenAt)}</p>
+                  <div className={styles.resultContext}>
+                    <span>{result.questionSet?.label ?? 'Full chapter'}</span>
+                    <span>
+                      {result.totalQuestions}/{result.questionSet?.sourceQuestionCount ?? result.totalQuestions} questions
+                      {result.questionSet && result.questionSet.type !== 'full' ? ' · targeted quiz' : ' · full quiz'}
+                    </span>
+                  </div>
                 </div>
                 {status === 'authenticated' && (
                   <div className={styles.shareActions}>
@@ -140,6 +148,7 @@ function LoadedResult({ result }: { result: QuizResult }) {
               </header>
               <QuizResults
               historical
+              chapterId={result.chapterId}
               questions={questions}
               answers={result.answers}
               summary={{
@@ -161,6 +170,7 @@ function LoadedResult({ result }: { result: QuizResult }) {
                 warningsAllowed: result.settings?.focusLossGrace ?? 3,
                 deductionPerExit: result.settings?.focusPenaltyPerLoss ?? 0.25,
               }}
+              questionHistory={questionAttemptStats(quizResults, result.chapterId)}
               onAnalyticsChange={(included) => setQuizResultAnalytics(result.id, included)}
               onRetry={() => navigate(Routes.chapter(result.chapterId))}
               onExit={() => navigate(Routes.chapter(result.chapterId))}

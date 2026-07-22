@@ -4,7 +4,7 @@ export const Routes = {
   library: '/library',
   search: '/search',
   chapter: (chapterId: string = ':chapterId') => `/chapter/${chapterId}`,
-  quiz: (chapterId: string = ':chapterId') => `/chapter/${chapterId}/revise`,
+  quiz: (chapterId: string = ':chapterId') => `/chapter/${chapterId}?mode=quiz`,
   quizResult: (resultId: string = ':resultId') => `/results/${resultId}`,
   sharedQuizResult: (shareToken: string = ':shareToken') => `/shared/${shareToken}`,
   statistics: '/statistics',
