@@ -87,6 +87,11 @@ export function SharedQuizResultPage() {
         focusLossCount={result.focusLossCount}
         focusPenaltyTotal={result.focusPenaltyTotal}
         adjustedScore={result.adjustedScore}
+        focusPenaltyPolicy={{
+          enabled: result.settings?.focusPenaltyEnabled ?? false,
+          warningsAllowed: result.settings?.focusLossGrace ?? 3,
+          deductionPerExit: result.settings?.focusPenaltyPerLoss ?? 0.25,
+        }}
         onRetry={() => navigate(Routes.dashboard)}
         onExit={() => navigate(Routes.dashboard)}
       />

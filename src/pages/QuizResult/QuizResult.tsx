@@ -156,6 +156,11 @@ function LoadedResult({ result }: { result: QuizResult }) {
               focusLossCount={result.focusLossCount}
               focusPenaltyTotal={result.focusPenaltyTotal}
               adjustedScore={result.adjustedScore}
+              focusPenaltyPolicy={{
+                enabled: result.settings?.focusPenaltyEnabled ?? false,
+                warningsAllowed: result.settings?.focusLossGrace ?? 3,
+                deductionPerExit: result.settings?.focusPenaltyPerLoss ?? 0.25,
+              }}
               onAnalyticsChange={(included) => setQuizResultAnalytics(result.id, included)}
               onRetry={() => navigate(Routes.chapter(result.chapterId))}
               onExit={() => navigate(Routes.chapter(result.chapterId))}

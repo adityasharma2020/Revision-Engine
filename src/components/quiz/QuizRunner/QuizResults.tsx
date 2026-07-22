@@ -19,6 +19,11 @@ interface QuizResultsProps {
   focusPenaltyTotal?: number;
   adjustedScore?: number;
   exitLabel?: string;
+  focusPenaltyPolicy?: {
+    enabled: boolean;
+    warningsAllowed: number;
+    deductionPerExit: number;
+  };
 }
 
 type ReviewFilter = 'all' | 'incorrect' | 'skipped' | 'correct';
@@ -36,6 +41,7 @@ export function QuizResults({
   focusPenaltyTotal = 0,
   adjustedScore,
   exitLabel,
+  focusPenaltyPolicy,
 }: QuizResultsProps) {
   const [reviewFilter, setReviewFilter] = useState<ReviewFilter>('all');
   const [included, setIncluded] = useState(includedInAnalytics);
@@ -79,6 +85,25 @@ export function QuizResults({
               </div>
             ))}
           </div>
+          {focusLossCount > 0 && focusPenaltyPolicy && (
+            <div className={styles.penaltySummary}>
+              {focusPenaltyPolicy.enabled ? (
+                <>
+                  <strong>Focus penalty policy</strong>
+                  <span>
+                    {focusPenaltyPolicy.warningsAllowed} warning{focusPenaltyPolicy.warningsAllowed === 1 ? '' : 's'} allowed
+                    {' · '}−{focusPenaltyPolicy.deductionPerExit} per additional exit
+                    {' · '}{Math.max(0, focusLossCount - focusPenaltyPolicy.warningsAllowed)} penalized
+                  </span>
+                </>
+              ) : (
+                <>
+                  <strong>No focus penalty applied</strong>
+                  <span>Focus tracking was enabled, but negative marking was disabled for this attempt.</span>
+                </>
+              )}
+            </div>
+          )}
           <div className={styles.scoreActions}>
             {!historical && <Button variant="primary" onClick={onRetry}>Retry quiz</Button>}
             <Button variant="ghost" onClick={onExit}>
