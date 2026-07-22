@@ -2,13 +2,33 @@ import { useCallback, useEffect, useMemo, useReducer } from 'react';
 import type { PrelimsQuestion, QuizAnswerMap } from '../types';
 
 export interface QuizSessionState {
-  status: 'active' | 'finished';
+  status: 'active' | 'paused' | 'finished';
+  settings: QuizSettings;
   total: number;
   currentIndex: number;
   answers: QuizAnswerMap;
   startedAt: number;
   finishedAt: number | null;
+  pausedAt: number | null;
 }
+
+export interface QuizSettings {
+  allowPause: boolean;
+  lockNavigation: boolean;
+  trackFocusLoss: boolean;
+}
+
+export const STANDARD_QUIZ_SETTINGS: QuizSettings = {
+  allowPause: true,
+  lockNavigation: true,
+  trackFocusLoss: false,
+};
+
+export const STRICT_QUIZ_SETTINGS: QuizSettings = {
+  allowPause: false,
+  lockNavigation: true,
+  trackFocusLoss: true,
+};
 
 type QuizAction =
   | { type: 'answer'; questionId: string; optionId: string }
@@ -17,21 +37,25 @@ type QuizAction =
   | { type: 'prev' }
   | { type: 'goto'; index: number }
   | { type: 'finish' }
+  | { type: 'pause' }
+  | { type: 'resume' }
   | { type: 'restart' };
 
-function init(total: number): QuizSessionState {
+function init(total: number, settings: QuizSettings): QuizSessionState {
   return {
     status: 'active',
+    settings,
     total,
     currentIndex: 0,
     answers: {},
     startedAt: Date.now(),
     finishedAt: null,
+    pausedAt: null,
   };
 }
 
 interface StoredQuizDraft {
-  version: 1;
+  version: 1 | 2;
   questionIds: string[];
   state: QuizSessionState;
 }
@@ -40,25 +64,62 @@ export function quizDraftKey(chapterId: string): string {
   return `revision-engine:quiz-draft:${chapterId}`;
 }
 
-function restoreDraft(key: string, questions: readonly PrelimsQuestion[]): QuizSessionState {
+const QUIZ_DRAFT_PREFIX = 'revision-engine:quiz-draft:';
+
+export function findActiveQuizDraft(): { chapterId: string; status: 'active' | 'paused'; settings: QuizSettings } | null {
+  try {
+    for (let index = 0; index < sessionStorage.length; index += 1) {
+      const key = sessionStorage.key(index);
+      if (key?.startsWith(QUIZ_DRAFT_PREFIX)) {
+        const raw = sessionStorage.getItem(key);
+        const draft = raw ? JSON.parse(raw) as StoredQuizDraft : null;
+        return {
+          chapterId: key.slice(QUIZ_DRAFT_PREFIX.length),
+          status: draft?.state.status === 'paused' ? 'paused' : 'active',
+          settings: settingsFromDraft(draft?.state),
+        };
+      }
+    }
+  } catch {
+    // Storage can be unavailable in hardened/private browser contexts.
+  }
+  return null;
+}
+
+export function announceQuizLock(chapterId: string | null, locked = false): void {
+  window.dispatchEvent(
+    new CustomEvent('revision-engine:quiz-lock', { detail: { chapterId, locked } }),
+  );
+}
+
+function settingsFromDraft(state?: QuizSessionState & { policy?: 'standard' | 'strict' }): QuizSettings {
+  if (state?.settings) return state.settings;
+  return state?.policy === 'standard' ? STANDARD_QUIZ_SETTINGS : STRICT_QUIZ_SETTINGS;
+}
+
+function restoreDraft(key: string, questions: readonly PrelimsQuestion[], settings: QuizSettings): QuizSessionState {
   try {
     const raw = sessionStorage.getItem(key);
-    if (!raw) return init(questions.length);
+    if (!raw) return init(questions.length, settings);
     const draft = JSON.parse(raw) as StoredQuizDraft;
     const ids = questions.map((question) => question.id);
     if (
-      draft.version !== 1 ||
-      draft.state.status !== 'active' ||
+      ![1, 2].includes(draft.version) ||
+      draft.state.status === 'finished' ||
       draft.state.total !== questions.length ||
       draft.questionIds.join('\n') !== ids.join('\n')
     ) {
       sessionStorage.removeItem(key);
-      return init(questions.length);
+      return init(questions.length, settings);
     }
-    return draft.state;
+    return {
+      ...draft.state,
+      settings: settingsFromDraft(draft.state as QuizSessionState & { policy?: 'standard' | 'strict' }),
+      pausedAt: draft.state.pausedAt ?? null,
+    };
   } catch {
     sessionStorage.removeItem(key);
-    return init(questions.length);
+    return init(questions.length, settings);
   }
 }
 
@@ -76,15 +137,19 @@ function reducer(state: QuizSessionState, action: QuizAction): QuizSessionState 
       if (state.status !== 'active') return state;
       return { ...state, answers: { ...state.answers, [action.questionId]: action.optionId } };
     case 'clear':
+      if (state.status !== 'active') return state;
       return { ...state, answers: { ...state.answers, [action.questionId]: null } };
     case 'next':
+      if (state.status !== 'active') return state;
       if (state.currentIndex >= state.total - 1) {
         return { ...state, status: 'finished', finishedAt: Date.now() };
       }
       return { ...state, currentIndex: state.currentIndex + 1 };
     case 'prev':
+      if (state.status !== 'active') return state;
       return { ...state, currentIndex: Math.max(0, state.currentIndex - 1) };
     case 'goto':
+      if (state.status !== 'active') return state;
       return {
         ...state,
         currentIndex: Math.min(Math.max(0, action.index), state.total - 1),
@@ -92,8 +157,19 @@ function reducer(state: QuizSessionState, action: QuizAction): QuizSessionState 
     case 'finish':
       if (state.status === 'finished') return state;
       return { ...state, status: 'finished', finishedAt: Date.now() };
+    case 'pause':
+      if (state.status !== 'active' || !state.settings.allowPause) return state;
+      return { ...state, status: 'paused', pausedAt: Date.now() };
+    case 'resume':
+      if (state.status !== 'paused' || state.pausedAt === null) return state;
+      return {
+        ...state,
+        status: 'active',
+        startedAt: state.startedAt + (Date.now() - state.pausedAt),
+        pausedAt: null,
+      };
     case 'restart':
-      return init(state.total);
+      return init(state.total, state.settings);
     default:
       return state;
   }
@@ -121,7 +197,7 @@ export function summarize(
     answered += 1;
     if (picked === question.answer) correct += 1;
   }
-  const end = state.finishedAt ?? Date.now();
+  const end = state.finishedAt ?? state.pausedAt ?? Date.now();
   return {
     total: questions.length,
     answered,
@@ -133,12 +209,16 @@ export function summarize(
 }
 
 /** Reducer-driven state machine for one timed quiz over a set of prelims. */
-export function useQuizSession(questions: readonly PrelimsQuestion[], chapterId: string) {
+export function useQuizSession(
+  questions: readonly PrelimsQuestion[],
+  chapterId: string,
+  settings: QuizSettings,
+) {
   const draftKey = quizDraftKey(chapterId);
   const [state, dispatch] = useReducer(
     reducer,
     undefined,
-    () => restoreDraft(draftKey, questions),
+    () => restoreDraft(draftKey, questions, settings),
   );
 
   useEffect(() => {
@@ -147,7 +227,7 @@ export function useQuizSession(questions: readonly PrelimsQuestion[], chapterId:
       return;
     }
     const draft: StoredQuizDraft = {
-      version: 1,
+      version: 2,
       questionIds: questions.map((question) => question.id),
       state,
     };
@@ -156,12 +236,12 @@ export function useQuizSession(questions: readonly PrelimsQuestion[], chapterId:
 
   useEffect(() => {
     const warn = (event: BeforeUnloadEvent) => {
-      if (state.status !== 'active') return;
+      if (state.status !== 'active' || !state.settings.lockNavigation) return;
       event.preventDefault();
     };
     window.addEventListener('beforeunload', warn);
     return () => window.removeEventListener('beforeunload', warn);
-  }, [state.status]);
+  }, [state.status, state.settings.lockNavigation]);
 
   const actions = useMemo(
     () => ({
@@ -172,6 +252,8 @@ export function useQuizSession(questions: readonly PrelimsQuestion[], chapterId:
       prev: () => dispatch({ type: 'prev' }),
       goto: (index: number) => dispatch({ type: 'goto', index }),
       finish: () => dispatch({ type: 'finish' }),
+      pause: () => dispatch({ type: 'pause' }),
+      resume: () => dispatch({ type: 'resume' }),
       restart: () => dispatch({ type: 'restart' }),
     }),
     [],

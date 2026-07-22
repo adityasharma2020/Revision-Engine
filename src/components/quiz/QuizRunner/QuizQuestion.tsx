@@ -8,10 +8,11 @@ interface QuizQuestionProps {
   question: PrelimsQuestion;
   selected: string | null;
   onSelect: (optionId: string) => void;
+  disabled?: boolean;
 }
 
 /** A quiz question in-flight: selectable, but never reveals the answer. */
-export function QuizQuestion({ question, selected, onSelect }: QuizQuestionProps) {
+export function QuizQuestion({ question, selected, onSelect, disabled = false }: QuizQuestionProps) {
   return (
     <div className={styles.question}>
       {question.origin && (
@@ -29,6 +30,7 @@ export function QuizQuestion({ question, selected, onSelect }: QuizQuestionProps
               type="button"
               className={cx(styles.qOption, selected === option.id && styles.qOptionActive)}
               onClick={() => onSelect(option.id)}
+              disabled={disabled}
               aria-pressed={selected === option.id}
             >
               <span className={styles.qMarker}>{option.id.toUpperCase()}</span>

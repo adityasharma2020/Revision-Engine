@@ -3,6 +3,7 @@ import { Button, ThemeToggle } from '../../components/common';
 import { AccountPanel } from '../../components/auth/AccountPanel';
 import { Page, PageHeader } from '../../components/layout';
 import { useStorage } from '../../context/StorageContext';
+import { APP_NAME, APP_VERSION } from '../../constants/app';
 import styles from './Settings.module.css';
 
 export function Settings() {
@@ -60,6 +61,16 @@ export function Settings() {
           <Button variant="danger" onClick={resetAll} disabled={cleared}>
             Reset data
           </Button>
+        </div>
+      </section>
+
+      <section className={styles.group}>
+        <div className={styles.row}>
+          <div className={styles.rowText}>
+            <h3 className={styles.rowTitle}>About</h3>
+            <p className={styles.rowDesc}>{APP_NAME} application version.</p>
+          </div>
+          <code className={styles.version}>v{APP_VERSION}</code>
         </div>
       </section>
     </Page>

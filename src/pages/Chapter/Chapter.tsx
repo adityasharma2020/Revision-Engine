@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { Link, useParams, useSearchParams } from 'react-router-dom';
-import { AsyncBoundary, Badge, EmptyState, Icon, Tabs } from '../../components/common';
+import { AsyncBoundary, Badge, Button, EmptyState, Icon, Tabs } from '../../components/common';
 import { Page } from '../../components/layout';
 import { MainsCard } from '../../components/quiz/MainsCard';
 import { PrelimsCard } from '../../components/quiz/PrelimsCard';
@@ -10,6 +10,7 @@ import { subjectStyle } from '../../constants/subjects';
 import { useChapter } from '../../hooks/useChapters';
 import type { Chapter as ChapterModel, MainsQuestion, PrelimsQuestion } from '../../types';
 import { questionOriginKind, type QuestionOriginKind } from '../../utils/questionOrigin';
+import { hasQuizDraft } from '../../hooks/useQuizSession';
 import styles from './Chapter.module.css';
 
 type Mode = 'learning' | 'quiz';
@@ -43,6 +44,7 @@ function ChapterView({ chapter }: { chapter: ChapterModel }) {
     : chapter.prelims.length > 0 ? 'prelims' : 'mains');
   const [origin, setOrigin] = useState<OriginFilter>('all');
   const [quizActive, setQuizActive] = useState(false);
+  const [leaveQuizOpen, setLeaveQuizOpen] = useState(false);
   const filteredPrelims = filterByOrigin(chapter.prelims, origin);
   const filteredMains = filterByOrigin(chapter.mains, origin);
   const availableOrigins = new Set(
@@ -50,13 +52,12 @@ function ChapterView({ chapter }: { chapter: ChapterModel }) {
       .filter((question) => question.origin)
       .map((question) => questionOriginKind(question.origin)),
   );
+  const quizDraftPresent = hasQuizDraft(chapter.id);
 
   const changeMode = (next: Mode) => {
     if (next === 'learning' && mode === 'quiz' && quizActive) {
-      const leave = window.confirm(
-        'Your quiz is still running. Leave Quiz mode? Your answers are saved and will resume when you return.',
-      );
-      if (!leave) return;
+      setLeaveQuizOpen(true);
+      return;
     }
     setMode(next);
   };
@@ -106,7 +107,7 @@ function ChapterView({ chapter }: { chapter: ChapterModel }) {
                   type="button"
                   className={origin === value ? styles.filterActive : styles.filterButton}
                   aria-pressed={origin === value}
-                  disabled={quizActive}
+                  disabled={quizActive || quizDraftPresent}
                   title={quizActive ? 'Finish or leave the active quiz before changing its source.' : undefined}
                   onClick={() => setOrigin(value)}
                 >
@@ -128,6 +129,25 @@ function ChapterView({ chapter }: { chapter: ChapterModel }) {
           tab={tab}
           onTab={setTab}
         />
+      )}
+
+      {leaveQuizOpen && (
+        <div className={styles.modalBackdrop} role="presentation" onMouseDown={() => setLeaveQuizOpen(false)}>
+          <section
+            className={styles.modal}
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="leave-quiz-title"
+            onMouseDown={(event) => event.stopPropagation()}
+          >
+            <span className={styles.modalIcon}><Icon name="clock" size={20} /></span>
+            <h2 id="leave-quiz-title">Quiz in progress</h2>
+            <p>Submit your timed quiz before switching to Learning mode. This keeps the attempt and timer accurate.</p>
+            <div className={styles.modalActions}>
+              <Button variant="primary" onClick={() => setLeaveQuizOpen(false)}>Continue quiz</Button>
+            </div>
+          </section>
+        </div>
       )}
     </>
   );

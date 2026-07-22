@@ -1,10 +1,11 @@
 import { useEffect, useRef, useState } from 'react';
 import type { Chapter, PrelimsQuestion } from '../../../types';
 import { useElapsed } from '../../../hooks/useElapsed';
-import { useQuizSession } from '../../../hooks/useQuizSession';
+import { announceQuizLock, useQuizSession, type QuizSettings } from '../../../hooks/useQuizSession';
 import { useUserData } from '../../../context/UserDataContext';
 import { createId } from '../../../utils/id';
 import { Button } from '../../common/Button';
+import { Icon } from '../../common/Icon';
 import { QuizProgress } from './QuizProgress';
 import { QuizQuestion } from './QuizQuestion';
 import { QuizResults } from './QuizResults';
@@ -16,19 +17,38 @@ interface QuizSessionProps {
   onExit: () => void;
   onRetry: () => void;
   onActiveChange?: (active: boolean) => void;
+  settings: QuizSettings;
 }
 
 /** One live quiz run: active question flow → finished results. */
-export function QuizSession({ chapter, questions, onExit, onRetry, onActiveChange }: QuizSessionProps) {
-  const { state, current, actions, summary } = useQuizSession(questions, chapter.id);
+export function QuizSession({ chapter, questions, onExit, onRetry, onActiveChange, settings }: QuizSessionProps) {
+  const { state, current, actions, summary } = useQuizSession(questions, chapter.id, settings);
   const running = state.status === 'active';
-  const elapsedMs = useElapsed(state.startedAt, running);
+  const liveElapsedMs = useElapsed(state.startedAt, running);
+  const elapsedMs = state.status === 'paused' && state.pausedAt
+    ? Math.max(0, state.pausedAt - state.startedAt)
+    : liveElapsedMs;
   const { recordQuizResult } = useUserData();
   const [fullscreen, setFullscreen] = useState(Boolean(document.fullscreenElement));
+  const [focusInterrupted, setFocusInterrupted] = useState(false);
+  const paused = state.status === 'paused';
 
   useEffect(() => {
-    onActiveChange?.(state.status === 'active');
-  }, [state.status, onActiveChange]);
+    onActiveChange?.(state.status === 'active' && state.settings.lockNavigation);
+    announceQuizLock(
+      state.status === 'finished' ? null : chapter.id,
+      state.status === 'active' && state.settings.lockNavigation,
+    );
+  }, [state.status, state.settings.lockNavigation, onActiveChange, chapter.id]);
+
+  useEffect(() => {
+    if (!state.settings.trackFocusLoss || state.status !== 'active') return;
+    const visibility = () => {
+      if (document.hidden) setFocusInterrupted(true);
+    };
+    document.addEventListener('visibilitychange', visibility);
+    return () => document.removeEventListener('visibilitychange', visibility);
+  }, [state.settings.trackFocusLoss, state.status]);
 
   useEffect(() => {
     const update = () => setFullscreen(Boolean(document.fullscreenElement));
@@ -124,12 +144,33 @@ export function QuizSession({ chapter, questions, onExit, onRetry, onActiveChang
           elapsedMs={elapsedMs}
         />
         <div className={styles.sessionActions}>
+          {state.settings.allowPause && (
+            <Button variant="ghost" size="sm" onClick={paused ? actions.resume : actions.pause}>
+              <Icon name={paused ? 'target' : 'clock'} size={15} />
+              {paused ? 'Resume' : 'Pause'}
+            </Button>
+          )}
           <Button variant="ghost" size="sm" onClick={() => void toggleFullscreen()}>
+            <Icon name={fullscreen ? 'minimize' : 'expand'} size={15} />
             {fullscreen ? 'Exit full screen' : 'Full screen'}
           </Button>
-          <Button variant="secondary" size="sm" onClick={submit}>Submit test</Button>
+          <Button variant="secondary" size="sm" onClick={submit} disabled={paused}>Submit test</Button>
         </div>
       </div>
+
+      {paused && (
+        <div className={styles.pausedBanner} role="status">
+          <Icon name="clock" size={18} />
+          <div><strong>Quiz paused</strong><span>The timer and all question controls are frozen.</span></div>
+          <Button variant="primary" size="sm" onClick={actions.resume}>Resume quiz</Button>
+        </div>
+      )}
+      {focusInterrupted && !paused && (
+        <div className={styles.focusNotice} role="status">
+          Strict mode focus was interrupted. The timer continued running.
+          <button type="button" onClick={() => setFocusInterrupted(false)}>Dismiss</button>
+        </div>
+      )}
 
       <nav className={styles.questionNav} aria-label="Quiz questions">
         {questions.map((question, questionIndex) => {
@@ -143,6 +184,7 @@ export function QuizSession({ chapter, questions, onExit, onRetry, onActiveChang
               aria-label={`Question ${questionIndex + 1}${answered ? ', answered' : ', unanswered'}`}
               aria-current={currentQuestion ? 'step' : undefined}
               onClick={() => actions.goto(questionIndex)}
+              disabled={paused}
             >
               {questionIndex + 1}
             </button>
@@ -154,19 +196,20 @@ export function QuizSession({ chapter, questions, onExit, onRetry, onActiveChang
         question={current}
         selected={state.answers[current.id] ?? null}
         onSelect={(optionId) => actions.answer(current.id, optionId)}
+        disabled={paused}
       />
 
       <div className={styles.controls}>
-        <Button variant="ghost" onClick={actions.prev} disabled={index === 0}>
+        <Button variant="ghost" onClick={actions.prev} disabled={paused || index === 0}>
           Previous
         </Button>
         <div className={styles.controlsRight}>
           {!answeredCurrent && !isLast && (
-            <Button variant="ghost" onClick={actions.next}>
+            <Button variant="ghost" onClick={actions.next} disabled={paused}>
               Skip
             </Button>
           )}
-          <Button variant="primary" onClick={isLast ? submit : actions.next}>
+          <Button variant="primary" onClick={isLast ? submit : actions.next} disabled={paused}>
             {isLast ? 'Finish' : 'Next'}
           </Button>
         </div>

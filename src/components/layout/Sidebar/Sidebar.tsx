@@ -8,12 +8,28 @@ import { ThemeToggle } from '../../common/ThemeToggle';
 import { cx } from '../../../utils/cx';
 import styles from './Sidebar.module.css';
 
-export function Sidebar() {
+interface SidebarProps {
+  collapsed: boolean;
+  collapseLocked?: boolean;
+  onToggle: () => void;
+}
+
+export function Sidebar({ collapsed, collapseLocked = false, onToggle }: SidebarProps) {
   const { status, user } = useAuth();
   const signedIn = status === 'authenticated' && user;
 
   return (
-    <aside className={styles.sidebar}>
+    <aside className={cx(styles.sidebar, collapsed && styles.collapsedSidebar)}>
+      <button
+        type="button"
+        className={styles.collapseToggle}
+        onClick={onToggle}
+        disabled={collapseLocked}
+        aria-label={collapsed ? 'Expand sidebar' : 'Collapse sidebar'}
+        title={collapseLocked ? 'Sidebar stays compact in full screen' : collapsed ? 'Expand sidebar' : 'Collapse sidebar'}
+      >
+        <Icon name={collapsed ? 'panelLeftOpen' : 'panelLeftClose'} size={16} />
+      </button>
       <Link to={Routes.dashboard} className={styles.brand} aria-label={`${APP_NAME} home`}>
         <span className={styles.mark}>
           <Icon name="sparkle" size={18} />

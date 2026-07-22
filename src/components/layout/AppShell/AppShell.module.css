@@ -9,6 +9,48 @@
   min-height: 100vh;
 }
 
+.collapsed {
+  grid-template-columns: 80px minmax(0, 1fr);
+}
+
+.guardBackdrop {
+  position: fixed;
+  inset: 0;
+  z-index: var(--z-modal);
+  display: grid;
+  place-items: center;
+  padding: var(--space-4);
+  background-color: var(--overlay);
+  backdrop-filter: blur(4px);
+}
+.guardModal {
+  width: min(100%, 420px);
+  padding: var(--space-6);
+  background-color: var(--surface-elevated);
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius-xl);
+  box-shadow: var(--shadow-lg);
+  animation: guardIn var(--duration-base) var(--ease-out);
+}
+.guardIcon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 42px;
+  height: 42px;
+  margin-bottom: var(--space-4);
+  color: var(--warning);
+  background-color: var(--warning-subtle);
+  border-radius: var(--radius-md);
+}
+.guardModal h2 { font-size: var(--text-xl); }
+.guardModal p { margin: var(--space-2) 0 var(--space-6); color: var(--text-secondary); }
+.guardModal button { width: 100%; }
+@keyframes guardIn {
+  from { opacity: 0; transform: translateY(8px) scale(0.98); }
+  to { opacity: 1; transform: translateY(0) scale(1); }
+}
+
 @media (max-width: 1024px) and (min-width: 721px) {
   .shell {
     grid-template-columns: 80px minmax(0, 1fr);

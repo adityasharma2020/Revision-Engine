@@ -35,6 +35,16 @@
   color: var(--text-secondary);
 }
 
+.version {
+  padding: var(--space-2) var(--space-3);
+  font-family: var(--font-mono);
+  font-size: var(--text-sm);
+  color: var(--text-secondary);
+  background-color: var(--bg-sunken);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+}
+
 @media (max-width: 560px) {
   .row {
     flex-direction: column;
