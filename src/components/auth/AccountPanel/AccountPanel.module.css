@@ -126,3 +126,19 @@
   font-size: var(--text-sm);
   color: var(--danger);
 }
+
+@media (max-width: 480px) {
+  .emailForm,
+  .syncRow {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .identityText {
+    min-width: 0;
+  }
+
+  .email {
+    overflow-wrap: anywhere;
+  }
+}

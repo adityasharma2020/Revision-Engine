@@ -162,3 +162,17 @@
   color: var(--danger);
   background-color: var(--danger-subtle);
 }
+
+@media (max-width: 480px) {
+  .dropInner,
+  .preview {
+    padding: var(--space-4);
+  }
+
+  .pasteLabel,
+  .previewHead {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: var(--space-2);
+  }
+}

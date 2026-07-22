@@ -113,3 +113,80 @@
   overflow: hidden;
   text-overflow: ellipsis;
 }
+
+/* Compact rail for tablets, leaving the content area comfortably wide. */
+@media (max-width: 1024px) and (min-width: 721px) {
+  .sidebar {
+    width: 80px;
+    padding-inline: var(--space-3);
+  }
+
+  .brand {
+    justify-content: center;
+    padding-inline: 0;
+  }
+
+  .brandName,
+  .link span,
+  .footer {
+    display: none;
+  }
+
+  .link {
+    justify-content: center;
+    height: 44px;
+    padding: 0;
+  }
+}
+
+/* On phones the primary navigation becomes a reachable bottom bar. */
+@media (max-width: 720px) {
+  .sidebar {
+    position: fixed;
+    inset: auto 0 0;
+    z-index: var(--z-overlay);
+    width: 100%;
+    height: calc(68px + env(safe-area-inset-bottom));
+    padding: var(--space-2) max(var(--space-2), env(safe-area-inset-right))
+      env(safe-area-inset-bottom) max(var(--space-2), env(safe-area-inset-left));
+    background-color: var(--surface-elevated);
+    border-top: 1px solid var(--border);
+    border-right: 0;
+    box-shadow: 0 -4px 20px var(--overlay);
+  }
+
+  .brand,
+  .footer {
+    display: none;
+  }
+
+  .nav {
+    display: grid;
+    grid-template-columns: repeat(5, minmax(0, 1fr));
+    gap: var(--space-1);
+    height: 100%;
+  }
+
+  .link {
+    flex-direction: column;
+    justify-content: center;
+    gap: 2px;
+    height: 52px;
+    min-width: 0;
+    padding: var(--space-1) 2px;
+    font-size: 0.625rem;
+  }
+
+  .link span {
+    max-width: 100%;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .active {
+    color: var(--accent);
+    background-color: var(--accent-subtle);
+    box-shadow: none;
+  }
+}

@@ -9,8 +9,18 @@
   min-height: 100vh;
 }
 
+@media (max-width: 1024px) and (min-width: 721px) {
+  .shell {
+    grid-template-columns: 80px minmax(0, 1fr);
+  }
+}
+
 @media (max-width: 720px) {
   .shell {
     grid-template-columns: 1fr;
+  }
+
+  .main {
+    padding-bottom: calc(68px + env(safe-area-inset-bottom));
   }
 }

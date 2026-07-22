@@ -1,5 +1,7 @@
 .tabs {
   display: inline-flex;
+  max-width: 100%;
+  overflow-x: auto;
   gap: 2px;
   padding: 3px;
   background-color: var(--bg-sunken);
@@ -20,6 +22,19 @@
   transition:
     background-color var(--duration-fast) var(--ease-out),
     color var(--duration-fast) var(--ease-out);
+}
+
+@media (max-width: 480px) {
+  .tabs {
+    display: flex;
+    width: 100%;
+  }
+
+  .tab {
+    flex: 1 0 auto;
+    justify-content: center;
+    padding-inline: var(--space-3);
+  }
 }
 
 .tab:hover {
