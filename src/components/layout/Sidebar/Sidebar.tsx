@@ -1,5 +1,5 @@
 import { Link, NavLink } from 'react-router-dom';
-import { APP_NAME } from '../../../constants/app';
+import { APP_NAME, APP_VERSION } from '../../../constants/app';
 import { PRIMARY_NAV } from '../../../constants/navigation';
 import { Routes } from '../../../constants/routes';
 import { useAuth } from '../../../context/AuthContext';
@@ -54,6 +54,9 @@ export function Sidebar() {
         </Link>
         <ThemeToggle />
       </div>
+      <span className={styles.version} title={`Revision Engine version ${APP_VERSION}`}>
+        v{APP_VERSION}
+      </span>
     </aside>
   );
 }

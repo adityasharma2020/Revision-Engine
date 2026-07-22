@@ -114,6 +114,16 @@
   text-overflow: ellipsis;
 }
 
+.version {
+  align-self: center;
+  margin-top: var(--space-3);
+  font-family: var(--font-mono);
+  font-size: 0.625rem;
+  line-height: 1;
+  letter-spacing: var(--tracking-wide);
+  color: var(--text-tertiary);
+}
+
 /* Compact rail for tablets, leaving the content area comfortably wide. */
 @media (max-width: 1024px) and (min-width: 721px) {
   .sidebar {
@@ -137,6 +147,11 @@
     height: 44px;
     padding: 0;
   }
+
+  .version {
+    margin-top: auto;
+    padding-bottom: var(--space-2);
+  }
 }
 
 /* On phones the primary navigation becomes a reachable bottom bar. */
@@ -156,7 +171,8 @@
   }
 
   .brand,
-  .footer {
+  .footer,
+  .version {
     display: none;
   }
 

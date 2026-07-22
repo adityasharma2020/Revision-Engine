@@ -25,6 +25,20 @@ npm run dev        # regenerates the chapter manifest, then starts Vite
 | `npm run typecheck`| Type-only check                                         |
 | `npm run lint`    | oxlint                                                    |
 
+### Release version
+
+The version shown at the bottom of the sidebar comes from `package.json` and is
+embedded automatically during development and production builds. Use one of
+these commands before deploying a release:
+
+```bash
+npm run version:patch  # bug fix:       1.2.3 → 1.2.4
+npm run version:minor  # new features:  1.2.3 → 1.3.0
+npm run version:major  # breaking work: 1.2.3 → 2.0.0
+```
+
+Commit both `package.json` and `package-lock.json` after changing the version.
+
 ---
 
 ## Adding a chapter (no code changes)
