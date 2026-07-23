@@ -3,6 +3,7 @@ import { usePdfWorkspace } from '../../../context/PdfWorkspaceContext';
 import { Icon } from '../../common';
 import { PdfCanvasViewer } from '../PdfCanvasViewer';
 import styles from './PdfWorkspace.module.css';
+import { PDF_SOFT_LIMIT_BYTES } from '../../../services/pdf/PdfCloudStore';
 
 interface PdfWorkspaceProps {
   readonly chapterId: string;
@@ -14,6 +15,9 @@ export function PdfWorkspace({ chapterId, children }: PdfWorkspaceProps) {
   const workspace = usePdfWorkspace();
   const rootRef = useRef<HTMLDivElement>(null);
   const [focused, setFocused] = useState(false);
+  const [cloudDialogOpen, setCloudDialogOpen] = useState(false);
+  const [cloudBusy, setCloudBusy] = useState(false);
+  const [cloudError, setCloudError] = useState('');
   const activeDocument = workspace.document?.linkedChapterIds.includes(chapterId)
     ? workspace.document
     : null;
@@ -111,6 +115,9 @@ export function PdfWorkspace({ chapterId, children }: PdfWorkspaceProps) {
                 {activeDocument.local && <small>On this device</small>}
               </div>
               <div className={styles.documentActions}>
+                <button type="button" onClick={() => { setCloudError(''); setCloudDialogOpen(true); }} title={activeDocument.cloud ? 'Synced privately across devices' : 'Save PDF to cloud'} aria-label={activeDocument.cloud ? 'PDF cloud sync active' : 'Save PDF to cloud'}>
+                  <Icon name="sync" size={15} />
+                </button>
                 <button type="button" onClick={() => { workspace.toggleChapterLink(activeDocument.id, chapterId); workspace.closeDocument(); }} title="Unlink PDF from this chapter" aria-label="Unlink PDF from this chapter">
                   <Icon name="unlink" size={15} />
                 </button>
@@ -122,7 +129,14 @@ export function PdfWorkspace({ chapterId, children }: PdfWorkspaceProps) {
                 </button>
               </div>
             </header>
-            <PdfCanvasViewer controlsInHeader className={styles.documentFrame} url={activeDocument.url} name={activeDocument.name} fileHandle={activeDocument.fileHandle} />
+            <PdfCanvasViewer controlsInHeader className={styles.documentFrame} url={activeDocument.url} name={activeDocument.name} fileHandle={activeDocument.fileHandle} cloudAnnotations={activeDocument.cloud?.annotations} onCloudAnnotationsChange={activeDocument.cloud ? (annotations) => workspace.syncCloudAnnotations(activeDocument.id, annotations) : undefined} />
+            {cloudDialogOpen && <div className={styles.cloudBackdrop} onPointerDown={() => !cloudBusy && setCloudDialogOpen(false)}>
+              <section className={styles.cloudDialog} role="dialog" aria-modal="true" aria-labelledby="chapter-cloud-title" onPointerDown={(event) => event.stopPropagation()}>
+                <header><span><Icon name="sync" size={19} /></span><div><strong id="chapter-cloud-title">{activeDocument.cloud ? 'Cloud sync is active' : 'Use this PDF across devices?'}</strong><small>{activeDocument.name}</small></div><button type="button" onClick={() => setCloudDialogOpen(false)} aria-label="Close"><Icon name="close" size={15} /></button></header>
+                <div className={styles.cloudDialogBody}><p>{activeDocument.cloud ? 'The source PDF is stored once. Only lightweight annotation changes sync afterward.' : 'Upload the source once, then keep editable annotations synchronized privately across your signed-in devices.'}</p>{!activeDocument.cloud && (activeDocument.sizeBytes ?? 0) > PDF_SOFT_LIMIT_BYTES && <p className={styles.cloudWarning}>Large PDF · {((activeDocument.sizeBytes ?? 0) / 1024 / 1024).toFixed(1)} MB. Upload only if cross-device access is important.</p>}{cloudError && <p className={styles.cloudError} role="alert">{cloudError}</p>}</div>
+                <footer><button type="button" onClick={() => setCloudDialogOpen(false)}>{activeDocument.cloud ? 'Done' : 'Keep local'}</button>{!activeDocument.cloud && <button type="button" disabled={cloudBusy} onClick={() => { setCloudBusy(true); setCloudError(''); void workspace.uploadDocumentToCloud(activeDocument.id).then(() => setCloudDialogOpen(false)).catch((reason) => setCloudError(reason instanceof Error ? reason.message : 'Upload failed.')).finally(() => setCloudBusy(false)); }}>{cloudBusy ? 'Uploading…' : 'Upload privately'}</button>}</footer>
+              </section>
+            </div>}
           </aside>
         </>
       )}

@@ -109,6 +109,22 @@
   overscroll-behavior: contain;
 }
 
+.cloudBackdrop { position: fixed; z-index: 1500; inset: 0; display: grid; padding: 18px; background: rgb(0 0 0 / 68%); backdrop-filter: blur(9px); place-items: center; }
+.cloudDialog { width: min(460px, calc(100vw - 28px)); overflow: hidden; color: var(--text-primary); background: var(--surface-elevated); border: 1px solid var(--border-strong); border-radius: var(--radius-xl); box-shadow: var(--shadow-lg); }
+.cloudDialog > header { display: grid; grid-template-columns: 38px minmax(0, 1fr) 34px; align-items: center; gap: 10px; padding: 17px; border-bottom: 1px solid var(--border); }
+.cloudDialog > header > span, .cloudDialog > header > button { display: grid; width: 34px; height: 34px; padding: 0; border-radius: var(--radius-md); place-items: center; }
+.cloudDialog > header > span { color: var(--accent); background: var(--accent-subtle); }
+.cloudDialog > header > button { color: var(--text-secondary); background: var(--bg-sunken); }
+.cloudDialog > header > div { display: grid; min-width: 0; gap: 3px; }
+.cloudDialog > header small { overflow: hidden; color: var(--text-tertiary); font-size: 10px; text-overflow: ellipsis; white-space: nowrap; }
+.cloudDialogBody { display: grid; gap: 10px; padding: 20px; }
+.cloudDialogBody p { margin: 0; color: var(--text-secondary); font-size: var(--text-sm); line-height: 1.55; }
+.cloudDialogBody .cloudWarning { padding: 10px 12px; color: #d9a441; background: color-mix(in srgb, #d9a441 10%, transparent); border: 1px solid color-mix(in srgb, #d9a441 30%, transparent); border-radius: var(--radius-md); }
+.cloudDialogBody .cloudError { color: var(--danger); }
+.cloudDialog > footer { display: flex; justify-content: flex-end; gap: 8px; padding: 12px 17px; border-top: 1px solid var(--border); }
+.cloudDialog > footer button { min-height: 36px; padding: 0 14px; color: var(--text-secondary); border: 1px solid var(--border); border-radius: var(--radius-md); }
+.cloudDialog > footer button:last-child { color: #111; background: var(--accent); border-color: var(--accent); }
+
 .workspace:fullscreen .documentPane {
   top: 0;
   height: 100dvh;

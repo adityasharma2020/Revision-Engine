@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState, type CSSProperties, type KeyboardEvent as ReactKeyboardEvent, type PointerEvent as ReactPointerEvent } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState, type CSSProperties, type KeyboardEvent as ReactKeyboardEvent, type PointerEvent as ReactPointerEvent } from 'react';
 import type { PDFDocumentLoadingTask, PDFDocumentProxy, PDFPageProxy, RenderTask } from 'pdfjs-dist';
 import pdfWorker from 'pdfjs-dist/build/pdf.worker.min.mjs?url';
 import { deletePdfAnnotations, loadPdfAnnotations, savePdfAnnotations, type PdfAnnotationPoint, type PdfInkAnnotation } from '../../../services/pdf';
@@ -6,7 +6,7 @@ import { cx } from '../../../utils/cx';
 import { Icon } from '../../common';
 import styles from './PdfCanvasViewer.module.css';
 
-interface PdfCanvasViewerProps { readonly url: string; readonly name: string; readonly className?: string; readonly fileHandle?: FileSystemFileHandle; readonly controlsInHeader?: boolean }
+interface PdfCanvasViewerProps { readonly url: string; readonly name: string; readonly className?: string; readonly fileHandle?: FileSystemFileHandle; readonly controlsInHeader?: boolean; readonly cloudAnnotations?: readonly PdfInkAnnotation[]; readonly onCloudAnnotationsChange?: (annotations: readonly PdfInkAnnotation[]) => Promise<void> }
 type ViewMode = 'continuous' | 'page';
 type InkTool = 'pen' | 'highlighter' | 'line' | 'eraser';
 type DrawableTool = Exclude<InkTool, 'eraser'>;
@@ -100,9 +100,10 @@ function AnnotationLayer({ pageNumber, rotation, annotations, editing, tool, col
   onBegin: (annotation: PdfInkAnnotation) => void; onExtend: (id: string, points: readonly PdfAnnotationPoint[]) => void; onEnd: () => void; onErase: (page: number, point: PdfAnnotationPoint, mode: EraserMode) => void;
 }) {
   const activeId = useRef<string | null>(null);
+  const activePointsRef = useRef<PdfAnnotationPoint[]>([]);
+  const canvasRef = useRef<HTMLCanvasElement>(null);
   const eraserCursorRef = useRef<SVGCircleElement>(null);
   const lastPointRef = useRef<PdfAnnotationPoint | null>(null);
-  const lastPenAtRef = useRef(0);
   const pointerModeRef = useRef<'draw' | 'erase' | null>(null);
   const pointsFromEvent = (event: ReactPointerEvent<SVGSVGElement>) => {
     const bounds = event.currentTarget.getBoundingClientRect();
@@ -113,7 +114,9 @@ function AnnotationLayer({ pageNumber, rotation, annotations, editing, tool, col
       return { ...point, pressure: tool === 'pen' && advanced.penPressure ? item.pressure || .5 : .5 };
     });
     if (tool !== 'pen' || advanced.penSmoothing === 'off') return raw;
-    const factor = advanced.penSmoothing === 'smooth' ? .24 : .48;
+    // Strong low-pass filtering trails visibly behind a stylus. These values
+    // remove digitizer jitter without adding the former rubber-band latency.
+    const factor = advanced.penSmoothing === 'smooth' ? .58 : .78;
     return raw.map((point) => {
       const previous = lastPointRef.current;
       const smoothed = previous ? { x: previous.x + (point.x - previous.x) * factor, y: previous.y + (point.y - previous.y) * factor, pressure: previous.pressure + (point.pressure - previous.pressure) * factor } : point;
@@ -121,7 +124,32 @@ function AnnotationLayer({ pageNumber, rotation, annotations, editing, tool, col
     });
   };
   const barrelEraser = (event: ReactPointerEvent<SVGSVGElement>) => event.pointerType === 'pen' && (event.button === 2 || (event.buttons & 2) !== 0);
-  const rejectPalm = (event: ReactPointerEvent<SVGSVGElement>) => event.pointerType === 'touch' && Date.now() - lastPenAtRef.current < 900;
+  const rejectPalm = (event: ReactPointerEvent<SVGSVGElement>) => event.pointerType === 'touch';
+  const drawSegment = useCallback((from: PdfAnnotationPoint, to: PdfAnnotationPoint, annotationTool = tool, annotationColor = color, annotationSize = size, opacity = annotationTool === 'highlighter' ? advanced.highlighterOpacity : .95, pressureEnabled = advanced.penPressure) => {
+    const canvas = canvasRef.current; const context = canvas?.getContext('2d'); if (!canvas || !context) return;
+    const bounds = canvas.getBoundingClientRect(); const fromScreen = screenPoint(from, rotation); const toScreen = screenPoint(to, rotation);
+    const start = { x: fromScreen.x * bounds.width, y: fromScreen.y * bounds.height }; const finish = { x: toScreen.x * bounds.width, y: toScreen.y * bounds.height };
+    context.save(); context.scale(canvas.width / Math.max(1, bounds.width), canvas.height / Math.max(1, bounds.height));
+    context.beginPath(); context.moveTo(start.x, start.y); context.lineTo(finish.x, finish.y); context.strokeStyle = annotationColor; context.globalAlpha = opacity;
+    const pressure = pressureEnabled && annotationTool === 'pen' ? (from.pressure + to.pressure) / 2 : .5;
+    context.lineWidth = annotationSize * (annotationTool === 'highlighter' ? 5 : 1.5 + pressure * 1.4); context.lineCap = 'round'; context.lineJoin = 'round'; context.stroke(); context.restore();
+  }, [advanced.highlighterOpacity, advanced.penPressure, color, rotation, size, tool]);
+  useEffect(() => {
+    const canvas = canvasRef.current; if (!canvas) return;
+    const paint = () => {
+      const bounds = canvas.getBoundingClientRect(); const ratio = Math.min(devicePixelRatio || 1, 2);
+      const nextWidth = Math.max(1, Math.round(bounds.width * ratio)); const nextHeight = Math.max(1, Math.round(bounds.height * ratio));
+      if (canvas.width !== nextWidth || canvas.height !== nextHeight) { canvas.width = nextWidth; canvas.height = nextHeight; }
+      const context = canvas.getContext('2d'); context?.clearRect(0, 0, canvas.width, canvas.height);
+      for (const annotation of annotations) {
+        const points = annotation.tool === 'line' || (annotation.tool === 'highlighter' && annotation.straight)
+          ? annotation.points.length > 1 ? [annotation.points[0]!, annotation.points.at(-1)!] : annotation.points
+          : annotation.points;
+        for (let index = 1; index < points.length; index += 1) drawSegment(points[index - 1]!, points[index]!, annotation.tool, annotation.color, annotation.size, annotation.tool === 'highlighter' ? annotation.opacity ?? .3 : .95, annotation.pressureEnabled !== false);
+      }
+    };
+    paint(); const observer = new ResizeObserver(paint); observer.observe(canvas); return () => observer.disconnect();
+  }, [annotations, drawSegment, rotation]);
   const updateEraserCursor = (point: PdfAnnotationPoint | undefined, visible: boolean) => {
     const cursor = eraserCursorRef.current; if (!cursor) return;
     if (!point || !visible) { cursor.style.opacity = '0'; return; }
@@ -129,7 +157,6 @@ function AnnotationLayer({ pageNumber, rotation, annotations, editing, tool, col
   };
   const down = (event: ReactPointerEvent<SVGSVGElement>) => {
     if (!editing || rejectPalm(event)) return;
-    if (event.pointerType === 'pen') lastPenAtRef.current = Date.now();
     const temporaryEraser = barrelEraser(event);
     if (event.button > 0 && !temporaryEraser) return;
     event.preventDefault(); event.currentTarget.setPointerCapture(event.pointerId);
@@ -138,38 +165,23 @@ function AnnotationLayer({ pageNumber, rotation, annotations, editing, tool, col
     if (tool === 'eraser' || temporaryEraser) { updateEraserCursor(point, true); pointerModeRef.current = 'erase'; onErase(pageNumber, point, advanced.eraserMode); return; }
     const id = crypto.randomUUID?.() ?? `ink-${Date.now()}`;
     activeId.current = id; pointerModeRef.current = 'draw'; lastPointRef.current = point;
+    activePointsRef.current = [point];
     onBegin({ id, page: pageNumber, tool, color, size, opacity: tool === 'highlighter' ? advanced.highlighterOpacity : undefined, straight: tool === 'highlighter' ? advanced.highlighterStraight : undefined, pressureEnabled: tool === 'pen' ? advanced.penPressure : undefined, overlapProtected: tool === 'highlighter' ? advanced.highlighterOverlap : undefined, points: [point] });
   };
   const move = (event: ReactPointerEvent<SVGSVGElement>) => {
     if (!editing || rejectPalm(event)) return;
-    if (event.pointerType === 'pen') lastPenAtRef.current = Date.now();
     const points = pointsFromEvent(event);
     const erasing = pointerModeRef.current === 'erase' || tool === 'eraser' || barrelEraser(event);
     updateEraserCursor(points.at(-1), erasing);
     if (erasing) { if (event.buttons || event.pressure) onErase(pageNumber, points.at(-1)!, advanced.eraserMode); return; }
-    if (activeId.current) onExtend(activeId.current, points);
+    if (activeId.current) {
+      for (const point of points) { const previous = activePointsRef.current.at(-1); if (previous) drawSegment(previous, point); activePointsRef.current.push(point); }
+    }
   };
-  const end = () => { if (activeId.current) onEnd(); activeId.current = null; pointerModeRef.current = null; lastPointRef.current = null; };
-  const protectedGroups = new Map<string, PdfInkAnnotation[]>();
-  for (const annotation of annotations) if (annotation.tool === 'highlighter' && annotation.overlapProtected) {
-    const key = `${annotation.color}:${annotation.opacity ?? .3}`; protectedGroups.set(key, [...(protectedGroups.get(key) ?? []), annotation]);
-  }
-  const renderStroke = (annotation: PdfInkAnnotation, protectedStroke = false) => {
-    const straight = annotation.tool === 'line' || (annotation.tool === 'highlighter' && annotation.straight);
-    const visiblePoints = straight && annotation.points.length > 1 ? [annotation.points[0]!, annotation.points.at(-1)!] : annotation.points;
-    if (annotation.tool === 'pen' && annotation.pressureEnabled !== false && visiblePoints.length > 1) return <g key={annotation.id}>{visiblePoints.slice(1).map((point, index) => {
-      const from = screenPoint(visiblePoints[index]!, rotation); const to = screenPoint(point, rotation); const pressure = (visiblePoints[index]!.pressure + point.pressure) / 2;
-      return <line key={`${annotation.id}-${index}`} x1={from.x * 1000} y1={from.y * 1000} x2={to.x * 1000} y2={to.y * 1000} stroke={annotation.color} strokeWidth={annotation.size * (1.5 + pressure * 1.4)} strokeOpacity={.95} strokeLinecap="round" vectorEffect="non-scaling-stroke" />;
-    })}</g>;
-    const points = visiblePoints.map((point) => { const value = screenPoint(point, rotation); return `${value.x * 1000},${value.y * 1000}`; }).join(' ');
-    const pressure = annotation.pressureEnabled === false ? .5 : annotation.points.reduce((total, point) => total + point.pressure, 0) / Math.max(1, annotation.points.length);
-    return <polyline key={annotation.id} points={points} fill="none" stroke={annotation.color} strokeWidth={annotation.size * (annotation.tool === 'highlighter' ? 5 : 1.5 + pressure * 1.4)} strokeOpacity={protectedStroke ? 1 : annotation.tool === 'highlighter' ? annotation.opacity ?? .3 : .95} strokeLinecap="round" strokeLinejoin="round" vectorEffect="non-scaling-stroke" />;
-  };
-  return <svg className={cx(styles.annotationLayer, editing && styles.annotationEditing, editing && tool === 'eraser' && styles.eraserActive)} viewBox="0 0 1000 1000" preserveAspectRatio="none" onContextMenu={(event) => editing && event.preventDefault()} onPointerDown={down} onPointerMove={move} onPointerUp={end} onPointerCancel={end} onPointerLeave={(event) => { updateEraserCursor(undefined, false); if (event.buttons === 0) end(); }}>
-    {annotations.filter((annotation) => !(annotation.tool === 'highlighter' && annotation.overlapProtected)).map((annotation) => renderStroke(annotation))}
-    {[...protectedGroups.entries()].map(([key, group]) => <g key={key} opacity={group[0]?.opacity ?? .3}>{group.map((annotation) => renderStroke(annotation, true))}</g>)}
+  const end = () => { if (activeId.current) { onExtend(activeId.current, activePointsRef.current.slice(1)); onEnd(); } activeId.current = null; activePointsRef.current = []; pointerModeRef.current = null; lastPointRef.current = null; };
+  return <><canvas ref={canvasRef} className={styles.annotationCanvas} aria-hidden="true" /><svg className={cx(styles.annotationLayer, editing && styles.annotationEditing, editing && tool === 'eraser' && styles.eraserActive)} viewBox="0 0 1000 1000" preserveAspectRatio="none" onContextMenu={(event) => editing && event.preventDefault()} onPointerDown={down} onPointerMove={move} onPointerUp={end} onPointerCancel={end} onPointerLeave={(event) => { updateEraserCursor(undefined, false); if (event.buttons === 0) end(); }}>
     <circle ref={eraserCursorRef} className={cx(styles.eraserPreview, advanced.eraserMode === 'precision' && styles.precisionEraserPreview)} r={Math.max(12, size * 12.5)} />
-  </svg>;
+  </svg></>;
 }
 
 function PdfPage({ document, pageNumber, width, zoom, rotation, register, annotations, hideNativeAnnotations, editing, tool, color, inkSize, advanced, onBegin, onExtend, onEnd, onErase, onNavigate }: {
@@ -280,7 +292,7 @@ function PdfPage({ document, pageNumber, width, zoom, rotation, register, annota
 }
 
 /** Virtualized PDF.js reader with stylus annotations and single-page navigation. */
-export function PdfCanvasViewer({ url, name, className, fileHandle, controlsInHeader = false }: PdfCanvasViewerProps) {
+export function PdfCanvasViewer({ url, name, className, fileHandle, controlsInHeader = false, cloudAnnotations, onCloudAnnotationsChange }: PdfCanvasViewerProps) {
   const viewportRef = useRef<HTMLDivElement>(null);
   const documentMenuRef = useRef<HTMLDivElement>(null);
   const inkToolbarRef = useRef<HTMLDivElement>(null);
@@ -319,6 +331,8 @@ export function PdfCanvasViewer({ url, name, className, fileHandle, controlsInHe
   const inkPreferences = useMemo(initialInkPreferences, []);
   const [editing, setEditing] = useState(false); const [tool, setTool] = useState<InkTool>(inkPreferences.tool); const [toolColors, setToolColors] = useState<ToolColors>(inkPreferences.colors); const [toolSizes, setToolSizes] = useState<ToolSizes>(inkPreferences.sizes); const [advanced, setAdvanced] = useState<AdvancedToolPreferences>(inkPreferences.advanced); const [toolPresets, setToolPresets] = useState<ToolPreset[]>(inkPreferences.presets); const inkSize = toolSizes[tool]; const color = tool === 'eraser' ? toolColors.pen : toolColors[tool];
   const [annotations, setAnnotations] = useState<PdfInkAnnotation[]>([]); const [annotationsReady, setAnnotationsReady] = useState(false); const [exporting, setExporting] = useState(false); const [saving, setSaving] = useState(false); const [saveNotice, setSaveNotice] = useState(''); const [autosaveState, setAutosaveState] = useState<'saved' | 'saving'>('saved');
+  const cloudSeededRef = useRef('');
+  const lastCloudDigestRef = useRef('');
   const fingerprint = document?.fingerprints[0] ?? '';
   const [sourceUrl, setSourceUrl] = useState(url);
   const positionKey = useMemo(() => { let hash = 2166136261; for (const character of name) hash = Math.imul(hash ^ character.charCodeAt(0), 16777619); return `revision-engine:pdf-position:${(hash >>> 0).toString(36)}`; }, [name]);
@@ -419,6 +433,32 @@ export function PdfCanvasViewer({ url, name, className, fileHandle, controlsInHe
     }, autosaveDelay);
     return () => window.clearTimeout(timer);
   }, [annotations, annotationsReady, autosaveDelay, fingerprint]);
+
+  useEffect(() => {
+    if (!annotationsReady || !cloudAnnotations || !fingerprint || cloudSeededRef.current === fingerprint) return;
+    cloudSeededRef.current = fingerprint;
+    lastCloudDigestRef.current = annotationDigest(cloudAnnotations);
+    setAnnotations((current) => {
+      const ids = new Set(current.map((item) => item.id));
+      return [...current, ...cloudAnnotations.filter((item) => !ids.has(item.id))];
+    });
+  }, [annotationsReady, cloudAnnotations, fingerprint]);
+
+  useEffect(() => {
+    if (!annotationsReady || !onCloudAnnotationsChange || cloudSeededRef.current !== fingerprint) return;
+    const digest = annotationDigest(annotations);
+    if (digest === lastCloudDigestRef.current) return;
+    const timer = window.setTimeout(() => {
+      setAutosaveState('saving');
+      void onCloudAnnotationsChange(annotations).then(() => { lastCloudDigestRef.current = digest; setAutosaveState('saved'); }).catch((reason) => {
+        setAutosaveState('saved'); setSaveNotice(reason instanceof Error ? reason.message : 'Cloud sync failed');
+      });
+    // Cloud sync is deliberately idle-debounced. Pointer movement may produce
+    // hundreds of local annotation snapshots, but only the settled stroke is
+    // sent to Supabase. IndexedDB remains the immediate crash-safe store.
+    }, 2000);
+    return () => window.clearTimeout(timer);
+  }, [annotations, annotationsReady, fingerprint, onCloudAnnotationsChange]);
   useEffect(() => {
     if (!annotationsReady) return;
     const savedDigest = localStorage.getItem(savedDigestKey);

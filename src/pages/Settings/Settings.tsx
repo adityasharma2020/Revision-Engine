@@ -18,6 +18,7 @@ import { getPwaInstallState, requestPwaInstall, subscribeToPwaInstall } from '..
 import { useDeviceNotificationSettings } from '../../context/DeviceNotificationSettingsContext';
 import type { DeviceNotificationSettings } from '../../services/notifications';
 import { clearAllPdfAnnotations } from '../../services/pdf/PdfAnnotationStore';
+import { clearStoredWorkspacePdfs } from '../../services/pdf/PdfWorkspaceStore';
 
 export function Settings() {
   const [searchParams, setSearchParams] = useSearchParams();
@@ -188,7 +189,7 @@ export function Settings() {
     // IndexedDB can be held briefly by a PDF tab. Never let optional crash
     // recovery cleanup prevent the rest of this-device reset from completing.
     await Promise.race([
-      clearAllPdfAnnotations(),
+      Promise.all([clearAllPdfAnnotations(), clearStoredWorkspacePdfs()]).then(() => undefined),
       new Promise<void>((resolve) => window.setTimeout(resolve, 1500)),
     ]).catch(() => undefined);
 

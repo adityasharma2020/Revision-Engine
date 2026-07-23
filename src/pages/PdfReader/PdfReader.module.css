@@ -87,6 +87,19 @@
 .managedList > .chapterLinked { background: color-mix(in srgb, var(--accent-subtle) 60%, transparent); }
 .managedList > .chapterLinked i { color: var(--accent); background: var(--accent-subtle); }
 
+@media (max-width: 1500px) {
+  .viewer header .viewerActions button { width: 34px; padding: 0; justify-content: center; }
+  .viewer header .viewerActions button > span { display: none; }
+}
+.cloudDocument { border-color: color-mix(in srgb, var(--accent) 22%, transparent) !important; }
+.cloudDocument .documentIcon, .cloudMark { color: var(--accent); background: var(--accent-subtle); }
+.cloudError { padding: 8px 12px; color: var(--danger); font-size: var(--text-xs); }
+.cloudPrompt { grid-template-rows: auto auto auto; width: min(480px, calc(100vw - 32px)); }
+.cloudPromptBody { display: grid; justify-items: center; gap: 10px; padding: 24px; text-align: center; }
+.cloudPromptBody > p { max-width: 390px; margin: 0; color: var(--text-secondary); font-size: var(--text-sm); line-height: 1.55; }
+.cloudMark { display: grid; width: 48px; height: 48px; border-radius: var(--radius-lg); place-items: center; }
+.cloudPromptBody .sizeWarning { padding: 11px 13px; color: var(--warning, #d9a441); background: color-mix(in srgb, #d9a441 10%, transparent); border: 1px solid color-mix(in srgb, #d9a441 30%, transparent); border-radius: var(--radius-md); }
+
 @media (max-width: 800px) {
   .page { height: calc(100dvh - 68px - env(safe-area-inset-bottom)); padding: 6px; }
   .reader { grid-template-rows: 46px minmax(0, 1fr); gap: 6px; }

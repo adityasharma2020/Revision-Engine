@@ -45,7 +45,7 @@
 .viewport { position: relative; min-width: 0; min-height: 0; flex: 1; overflow: auto; overscroll-behavior: contain; padding: 12px; scroll-behavior: smooth; text-align: center; touch-action: pan-y pinch-zoom; }
 .page { position: relative; display: block; min-width: min(100%, 240px); min-height: 160px; margin: 0 auto 14px; overflow: hidden; background: #fff; scroll-margin-top: 10px; box-shadow: 0 6px 28px rgb(0 0 0 / 35%); }
 .page > small { position: absolute; z-index: 1; top: 7px; left: 7px; padding: 2px 5px; color: #d4d4d8; background: rgb(0 0 0 / 60%); border-radius: 4px; font-size: 9px; pointer-events: none; }
-.page canvas { position: absolute; inset: 0; display: block; width: 100% !important; height: 100% !important; background: white; }
+.page > canvas:not(.annotationCanvas) { position: absolute; inset: 0; display: block; width: 100% !important; height: 100% !important; background: white; }
 .textLayer { --min-font-size: 1; --text-scale-factor: calc(var(--total-scale-factor) * var(--min-font-size)); --min-font-size-inv: calc(1 / var(--min-font-size)); position: absolute; z-index: 2; inset: 0; overflow: clip; color-scheme: only light; line-height: 1; letter-spacing: normal; word-spacing: normal; text-align: initial; text-size-adjust: none; forced-color-adjust: none; caret-color: CanvasText; transform-origin: 0 0; user-select: text; -webkit-user-select: text; }
 .textLayer :is(span, br) { position: absolute; color: transparent; white-space: pre; cursor: text; transform-origin: 0 0; user-select: text; -webkit-user-select: text; }
 .textLayer > :not(:global(.markedContent)), .textLayer :global(.markedContent) span:not(:global(.markedContent)) { --font-height: 0; --scale-x: 1; --rotate: 0deg; z-index: 1; font-size: calc(var(--text-scale-factor) * var(--font-height)); transform: rotate(var(--rotate)) scaleX(var(--scale-x)) scale(var(--min-font-size-inv)); }
@@ -55,7 +55,8 @@
 .textLayer ::selection { color: transparent; background: rgb(76 132 255 / 34%); }
 .textLayerDisabled { pointer-events: none; user-select: none; -webkit-user-select: none; }
 .annotationLayer { position: absolute; z-index: 4; inset: 0; display: block; width: 100%; height: 100%; pointer-events: none; }
-.annotationEditing { pointer-events: all; touch-action: none; cursor: crosshair; user-select: none; -webkit-user-select: none; }
+.annotationCanvas { position: absolute; z-index: 3; inset: 0; display: block; width: 100% !important; height: 100% !important; background: transparent; pointer-events: none; }
+.annotationEditing { pointer-events: all; touch-action: pan-y pinch-zoom; cursor: crosshair; user-select: none; -webkit-user-select: none; }
 .eraserActive { cursor: none; }
 .eraserPreview { opacity: 0; fill: rgb(255 255 255 / 16%); stroke: rgb(30 30 34 / 88%); stroke-width: 2; vector-effect: non-scaling-stroke; pointer-events: none; filter: drop-shadow(0 1px 2px rgb(255 255 255 / 55%)); transition: opacity 80ms ease; }
 .precisionEraserPreview { fill: rgb(124 131 255 / 12%); stroke: #777df0; stroke-dasharray: 3 3; }
