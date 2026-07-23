@@ -67,6 +67,8 @@ export function Nudges() {
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [deleteOpen, setDeleteOpen] = useState(false);
   const [deleting, setDeleting] = useState(false);
+  const [mobileToolsOpen, setMobileToolsOpen] = useState(false);
+  const [deliveryTestOpen, setDeliveryTestOpen] = useState(false);
 
   const sendNow = async (nudge: MemoryNudge) => {
     setSendingId(nudge.id);
@@ -177,21 +179,68 @@ export function Nudges() {
         description='Capture facts, data and reminders, then let weighted repetition bring them back at the right time.'
         actions={
           <div className={styles.headerActions}>
-            <Link
-              className={styles.settingsLink}
-              to={`${Routes.settings}?tab=addons&nudge=1`}
-            >
-              <Icon name='settings' size={15} /> Notification settings
-            </Link>
-            <Button
-              size='sm'
-              onClick={() => (selecting ? exitSelection() : setSelecting(true))}
-            >
-              {selecting ? "Done" : "Manage"}
-            </Button>
-            <Button size='sm' onClick={() => setImportOpen(true)}>
-              Import
-            </Button>
+            <div className={styles.desktopTools}>
+              <Link
+                className={styles.settingsLink}
+                to={`${Routes.settings}?tab=addons&nudge=1`}
+              >
+                <Icon name='settings' size={15} /> Notification settings
+              </Link>
+              <Button
+                size='sm'
+                onClick={() =>
+                  selecting ? exitSelection() : setSelecting(true)
+                }
+              >
+                {selecting ? "Done" : "Manage"}
+              </Button>
+              <Button size='sm' onClick={() => setImportOpen(true)}>
+                Import
+              </Button>
+            </div>
+            <div className={styles.mobileTools}>
+              <Button
+                size='sm'
+                aria-expanded={mobileToolsOpen}
+                aria-haspopup='menu'
+                onClick={() => setMobileToolsOpen((open) => !open)}
+              >
+                <Icon name='settings' size={15} /> Tools
+              </Button>
+              {mobileToolsOpen && (
+                <div className={styles.mobileToolsMenu} role='menu'>
+                  <Link
+                    role='menuitem'
+                    to={`${Routes.settings}?tab=addons&nudge=1`}
+                    onClick={() => setMobileToolsOpen(false)}
+                  >
+                    <Icon name='settings' size={15} /> Notification settings
+                  </Link>
+                  <button
+                    type='button'
+                    role='menuitem'
+                    onClick={() => {
+                      if (selecting) exitSelection();
+                      else setSelecting(true);
+                      setMobileToolsOpen(false);
+                    }}
+                  >
+                    <Icon name='check' size={15} />
+                    {selecting ? "Finish managing" : "Manage nudges"}
+                  </button>
+                  <button
+                    type='button'
+                    role='menuitem'
+                    onClick={() => {
+                      setImportOpen(true);
+                      setMobileToolsOpen(false);
+                    }}
+                  >
+                    <Icon name='plus' size={15} /> Import nudges
+                  </button>
+                </div>
+              )}
+            </div>
             <Button
               size='sm'
               variant='primary'
@@ -203,40 +252,54 @@ export function Nudges() {
         }
       />
       <section className={styles.deliveryTest}>
-        <div>
-          <span>Live delivery test</span>
-          <strong>Preview a real Memory Nudge on your devices</strong>
-          <small>
-            This uses the actual content and push pipeline. It will not change
-            the nudge schedule.
-          </small>
-        </div>
-        {testTarget ? (
-          <div className={styles.deliveryControls}>
-            <select
-              aria-label='Nudge to test'
-              value={testTarget.id}
-              onChange={(event) => setTestTargetId(event.target.value)}
-            >
-              {nudges.map((nudge) => (
-                <option key={nudge.id} value={nudge.id}>
-                  {nudge.title}
-                </option>
-              ))}
-            </select>
-            <Button
-              variant='primary'
-              disabled={sendingId !== null}
-              onClick={() => void sendNow(testTarget)}
-            >
-              <Icon name='sparkle' size={15} />
-              {sendingId === testTarget.id ? "Sending…" : "Send real test"}
-            </Button>
+        <button
+          className={styles.deliveryToggle}
+          type='button'
+          aria-expanded={deliveryTestOpen}
+          onClick={() => setDeliveryTestOpen((open) => !open)}
+        >
+          <span className={styles.deliveryIcon}>
+            <Icon name='sparkle' size={16} />
+          </span>
+          <span>
+            <strong>Test notification delivery</strong>
+            <small>Send one preview without changing its schedule</small>
+          </span>
+          <Icon
+            className={deliveryTestOpen ? styles.chevronOpen : ""}
+            name='chevronRight'
+            size={16}
+          />
+        </button>
+        {deliveryTestOpen && (
+          <div className={styles.deliveryPanel}>
+            {testTarget ? (
+              <div className={styles.deliveryControls}>
+                <select
+                  aria-label='Nudge to test'
+                  value={testTarget.id}
+                  onChange={(event) => setTestTargetId(event.target.value)}
+                >
+                  {nudges.map((nudge) => (
+                    <option key={nudge.id} value={nudge.id}>
+                      {nudge.title}
+                    </option>
+                  ))}
+                </select>
+                <Button
+                  variant='primary'
+                  disabled={sendingId !== null}
+                  onClick={() => void sendNow(testTarget)}
+                >
+                  {sendingId === testTarget.id ? "Sending…" : "Send test"}
+                </Button>
+              </div>
+            ) : (
+              <Button variant='primary' onClick={() => setEditing("new")}>
+                Add your first nudge
+              </Button>
+            )}
           </div>
-        ) : (
-          <Button variant='primary' onClick={() => setEditing("new")}>
-            Add your first nudge
-          </Button>
         )}
       </section>
       {message && (
@@ -247,8 +310,6 @@ export function Nudges() {
       {selected && (
         <ReviewCard
           nudge={selected}
-          sending={sendingId === selected.id}
-          onSend={() => sendNow(selected)}
           onDone={async (action, hours) => {
             await recordNudgeFeedback(selected, action, hours);
             setParams({});
@@ -481,13 +542,9 @@ function DeleteNudgesDialog({
 
 function ReviewCard({
   nudge,
-  sending,
-  onSend,
   onDone,
 }: {
   nudge: MemoryNudge;
-  sending: boolean;
-  onSend: () => Promise<void>;
   onDone: (
     action: "remembered" | "forgot" | "snooze" | "archive",
     hours?: number
@@ -502,32 +559,24 @@ function ReviewCard({
       <blockquote>{nudge.content}</blockquote>
       {nudge.context && <p>{nudge.context}</p>}
       {nudge.source && <small>Source: {nudge.source}</small>}
-      <div>
-        <Button
-          size='sm'
-          variant='primary'
-          disabled={sending}
-          onClick={() => void onSend()}
-        >
-          <Icon name='sparkle' size={14} />{" "}
-          {sending ? "Sending…" : "Send this nudge now"}
-        </Button>
-        <Button size='sm' onClick={() => void onDone("remembered")}>
-          Remembered
-        </Button>
-        <Button size='sm' onClick={() => void onDone("forgot")}>
-          Forgot this
-        </Button>
-        <Button size='sm' onClick={() => void onDone("snooze", 24)}>
-          Tomorrow
-        </Button>
-        <Button
-          size='sm'
-          variant='ghost'
-          onClick={() => void onDone("archive")}
-        >
-          Archive
-        </Button>
+      <p className={styles.reviewPrompt}>How well did you recall this?</p>
+      <div className={styles.reviewActions}>
+        <button type='button' onClick={() => void onDone("remembered")}>
+          <strong>Remembered</strong>
+          <small>Show less often</small>
+        </button>
+        <button type='button' onClick={() => void onDone("forgot")}>
+          <strong>Forgot it</strong>
+          <small>Bring it back sooner</small>
+        </button>
+        <button type='button' onClick={() => void onDone("snooze", 24)}>
+          <strong>Remind tomorrow</strong>
+          <small>Snooze for 24 hours</small>
+        </button>
+        <button type='button' onClick={() => void onDone("archive")}>
+          <strong>Archive</strong>
+          <small>Stop reminders, keep saved</small>
+        </button>
       </div>
     </section>
   );
