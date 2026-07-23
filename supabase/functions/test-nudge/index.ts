@@ -14,14 +14,16 @@ Deno.serve(async (request) => {
     if (nudgeError) throw nudgeError;
     if (!nudge) return Response.json({ error: 'That nudge was not found.' }, { status: 404, headers: corsHeaders });
     const { data: preferences } = await admin.from('nudge_preferences').select('privacy_mode').eq('user_id', auth.user.id).maybeSingle();
-    const { data: subscriptions, error: subscriptionError } = await admin.from('push_subscriptions').select('id,user_id,endpoint,p256dh,auth_key').eq('user_id', auth.user.id).is('disabled_at', null);
+    const { data: subscriptions, error: subscriptionError } = await admin.from('push_subscriptions').select('id,user_id,endpoint,p256dh,auth_key,preferences').eq('user_id', auth.user.id).is('disabled_at', null);
     if (subscriptionError) throw subscriptionError;
     if (!subscriptions?.length) return Response.json({ error: 'No active notification device. Enable notifications on this device first.' }, { status: 409, headers: corsHeaders });
     const privateMode = Boolean(preferences?.privacy_mode);
     const title = privateMode ? '🧠 A memory nudge is ready' : `🧠 ${String(nudge.title)}`;
     const body = privateMode ? 'One important idea is ready for a quick private review.' : String(nudge.content);
+    const eligibleSubscriptions = (subscriptions as SubscriptionRow[]).filter((item) => item.preferences?.enabled !== false && item.preferences?.memoryNudges !== false);
+    if (!eligibleSubscriptions.length) return Response.json({ error: 'Memory nudges are paused on every active device.' }, { status: 409, headers: corsHeaders });
     let delivered = 0;
-    for (const subscription of subscriptions as SubscriptionRow[]) {
+    for (const subscription of eligibleSubscriptions) {
       try {
         await deliver(subscription, { title, body, tag: `nudge-test-${nudge.id}`, url: `nudges?id=${nudge.id}`, actions: [{ action: 'review-nudge', title: 'Review now', url: `nudges?id=${nudge.id}` }] });
         delivered += 1;

@@ -9,6 +9,7 @@ export const ICON_PATHS = {
   home: 'M3 10.5 12 3l9 7.5M5 9.5V20a1 1 0 0 0 1 1h4v-6h4v6h4a1 1 0 0 0 1-1V9.5',
   book: 'M4 5a2 2 0 0 1 2-2h12v16H6a2 2 0 0 0-2 2V5ZM18 3v18',
   chart: 'M4 20V4M4 20h16M8 16v-4M12 16V8M16 16v-6',
+  bell: 'M18 8a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9ZM10 21h4',
   bookmark: 'M6 3h12v18l-6-4-6 4V3Z',
   settings: 'M4 7h8M16 7h4M4 17h4M12 17h8M14 4v6M10 14v6',
   sync: 'M20 7h-5V2M4 17h5v5M19 12a7 7 0 0 0-12-5L4 10M5 12a7 7 0 0 0 12 5l3-3',

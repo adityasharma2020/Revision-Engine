@@ -22,6 +22,7 @@ export interface AppSettings {
     readonly showActivityOverview: boolean;
   };
   readonly notifications: {
+    /** @deprecated Kept only to seed the one-time per-device migration. */
     readonly enabled: boolean;
     readonly dailyRevision: boolean;
     readonly weeklySummary: boolean;

@@ -8,6 +8,7 @@ import { StorageProvider } from './context/StorageContext';
 import { ThemeProvider } from './context/ThemeContext';
 import { UserDataProvider } from './context/UserDataContext';
 import { AppSettingsProvider } from './context/AppSettingsContext';
+import { DeviceNotificationSettingsProvider } from './context/DeviceNotificationSettingsContext';
 import './services/pwa/InstallService';
 
 import './styles/tokens.css';
@@ -42,9 +43,11 @@ createRoot(container).render(
           <StorageProvider>
             <ThemeProvider>
               <AppSettingsProvider>
-                <UserDataProvider>
-                  <App />
-                </UserDataProvider>
+                <DeviceNotificationSettingsProvider>
+                  <UserDataProvider>
+                    <App />
+                  </UserDataProvider>
+                </DeviceNotificationSettingsProvider>
               </AppSettingsProvider>
             </ThemeProvider>
           </StorageProvider>

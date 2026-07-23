@@ -10,11 +10,13 @@ import { APP_NAME, APP_VERSION } from '../../constants/app';
 import styles from './Settings.module.css';
 import { useRevisionPreferences } from '../../hooks/useRevisionPreferences';
 import { useAppSettings } from '../../context/AppSettingsContext';
-import { disableWebPush, enableWebPush, getPushStatus, sendTestNotification } from '../../services/notifications';
+import { disableWebPush, enableWebPush, getPushStatus, sendTestNotification, syncWebPushSubscription } from '../../services/notifications';
 import { loadNudgePreferences, saveNudgePreferences } from '../../services/nudges';
 import { DEFAULT_NUDGE_PREFERENCES, type NudgePreferences } from '../../types';
 import { Routes } from '../../constants/routes';
 import { getPwaInstallState, requestPwaInstall, subscribeToPwaInstall } from '../../services/pwa/InstallService';
+import { useDeviceNotificationSettings } from '../../context/DeviceNotificationSettingsContext';
+import type { DeviceNotificationSettings } from '../../services/notifications';
 
 export function Settings() {
   const [searchParams, setSearchParams] = useSearchParams();
@@ -31,8 +33,13 @@ export function Settings() {
   const installState = useSyncExternalStore(subscribeToPwaInstall, getPwaInstallState, getPwaInstallState);
   const { preferences: revisionPreferences, update: updateRevisionPreferences } = useRevisionPreferences();
   const { settings: appSettings, update: updateAppSettings, reset: resetAppSettings } = useAppSettings();
+  const { settings: deviceNotifications, update: updateDeviceNotifications } = useDeviceNotificationSettings();
   const pushStatus = getPushStatus(status === 'authenticated');
-  const notificationsReady = appSettings.notifications.enabled && pushStatus === 'granted';
+  const notificationsReady = deviceNotifications.enabled && pushStatus === 'granted';
+
+  const saveDeviceNotifications = (next: DeviceNotificationSettings) => {
+    updateDeviceNotifications(next);
+  };
 
   useEffect(() => {
     const requestedTab = searchParams.get('tab');
@@ -60,14 +67,16 @@ export function Settings() {
     try {
       if (!enabled) {
         await disableWebPush();
-        updateAppSettings({
-          ...appSettings,
-          notifications: { ...appSettings.notifications, enabled: false },
-        });
+        updateDeviceNotifications({ ...deviceNotifications, enabled: false });
         setPushMessage('Notifications disabled on this device.');
         return;
       }
-      const nextStatus = await enableWebPush();
+      const next = {
+        ...deviceNotifications,
+        enabled: true,
+        timezone: Intl.DateTimeFormat().resolvedOptions().timeZone || 'UTC',
+      };
+      const nextStatus = await enableWebPush(next);
       if (nextStatus !== 'granted') {
         const messages = {
           unsupported: 'This browser does not support Web Push.',
@@ -81,20 +90,10 @@ export function Settings() {
         setPushMessage(messages[nextStatus]);
         return;
       }
-      updateAppSettings({
-        ...appSettings,
-        notifications: {
-          ...appSettings.notifications,
-          enabled: true,
-          timezone: Intl.DateTimeFormat().resolvedOptions().timeZone || 'UTC',
-        },
-      });
+      updateDeviceNotifications(next);
       setPushMessage('This device is subscribed. Send a test to confirm delivery.');
     } catch (error) {
-      updateAppSettings({
-        ...appSettings,
-        notifications: { ...appSettings.notifications, enabled: false },
-      });
+      updateDeviceNotifications({ ...deviceNotifications, enabled: false });
       setPushMessage(error instanceof Error ? error.message : 'Could not configure notifications.');
     } finally {
       setPushBusy(false);
@@ -105,8 +104,10 @@ export function Settings() {
     setPushBusy(true);
     setPushMessage(null);
     try {
-      await sendTestNotification();
-      setPushMessage('Test sent to your subscribed devices.');
+      const currentStatus = await syncWebPushSubscription(deviceNotifications);
+      if (currentStatus !== 'granted') throw new Error('Enable notifications on this device before sending a test.');
+      const delivered = await sendTestNotification();
+      setPushMessage(`Test delivered to ${delivered} active device${delivered === 1 ? '' : 's'}.`);
     } catch (error) {
       setPushMessage(error instanceof Error ? error.message : 'Test delivery failed.');
     } finally {
@@ -115,14 +116,18 @@ export function Settings() {
   };
 
   const clearDeviceOnly = async () => {
+    await disableWebPush().catch(() => undefined);
     if (cloudAvailable) await signOut();
     await createLocalStorageService().resetAll();
+    updateDeviceNotifications({ ...deviceNotifications, enabled: false });
     setCleared(true);
     window.location.reload();
   };
 
   const clearDeviceAndArchiveCloud = async () => {
+    await disableWebPush().catch(() => undefined);
     await storage.resetAll();
+    updateDeviceNotifications({ ...deviceNotifications, enabled: false });
     setCleared(true);
     window.location.reload();
   };
@@ -363,7 +368,7 @@ export function Settings() {
         <div className={styles.preferenceSections}>
           <PreferenceGroup
             title="Notifications"
-            description="Choose which study updates you want to receive. Delivery remains off until notifications are enabled."
+            description="These choices apply only to this device. Other phones, tablets and computers keep their own notification settings."
           >
             <ToggleSetting
               title="Allow notifications"
@@ -375,80 +380,47 @@ export function Settings() {
             <ToggleSetting
               title="Daily revision reminder"
               description="Remind me when today’s revision is still pending."
-              checked={appSettings.notifications.dailyRevision}
+              checked={deviceNotifications.dailyRevision}
               disabled={!notificationsReady}
-              onChange={(checked) =>
-                updateAppSettings({
-                  ...appSettings,
-                  notifications: {
-                    ...appSettings.notifications,
-                    dailyRevision: checked,
-                  },
-                })
-              }
+              onChange={(checked) => saveDeviceNotifications({ ...deviceNotifications, dailyRevision: checked })}
             />
             <ToggleSetting
               title="Weekly progress summary"
               description="Receive a concise summary of questions, accuracy and active days."
-              checked={appSettings.notifications.weeklySummary}
+              checked={deviceNotifications.weeklySummary}
               disabled={!notificationsReady}
-              onChange={(checked) =>
-                updateAppSettings({
-                  ...appSettings,
-                  notifications: {
-                    ...appSettings.notifications,
-                    weeklySummary: checked,
-                  },
-                })
-              }
+              onChange={(checked) => saveDeviceNotifications({ ...deviceNotifications, weeklySummary: checked })}
             />
             <ToggleSetting
               title="Milestones"
               description="Celebrate streaks and meaningful learning milestones."
-              checked={appSettings.notifications.milestones}
+              checked={deviceNotifications.milestones}
               disabled={!notificationsReady}
-              onChange={(checked) =>
-                updateAppSettings({
-                  ...appSettings,
-                  notifications: {
-                    ...appSettings.notifications,
-                    milestones: checked,
-                  },
-                })
-              }
+              onChange={(checked) => saveDeviceNotifications({ ...deviceNotifications, milestones: checked })}
+            />
+            <ToggleSetting
+              title="Memory nudges"
+              description="Allow configured memory nudges to arrive on this device."
+              checked={deviceNotifications.memoryNudges}
+              disabled={!notificationsReady}
+              onChange={(checked) => saveDeviceNotifications({ ...deviceNotifications, memoryNudges: checked })}
             />
             <div className={`${styles.notificationSchedule} ${!notificationsReady ? styles.disabled : ''}`}>
               <label>
                 <span>Daily reminder</span>
                 <input
                   type="time"
-                  value={appSettings.notifications.dailyReminderTime}
+                  value={deviceNotifications.dailyReminderTime}
                   disabled={!notificationsReady}
-                  onChange={(event) =>
-                    updateAppSettings({
-                      ...appSettings,
-                      notifications: {
-                        ...appSettings.notifications,
-                        dailyReminderTime: event.target.value,
-                      },
-                    })
-                  }
+                  onChange={(event) => saveDeviceNotifications({ ...deviceNotifications, dailyReminderTime: event.target.value })}
                 />
               </label>
               <label>
                 <span>Weekly summary</span>
                 <select
-                  value={appSettings.notifications.weeklySummaryDay}
+                  value={deviceNotifications.weeklySummaryDay}
                   disabled={!notificationsReady}
-                  onChange={(event) =>
-                    updateAppSettings({
-                      ...appSettings,
-                      notifications: {
-                        ...appSettings.notifications,
-                        weeklySummaryDay: Number(event.target.value),
-                      },
-                    })
-                  }
+                  onChange={(event) => saveDeviceNotifications({ ...deviceNotifications, weeklySummaryDay: Number(event.target.value) })}
                 >
                   {['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'].map((day, index) => (
                     <option value={index} key={day}>
@@ -461,20 +433,12 @@ export function Settings() {
                 <span>Summary time</span>
                 <input
                   type="time"
-                  value={appSettings.notifications.weeklySummaryTime}
+                  value={deviceNotifications.weeklySummaryTime}
                   disabled={!notificationsReady}
-                  onChange={(event) =>
-                    updateAppSettings({
-                      ...appSettings,
-                      notifications: {
-                        ...appSettings.notifications,
-                        weeklySummaryTime: event.target.value,
-                      },
-                    })
-                  }
+                  onChange={(event) => saveDeviceNotifications({ ...deviceNotifications, weeklySummaryTime: event.target.value })}
                 />
               </label>
-              <small>Times use {appSettings.notifications.timezone || 'UTC'}.</small>
+              <small>This device uses {deviceNotifications.timezone || 'UTC'}.</small>
             </div>
             <div className={styles.pushActions}>
               <Button size="sm" variant="secondary" disabled={pushBusy || !notificationsReady} onClick={() => void testPush()}>

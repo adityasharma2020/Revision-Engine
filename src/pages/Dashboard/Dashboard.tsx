@@ -96,8 +96,8 @@ function HomeContent({ chapters }: { chapters: readonly ChapterSummary[] }) {
   };
   return (
     <>
-      {appSettings.dashboard.showActivityOverview && <ProgressOverview results={quizResults} />}
       <NotificationInbox />
+      {appSettings.dashboard.showActivityOverview && <ProgressOverview results={quizResults} />}
 
       <button type="button" onClick={openPreflight} className={`${styles.revisionHero} ${revisionPerformance ? styles[`revision_${revisionPerformance.tone}`] : ''}`}>
         <span className={styles.revisionMark}><Icon name="target" size={25} /></span>

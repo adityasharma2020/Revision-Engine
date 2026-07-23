@@ -29,7 +29,7 @@ export type PushPayload = {
   url: string;
   actions?: Array<{ action: string; title: string; url?: string }>;
 };
-export type SubscriptionRow = { id: string; user_id: string; endpoint: string; p256dh: string; auth_key: string };
+export type SubscriptionRow = { id: string; user_id: string; endpoint: string; p256dh: string; auth_key: string; preferences?: Record<string, unknown> };
 
 export async function deliver(subscription: SubscriptionRow, payload: PushPayload) {
   const sender = configureWebPush();

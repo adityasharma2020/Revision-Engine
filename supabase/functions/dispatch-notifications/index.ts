@@ -5,6 +5,7 @@ type NotificationPreferences = {
   dailyRevision?: boolean;
   weeklySummary?: boolean;
   milestones?: boolean;
+  memoryNudges?: boolean;
   dailyReminderTime?: string;
   weeklySummaryDay?: number;
   weeklySummaryTime?: string;
@@ -46,11 +47,11 @@ function weightedPick(items: Array<Record<string, unknown>>) {
 Deno.serve(async (request) => {
   if (request.headers.get('x-cron-secret') !== Deno.env.get('CRON_SECRET')) return new Response('Unauthorized', { status: 401 });
   const admin = adminClient();
-  const { data: settingRows, error } = await admin.from('user_state').select('user_id,value').eq('key', 'settings').eq('is_deleted', false);
+  const { data: deviceRows, error } = await admin.from('push_subscriptions').select('id,user_id,endpoint,p256dh,auth_key,preferences').is('disabled_at', null);
   if (error) throw error;
   let delivered = 0;
-  for (const row of settingRows ?? []) {
-    const preferences = (row.value?.notifications ?? {}) as NotificationPreferences;
+  for (const subscription of (deviceRows ?? []) as SubscriptionRow[]) {
+    const preferences = (subscription.preferences ?? {}) as NotificationPreferences;
     if (!preferences.enabled) continue;
     let clock: ReturnType<typeof localParts>;
     try { clock = localParts(preferences.timezone || 'UTC'); } catch { clock = localParts('UTC'); }
@@ -58,12 +59,12 @@ Deno.serve(async (request) => {
     let cachedResults: Array<Record<string, unknown>> | null = null;
     const getResults = async () => {
       if (cachedResults) return cachedResults;
-      const { data } = await admin.from('user_state').select('value').eq('user_id', row.user_id).eq('key', 'quiz-results').eq('is_deleted', false).maybeSingle();
+      const { data } = await admin.from('user_state').select('value').eq('user_id', subscription.user_id).eq('key', 'quiz-results').eq('is_deleted', false).maybeSingle();
       cachedResults = Array.isArray(data?.value) ? data.value.filter((item) => item.includedInAnalytics !== false && item.isDeleted !== 1) : [];
       return cachedResults;
     };
     if (preferences.dailyRevision && isDue(clock.time, preferences.dailyReminderTime)) {
-      const { data: assignment } = await admin.from('user_state').select('value').eq('user_id', row.user_id).eq('key', 'daily-revision-assignment').eq('is_deleted', false).maybeSingle();
+      const { data: assignment } = await admin.from('user_state').select('value').eq('user_id', subscription.user_id).eq('key', 'daily-revision-assignment').eq('is_deleted', false).maybeSingle();
       if (assignment?.value?.status !== 'completed' || assignment.value?.dateKey !== clock.date) messages.push({ type: 'daily-revision', key: clock.date, payload: { title: '🎯 Your daily review is ready', body: 'A few focused questions now will protect what you’ve already learned.', tag: `daily-${clock.date}`, url: 'revision', actions: [{ action: 'start-review', title: 'Start review', url: 'revision' }] } });
     }
     if (preferences.weeklySummary && clock.weekday === (preferences.weeklySummaryDay ?? 0) && isDue(clock.time, preferences.weeklySummaryTime)) {
@@ -78,22 +79,23 @@ Deno.serve(async (request) => {
       if (milestone >= 100) messages.push({ type: 'milestone', key: `questions-${milestone}`, payload: { title: `🏆 ${milestone} questions completed`, body: 'That is real momentum. Take a moment to see how far you’ve come.', tag: `milestone-${milestone}`, url: 'statistics', actions: [{ action: 'view-milestone', title: 'See achievement', url: 'statistics' }] } });
     }
     if (!messages.length) continue;
-    const { data: subscriptions } = await admin.from('push_subscriptions').select('id,user_id,endpoint,p256dh,auth_key').eq('user_id', row.user_id).is('disabled_at', null);
     for (const message of messages) {
       let successful = false;
-      for (const subscription of (subscriptions ?? []) as SubscriptionRow[]) {
-        const { data: existing } = await admin.from('notification_deliveries').select('id').eq('user_id', row.user_id).eq('notification_type', message.type).eq('dedupe_key', message.key).eq('subscription_id', subscription.id).maybeSingle();
-        if (existing) { successful = true; continue; }
+      const { data: existing } = await admin.from('notification_deliveries').select('id').eq('user_id', subscription.user_id).eq('notification_type', message.type).eq('dedupe_key', message.key).eq('subscription_id', subscription.id).maybeSingle();
+      if (existing) {
+        successful = true;
+      } else {
         try {
           await deliver(subscription, message.payload);
-          await admin.from('notification_deliveries').insert({ user_id: row.user_id, subscription_id: subscription.id, notification_type: message.type, dedupe_key: message.key });
-          successful = true; delivered += 1;
+          await admin.from('notification_deliveries').insert({ user_id: subscription.user_id, subscription_id: subscription.id, notification_type: message.type, dedupe_key: message.key });
+          successful = true;
+          delivered += 1;
         } catch (pushError) {
           const status = typeof pushError === 'object' && pushError && 'statusCode' in pushError ? Number(pushError.statusCode) : 0;
           if (status === 404 || status === 410) await admin.from('push_subscriptions').update({ disabled_at: new Date().toISOString() }).eq('id', subscription.id);
         }
       }
-      if (successful) await admin.from('notification_inbox').upsert({ user_id: row.user_id, notification_type: message.type, dedupe_key: message.key, title: message.payload.title, body: message.payload.body, url: message.payload.url }, { onConflict: 'user_id,notification_type,dedupe_key' });
+      if (successful) await admin.from('notification_inbox').upsert({ user_id: subscription.user_id, notification_type: message.type, dedupe_key: message.key, title: message.payload.title, body: message.payload.body, url: message.payload.url }, { onConflict: 'user_id,notification_type,dedupe_key' });
     }
   }
   const { data: nudgePreferenceRows } = await admin.from('nudge_preferences').select('*').eq('enabled', true);
@@ -119,12 +121,12 @@ Deno.serve(async (request) => {
     }
     const selected = weightedPick(pool);
     if (!selected) continue;
-    const { data: subscriptions } = await admin.from('push_subscriptions').select('id,user_id,endpoint,p256dh,auth_key').eq('user_id', preferences.user_id).is('disabled_at', null);
+    const { data: subscriptions } = await admin.from('push_subscriptions').select('id,user_id,endpoint,p256dh,auth_key,preferences').eq('user_id', preferences.user_id).is('disabled_at', null);
     if (!subscriptions?.length) continue;
     const title = preferences.privacy_mode ? '🧠 A memory nudge is ready' : `🧠 ${String(selected.title)}`;
     const body = preferences.privacy_mode ? 'One important idea is ready for a quick private review.' : String(selected.content);
     let successful = false;
-    for (const subscription of subscriptions as SubscriptionRow[]) {
+    for (const subscription of (subscriptions as SubscriptionRow[]).filter((item) => item.preferences?.enabled !== false && item.preferences?.memoryNudges !== false)) {
       try { await deliver(subscription, { title, body, tag: `nudge-${selected.id}`, url: `nudges?id=${selected.id}`, actions: [{ action: 'review-nudge', title: 'Review now', url: `nudges?id=${selected.id}` }] }); successful = true; delivered += 1; }
       catch (pushError) { const status = typeof pushError === 'object' && pushError && 'statusCode' in pushError ? Number(pushError.statusCode) : 0; if (status === 404 || status === 410) await admin.from('push_subscriptions').update({ disabled_at: new Date().toISOString() }).eq('id', subscription.id); }
     }

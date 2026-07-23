@@ -9,6 +9,9 @@ import { Button } from '../../common/Button';
 import { Icon } from '../../common/Icon';
 import { Search } from '../../../pages/Search';
 import { StoragePressureNudge } from '../StoragePressureNudge';
+import { useAuth } from '../../../context/AuthContext';
+import { disableWebPush, getPushStatus, syncWebPushSubscription } from '../../../services/notifications';
+import { useDeviceNotificationSettings } from '../../../context/DeviceNotificationSettingsContext';
 
 const SIDEBAR_KEY = 'revision-engine:sidebar-collapsed';
 const QUIZ_HISTORY_GUARD = '__revisionEngineQuizGuard';
@@ -37,6 +40,8 @@ function armQuizHistoryGuard(): void {
 /** Top-level chrome: persistent sidebar + scrollable routed content. */
 export function AppShell() {
   const navigate = useNavigate();
+  const { status: authStatus } = useAuth();
+  const { settings: deviceNotifications, ready: deviceNotificationsReady, update: updateDeviceNotifications } = useDeviceNotificationSettings();
   const [userCollapsed, setUserCollapsed] = useState(
     () => localStorage.getItem(SIDEBAR_KEY) === 'true',
   );
@@ -53,6 +58,30 @@ export function AppShell() {
   const [navigationBlocked, setNavigationBlocked] = useState(false);
   const [blockedDestination, setBlockedDestination] = useState<string | null>(null);
   const [searchOpen, setSearchOpen] = useState(false);
+
+  useEffect(() => {
+    if (!deviceNotificationsReady || authStatus !== 'authenticated' || !deviceNotifications.enabled) return;
+
+    const reconcile = () => {
+      const pushStatus = getPushStatus(true);
+      if (pushStatus === 'denied') {
+        updateDeviceNotifications({ ...deviceNotifications, enabled: false });
+        void disableWebPush().catch(() => undefined);
+        return;
+      }
+      if (pushStatus !== 'granted') return;
+      void syncWebPushSubscription(deviceNotifications).catch((error) => {
+        console.warn('[push] Could not reconcile this device subscription.', error);
+      });
+    };
+
+    const timer = window.setTimeout(reconcile, 200);
+    window.addEventListener('online', reconcile);
+    return () => {
+      window.clearTimeout(timer);
+      window.removeEventListener('online', reconcile);
+    };
+  }, [authStatus, deviceNotifications, deviceNotificationsReady, updateDeviceNotifications]);
 
   useEffect(() => {
     const update = (event: Event) => {

@@ -19,6 +19,7 @@ export const StorageKeys = {
   revisionPreferences: 'revision-preferences',
   quizSettings: 'quiz-settings',
   dailyRevisionAssignment: 'daily-revision-assignment',
+  deviceNotificationSettings: '__device-notification-settings',
 } as const;
 
 export type StorageKey = (typeof StorageKeys)[keyof typeof StorageKeys];

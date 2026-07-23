@@ -1,5 +1,6 @@
 import { env } from '../../config/env';
 import { getSupabase } from '../supabase/client';
+import type { DeviceNotificationSettings } from './DeviceNotificationSettings';
 
 export type PushStatus = 'unsupported' | 'install-required' | 'unconfigured' | 'signed-out' | 'prompt' | 'granted' | 'denied';
 
@@ -27,15 +28,9 @@ export function getPushStatus(authenticated: boolean): PushStatus {
   return Notification.permission === 'default' ? 'prompt' : Notification.permission;
 }
 
-export async function enableWebPush(): Promise<PushStatus> {
+async function registerCurrentDevice(userId: string, preferences: DeviceNotificationSettings): Promise<void> {
   const client = getSupabase();
-  if (!client) return 'unconfigured';
-  const { data: auth } = await client.auth.getUser();
-  if (!auth.user) return 'signed-out';
-  const status = getPushStatus(true);
-  if (status === 'install-required' || status === 'unsupported' || status === 'unconfigured') return status;
-  const permission = await Notification.requestPermission();
-  if (permission !== 'granted') return permission === 'default' ? 'prompt' : permission;
+  if (!client) throw new Error('Supabase is not configured.');
   const registration = await Promise.race([
     navigator.serviceWorker.ready,
     new Promise<never>((_, reject) => window.setTimeout(() => reject(new Error('The notification service worker did not become ready. Install or refresh the app, then try again.')), 10_000)),
@@ -53,15 +48,44 @@ export async function enableWebPush(): Promise<PushStatus> {
   const json = subscription.toJSON();
   if (!json.endpoint || !json.keys?.p256dh || !json.keys.auth) throw new Error('Browser returned an incomplete push subscription.');
   const { error } = await client.from('push_subscriptions').upsert({
-    user_id: auth.user.id,
+    user_id: userId,
     endpoint: json.endpoint,
     p256dh: json.keys.p256dh,
     auth_key: json.keys.auth,
     user_agent: navigator.userAgent,
+    preferences,
     disabled_at: null,
     updated_at: new Date().toISOString(),
   }, { onConflict: 'endpoint' });
   if (error) throw error;
+}
+
+/**
+ * Reconciles this browser's subscription without displaying a permission
+ * prompt. Push permission and subscriptions belong to a browser installation,
+ * so a synced account preference alone cannot register another device.
+ */
+export async function syncWebPushSubscription(preferences: DeviceNotificationSettings): Promise<PushStatus> {
+  const client = getSupabase();
+  if (!client) return 'unconfigured';
+  const { data: auth } = await client.auth.getUser();
+  if (!auth.user) return 'signed-out';
+  const status = getPushStatus(true);
+  if (status !== 'granted') return status;
+  await registerCurrentDevice(auth.user.id, preferences);
+  return 'granted';
+}
+
+export async function enableWebPush(preferences: DeviceNotificationSettings): Promise<PushStatus> {
+  const client = getSupabase();
+  if (!client) return 'unconfigured';
+  const { data: auth } = await client.auth.getUser();
+  if (!auth.user) return 'signed-out';
+  const status = getPushStatus(true);
+  if (status === 'install-required' || status === 'unsupported' || status === 'unconfigured') return status;
+  const permission = await Notification.requestPermission();
+  if (permission !== 'granted') return permission === 'default' ? 'prompt' : permission;
+  await registerCurrentDevice(auth.user.id, preferences);
   return 'granted';
 }
 
@@ -75,10 +99,10 @@ export async function disableWebPush(): Promise<void> {
   await subscription?.unsubscribe();
 }
 
-export async function sendTestNotification(): Promise<void> {
+export async function sendTestNotification(): Promise<number> {
   const client = getSupabase();
   if (!client) throw new Error('Supabase is not configured.');
-  const { error } = await client.functions.invoke('test-notification');
+  const { data, error } = await client.functions.invoke<{ delivered?: number }>('test-notification');
   if (error) {
     const response = (error as { context?: Response }).context;
     if (response) {
@@ -91,4 +115,5 @@ export async function sendTestNotification(): Promise<void> {
     }
     throw error;
   }
+  return Number(data?.delivered ?? 0);
 }
