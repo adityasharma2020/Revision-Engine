@@ -19,6 +19,7 @@ export const ICON_PATHS = {
   moon: 'M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8Z',
   monitor: 'M3 5h18v11H3zM8 20h8M12 16v4',
   chevronRight: 'm9 6 6 6-6 6',
+  chevronDown: 'm6 9 6 6 6-6',
   panelLeftClose: 'M3 4h18v16H3V4ZM9 4v16M15 9l-3 3 3 3',
   panelLeftOpen: 'M3 4h18v16H3V4ZM9 4v16M12 9l3 3-3 3',
   expand: 'M8 3H3v5M16 3h5v5M8 21H3v-5M21 16v5h-5',

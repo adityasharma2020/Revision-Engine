@@ -22,8 +22,9 @@
 .history i { padding: 2px 5px; color: var(--accent); background: var(--accent-subtle); border-radius: var(--radius-full); font-size: 8px; font-style: normal; text-transform: uppercase; }
 .history p { display: -webkit-box; margin-top: 2px; overflow: hidden; color: var(--text-secondary); font-size: var(--text-xs); -webkit-box-orient: vertical; -webkit-line-clamp: 2; }
 .history time { display: block; margin-top: 5px; color: var(--text-tertiary); font-size: 10px; }
+.historyImage { width: 58px; height: 42px; object-fit: cover; background: var(--bg-sunken); border: 1px solid var(--border); border-radius: var(--radius-md); }
 .history .read { opacity: .64; }
 .empty { display: grid; min-height: 220px; padding: var(--space-6); color: var(--text-tertiary); text-align: center; place-content: center; justify-items: center; gap: var(--space-2); }
 .empty strong { color: var(--text-primary); font-size: var(--text-sm); }
 .empty p { max-width: 300px; font-size: var(--text-xs); }
-@media (max-width: 560px) { .bellButton { width: 38px; height: 38px; } .backdrop { align-items: end; padding: var(--space-3) 0 0; } .modal { max-height: calc(100dvh - 20px); border-radius: var(--radius-xl) var(--radius-xl) 0 0; } }
+@media (max-width: 560px) { .bellButton { width: 38px; height: 38px; } .backdrop { align-items: end; padding: var(--space-3) 0 0; } .modal { max-height: calc(100dvh - 20px); border-radius: var(--radius-xl) var(--radius-xl) 0 0; } .historyImage { width: 48px; height: 38px; } }

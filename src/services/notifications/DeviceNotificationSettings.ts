@@ -4,6 +4,11 @@ export interface DeviceNotificationSettings {
   readonly weeklySummary: boolean;
   readonly milestones: boolean;
   readonly memoryNudges: boolean;
+  readonly motivation: boolean;
+  readonly motivationTime: string;
+  readonly motivationDays: readonly number[];
+  readonly motivationTone: 'mixed' | 'soft' | 'balanced' | 'firm' | 'brutal';
+  readonly motivationImages: boolean;
   readonly dailyReminderTime: string;
   readonly weeklySummaryDay: number;
   readonly weeklySummaryTime: string;
@@ -67,6 +72,11 @@ export function defaultDeviceNotificationSettings(): DeviceNotificationSettings 
     weeklySummary: true,
     milestones: true,
     memoryNudges: true,
+    motivation: false,
+    motivationTime: '08:00',
+    motivationDays: [0, 1, 2, 3, 4, 5, 6],
+    motivationTone: 'mixed',
+    motivationImages: true,
     dailyReminderTime: '18:00',
     weeklySummaryDay: 0,
     weeklySummaryTime: '18:00',
@@ -77,5 +87,15 @@ export function defaultDeviceNotificationSettings(): DeviceNotificationSettings 
 export function normalizeDeviceNotificationSettings(
   value?: Partial<DeviceNotificationSettings> | null,
 ): DeviceNotificationSettings {
-  return { ...defaultDeviceNotificationSettings(), ...value };
+  const defaults = defaultDeviceNotificationSettings();
+  const tone = value?.motivationTone;
+  const days = Array.isArray(value?.motivationDays)
+    ? [...new Set(value.motivationDays.filter((day) => Number.isInteger(day) && day >= 0 && day <= 6))]
+    : defaults.motivationDays;
+  return {
+    ...defaults,
+    ...value,
+    motivationDays: days.length ? days : defaults.motivationDays,
+    motivationTone: tone && ['mixed', 'soft', 'balanced', 'firm', 'brutal'].includes(tone) ? tone : defaults.motivationTone,
+  };
 }

@@ -32,6 +32,33 @@
 .notificationSchedule > small { grid-column: 1 / -1; color: var(--text-tertiary); font-size: 10px; }
 .pushActions { display: flex; align-items: center; gap: var(--space-3); padding: 0 0 var(--space-4); }
 .pushActions small { color: var(--text-secondary); font-size: var(--text-xs); }
+.disabled { pointer-events: none; opacity: .48; }
+.motivationPanel { margin: var(--space-3) 0 var(--space-4); overflow: hidden; background: var(--bg-sunken); border: 1px solid var(--border); border-radius: var(--radius-lg); }
+.motivationPanel > summary { display: grid; grid-template-columns: 34px minmax(0, 1fr) auto; align-items: center; gap: var(--space-3); padding: var(--space-3); cursor: pointer; list-style: none; }
+.motivationPanel > summary::-webkit-details-marker { display: none; }
+.motivationPanel > summary > span { display: grid; width: 34px; height: 34px; color: var(--accent); background: var(--accent-subtle); border-radius: var(--radius-md); place-items: center; }
+.motivationPanel > summary > div { display: flex; min-width: 0; flex-direction: column; gap: 2px; }
+.motivationPanel > summary strong { font-size: var(--text-sm); }
+.motivationPanel > summary small { overflow: hidden; color: var(--text-secondary); font-size: var(--text-xs); text-overflow: ellipsis; white-space: nowrap; }
+.motivationPanel > summary > svg { color: var(--text-tertiary); transition: transform var(--duration-fast); }
+.motivationPanel[open] > summary > svg { transform: rotate(180deg); }
+.motivationControls { padding: var(--space-4); border-top: 1px solid var(--border); }
+.motivationFields { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--space-3); }
+.motivationFields label { display: flex; min-width: 0; flex-direction: column; gap: var(--space-2); color: var(--text-secondary); font-size: var(--text-xs); }
+.motivationFields input, .motivationFields select { width: 100%; height: 38px; padding: 0 var(--space-3); color: var(--text-primary); background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-md); }
+.motivationControls fieldset { padding: var(--space-4) 0; border: 0; border-bottom: 1px solid var(--border); }
+.motivationControls legend { margin-bottom: var(--space-2); color: var(--text-secondary); font-size: var(--text-xs); }
+.motivationDays { display: flex; flex-wrap: wrap; gap: var(--space-2); }
+.motivationDays button { display: grid; width: 34px; height: 34px; color: var(--text-secondary); background: var(--surface); border: 1px solid var(--border); border-radius: 50%; place-items: center; font-size: var(--text-xs); }
+.motivationDays button:hover { border-color: var(--border-strong); }
+.motivationDays .motivationDayActive { color: var(--accent-text); background: var(--accent); border-color: var(--accent); }
+.imageChoice { display: flex; align-items: flex-start; gap: var(--space-3); padding: var(--space-4) 0; cursor: pointer; border-bottom: 1px solid var(--border); }
+.imageChoice > input { margin-top: 3px; accent-color: var(--accent); }
+.imageChoice > span { display: flex; min-width: 0; flex-direction: column; gap: 2px; }
+.imageChoice strong { font-size: var(--text-sm); }
+.imageChoice small { color: var(--text-secondary); font-size: var(--text-xs); line-height: var(--leading-normal); }
+.motivationPreview { display: flex; align-items: center; gap: var(--space-3); padding-top: var(--space-4); }
+.motivationPreview small { color: var(--text-tertiary); font-size: var(--text-xs); }
 .addonNote { display: flex; align-items: center; gap: var(--space-3); padding: var(--space-4); color: var(--text-secondary); background: var(--accent-subtle); border: 1px dashed color-mix(in srgb, var(--accent) 55%, var(--border)); border-radius: var(--radius-lg); }
 .addonNote > span { display: grid; flex: 0 0 36px; width: 36px; height: 36px; place-items: center; color: var(--accent); background: var(--surface); border-radius: var(--radius-md); }
 .addonNote > div { display: flex; min-width: 0; flex-direction: column; }
@@ -237,6 +264,10 @@
   .toggleRow { min-height: 76px; gap: var(--space-3); }
   .notificationSchedule { grid-template-columns: 1fr; }
   .pushActions { align-items: flex-start; flex-direction: column; }
+  .motivationFields { grid-template-columns: 1fr; }
+  .motivationDays { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); }
+  .motivationDays button { width: 100%; max-width: 34px; height: auto; aspect-ratio: 1; }
+  .motivationPreview { align-items: flex-start; flex-direction: column; }
   .addonCard { grid-template-columns: 40px 1fr; }
   .addonCard > button { grid-column: 1 / -1; width: 100%; }
   .modalBackdrop { align-items: end; padding: var(--space-3) 0 0; }

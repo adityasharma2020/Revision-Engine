@@ -1,4 +1,5 @@
 import { adminClient, deliver, type PushPayload, type SubscriptionRow } from '../_shared/push.ts';
+import { chooseMotivation, loadMotivationFeed, resolveMotivationImage, type MotivationTone } from '../_shared/motivation.ts';
 
 type NotificationPreferences = {
   enabled?: boolean;
@@ -6,6 +7,11 @@ type NotificationPreferences = {
   weeklySummary?: boolean;
   milestones?: boolean;
   memoryNudges?: boolean;
+  motivation?: boolean;
+  motivationTime?: string;
+  motivationDays?: number[];
+  motivationTone?: MotivationTone | 'mixed';
+  motivationImages?: boolean;
   dailyReminderTime?: string;
   weeklySummaryDay?: number;
   weeklySummaryTime?: string;
@@ -55,7 +61,7 @@ Deno.serve(async (request) => {
     if (!preferences.enabled) continue;
     let clock: ReturnType<typeof localParts>;
     try { clock = localParts(preferences.timezone || 'UTC'); } catch { clock = localParts('UTC'); }
-    const messages: Array<{ type: string; key: string; payload: PushPayload }> = [];
+    const messages: Array<{ type: string; key: string; payload: PushPayload; metadata?: Record<string, unknown> }> = [];
     let cachedResults: Array<Record<string, unknown>> | null = null;
     const getResults = async () => {
       if (cachedResults) return cachedResults;
@@ -78,6 +84,34 @@ Deno.serve(async (request) => {
       const milestone = Math.floor(lifetimeQuestions / 100) * 100;
       if (milestone >= 100) messages.push({ type: 'milestone', key: `questions-${milestone}`, payload: { title: `🏆 ${milestone} questions completed`, body: 'That is real momentum. Take a moment to see how far you’ve come.', tag: `milestone-${milestone}`, url: 'statistics', actions: [{ action: 'view-milestone', title: 'See achievement', url: 'statistics' }] } });
     }
+    if (preferences.motivation && (preferences.motivationDays ?? [0, 1, 2, 3, 4, 5, 6]).includes(clock.weekday) && isDue(clock.time, preferences.motivationTime ?? '08:00')) {
+      try {
+        const feed = await loadMotivationFeed();
+        const { data: recent } = await admin.from('notification_inbox').select('metadata').eq('user_id', subscription.user_id).eq('notification_type', 'motivation').order('delivered_at', { ascending: false }).limit(12);
+        const recentIds = (recent ?? []).map((item) => String(item.metadata?.quoteId ?? '')).filter(Boolean);
+        const selected = chooseMotivation(feed, preferences.motivationTone ?? 'mixed', clock.time, recentIds);
+        if (selected) {
+          const image = preferences.motivationImages === false ? undefined : await resolveMotivationImage(feed, selected);
+          messages.push({
+            type: 'motivation',
+            key: clock.date,
+            payload: {
+              title: selected.title,
+              body: selected.message,
+              tag: `motivation-${clock.date}`,
+              url: 'revision',
+              image,
+              imageAlt: image ? `Motivational image for ${selected.category}` : undefined,
+              timestamp: Date.now(),
+              actions: [{ action: 'start-revision', title: 'Start revision', url: 'revision' }],
+            },
+            metadata: { quoteId: selected.id, category: selected.category, tone: selected.tone, author: selected.author ?? null, image: image ?? null },
+          });
+        }
+      } catch (motivationError) {
+        console.error('[motivation] Could not prepare scheduled reminder.', motivationError);
+      }
+    }
     if (!messages.length) continue;
     for (const message of messages) {
       let successful = false;
@@ -95,7 +129,7 @@ Deno.serve(async (request) => {
           if (status === 404 || status === 410) await admin.from('push_subscriptions').update({ disabled_at: new Date().toISOString() }).eq('id', subscription.id);
         }
       }
-      if (successful) await admin.from('notification_inbox').upsert({ user_id: subscription.user_id, notification_type: message.type, dedupe_key: message.key, title: message.payload.title, body: message.payload.body, url: message.payload.url }, { onConflict: 'user_id,notification_type,dedupe_key' });
+      if (successful) await admin.from('notification_inbox').upsert({ user_id: subscription.user_id, notification_type: message.type, dedupe_key: message.key, title: message.payload.title, body: message.payload.body, url: message.payload.url, metadata: message.metadata ?? {} }, { onConflict: 'user_id,notification_type,dedupe_key' });
     }
   }
   const { data: nudgePreferenceRows } = await admin.from('nudge_preferences').select('*').eq('enabled', true);

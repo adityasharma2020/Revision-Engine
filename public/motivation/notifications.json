@@ -1,0 +1,280 @@
+{
+  "imagePools": {
+    "consistency": [
+      {
+        "url": "https://images.unsplash.com/photo-1769794371055-54436b54577e?w=1200&h=900&fit=crop&auto=format",
+        "alt": "A cozy study desk with an open book, laptop, and handwritten notes",
+        "source": "Unsplash"
+      },
+      {
+        "url": "https://images.unsplash.com/photo-1740679953597-f0b9e03e1645?w=1200&h=900&fit=crop&auto=format",
+        "alt": "A hand writing steadily in a notebook with a pen",
+        "source": "Unsplash"
+      },
+      {
+        "url": "https://images.unsplash.com/photo-1673162802561-dd53ec4be651?w=1200&h=900&fit=crop&auto=format",
+        "alt": "A bookshelf filled with rows of books in a library",
+        "source": "Unsplash"
+      }
+    ],
+    "gentle": [
+      {
+        "url": "https://images.unsplash.com/photo-1758243488200-d0b43f504953?w=1200&h=900&fit=crop&auto=format",
+        "alt": "A misty, calm lake surrounded by quiet forest",
+        "source": "Unsplash"
+      },
+      {
+        "url": "https://images.unsplash.com/photo-1759433169410-b904d63514e0?w=1200&h=900&fit=crop&auto=format",
+        "alt": "An open road leading toward sunlit hills at sunrise",
+        "source": "Unsplash"
+      }
+    ],
+    "discipline": [
+      {
+        "url": "https://images.unsplash.com/photo-1617299263454-3f1b584c89f3?w=1200&h=900&fit=crop&auto=format",
+        "alt": "A green and white alarm clock in soft morning light",
+        "source": "Unsplash"
+      },
+      {
+        "url": "https://images.unsplash.com/photo-1769794371055-54436b54577e?w=1200&h=900&fit=crop&auto=format",
+        "alt": "A cozy study desk with an open book, laptop, and handwritten notes",
+        "source": "Unsplash"
+      }
+    ],
+    "hard-truth": [
+      {
+        "url": "https://images.unsplash.com/photo-1759433169410-b904d63514e0?w=1200&h=900&fit=crop&auto=format",
+        "alt": "An open road leading toward sunlit hills at sunrise",
+        "source": "Unsplash"
+      },
+      {
+        "url": "https://images.unsplash.com/photo-1673162802561-dd53ec4be651?w=1200&h=900&fit=crop&auto=format",
+        "alt": "A bookshelf filled with rows of books in a library",
+        "source": "Unsplash"
+      }
+    ],
+    "exam-pressure": [
+      {
+        "url": "https://images.unsplash.com/photo-1617299263454-3f1b584c89f3?w=1200&h=900&fit=crop&auto=format",
+        "alt": "A green and white alarm clock in soft morning light",
+        "source": "Unsplash"
+      },
+      {
+        "url": "https://images.unsplash.com/photo-1759433169410-b904d63514e0?w=1200&h=900&fit=crop&auto=format",
+        "alt": "An open road leading toward sunlit hills at sunrise",
+        "source": "Unsplash"
+      }
+    ],
+    "failure-recovery": [
+      {
+        "url": "https://images.unsplash.com/photo-1758243488200-d0b43f504953?w=1200&h=900&fit=crop&auto=format",
+        "alt": "A misty, calm lake surrounded by quiet forest",
+        "source": "Unsplash"
+      },
+      {
+        "url": "https://images.unsplash.com/photo-1740679953597-f0b9e03e1645?w=1200&h=900&fit=crop&auto=format",
+        "alt": "A hand writing steadily in a notebook with a pen",
+        "source": "Unsplash"
+      }
+    ],
+    "confidence": [
+      {
+        "url": "https://images.unsplash.com/photo-1673162802561-dd53ec4be651?w=1200&h=900&fit=crop&auto=format",
+        "alt": "A bookshelf filled with rows of books in a library",
+        "source": "Unsplash"
+      },
+      {
+        "url": "https://images.unsplash.com/photo-1740679953597-f0b9e03e1645?w=1200&h=900&fit=crop&auto=format",
+        "alt": "A hand writing steadily in a notebook with a pen",
+        "source": "Unsplash"
+      }
+    ],
+    "strategy": [
+      {
+        "url": "https://images.unsplash.com/photo-1740679953597-f0b9e03e1645?w=1200&h=900&fit=crop&auto=format",
+        "alt": "A hand writing steadily in a notebook with a pen",
+        "source": "Unsplash"
+      },
+      {
+        "url": "https://images.unsplash.com/photo-1673162802561-dd53ec4be651?w=1200&h=900&fit=crop&auto=format",
+        "alt": "A bookshelf filled with rows of books in a library",
+        "source": "Unsplash"
+      }
+    ],
+    "default": [
+      {
+        "url": "https://images.unsplash.com/photo-1769794371055-54436b54577e?w=1200&h=900&fit=crop&auto=format",
+        "alt": "A cozy study desk with an open book, laptop, and handwritten notes",
+        "source": "Unsplash"
+      },
+      {
+        "url": "https://images.unsplash.com/photo-1673162802561-dd53ec4be651?w=1200&h=900&fit=crop&auto=format",
+        "alt": "A bookshelf filled with rows of books in a library",
+        "source": "Unsplash"
+      },
+      {
+        "url": "https://images.unsplash.com/photo-1617299263454-3f1b584c89f3?w=1200&h=900&fit=crop&auto=format",
+        "alt": "A green and white alarm clock in soft morning light",
+        "source": "Unsplash"
+      }
+    ]
+  },
+  "notifications": [
+    {
+      "id": "motivation-001",
+      "category": "consistency",
+      "tone": "firm",
+      "title": "Return to the syllabus",
+      "message": "One honest revision today is worth more than another elaborate plan you will not follow.",
+      "imageUrl": null,
+      "imageCategory": "consistency",
+      "author": null,
+      "preferredTime": "morning",
+      "weight": 5,
+      "enabled": true
+    },
+    {
+      "id": "motivation-002",
+      "category": "strategy",
+      "tone": "balanced",
+      "title": "Recall before reading again",
+      "message": "Close the notes, retrieve what you know, then study the gaps your memory actually revealed.",
+      "imageUrl": null,
+      "imageCategory": "strategy",
+      "author": null,
+      "preferredTime": "any",
+      "weight": 5,
+      "enabled": true
+    },
+    {
+      "id": "motivation-003",
+      "category": "hard-truth",
+      "tone": "brutal",
+      "title": "Your plan earns no marks",
+      "message": "UPSC evaluates what you can recall under pressure, not the timetable you created and repeatedly ignored.",
+      "imageUrl": null,
+      "imageCategory": "hard-truth",
+      "author": null,
+      "preferredTime": "evening",
+      "weight": 3,
+      "enabled": true
+    },
+    {
+      "id": "motivation-004",
+      "category": "gentle",
+      "tone": "soft",
+      "title": "Restart without the drama",
+      "message": "A difficult day does not need a perfect recovery. Complete one useful revision and begin again from there.",
+      "imageUrl": null,
+      "imageCategory": "gentle",
+      "author": null,
+      "preferredTime": "evening",
+      "weight": 3,
+      "enabled": true
+    },
+    {
+      "id": "motivation-005",
+      "category": "discipline",
+      "tone": "firm",
+      "title": "Do the scheduled work",
+      "message": "Motivation can be absent. Your revision slot, PYQs, and mock analysis still need to happen.",
+      "imageUrl": null,
+      "imageCategory": "discipline",
+      "author": null,
+      "preferredTime": "morning",
+      "weight": 4,
+      "enabled": true
+    },
+    {
+      "id": "motivation-006",
+      "category": "failure-recovery",
+      "tone": "balanced",
+      "title": "The mock exposed the gap",
+      "message": "A poor score is useful when every wrong answer becomes a correction you can retrieve next time.",
+      "imageUrl": null,
+      "imageCategory": "failure-recovery",
+      "author": null,
+      "preferredTime": "any",
+      "weight": 3,
+      "enabled": true
+    },
+    {
+      "id": "motivation-007",
+      "category": "exam-pressure",
+      "tone": "brutal",
+      "title": "The syllabus will not shrink",
+      "message": "Every postponed revision leaves the same material waiting inside a calendar with fewer days remaining.",
+      "imageUrl": null,
+      "imageCategory": "exam-pressure",
+      "author": null,
+      "preferredTime": "afternoon",
+      "weight": 3,
+      "enabled": true
+    },
+    {
+      "id": "motivation-008",
+      "category": "confidence",
+      "tone": "balanced",
+      "title": "Confidence follows evidence",
+      "message": "Each recalled fact, analysed mistake, and completed mock gives you a reason to trust your preparation.",
+      "imageUrl": null,
+      "imageCategory": "confidence",
+      "author": null,
+      "preferredTime": "any",
+      "weight": 3,
+      "enabled": true
+    },
+    {
+      "id": "motivation-009",
+      "category": "consistency",
+      "tone": "balanced",
+      "title": "Protect the chain today",
+      "message": "A smaller completed session keeps preparation alive better than a perfect session endlessly postponed.",
+      "imageUrl": null,
+      "imageCategory": "consistency",
+      "author": null,
+      "preferredTime": "afternoon",
+      "weight": 5,
+      "enabled": true
+    },
+    {
+      "id": "motivation-010",
+      "category": "strategy",
+      "tone": "firm",
+      "title": "PYQs reveal the examination",
+      "message": "Stop guessing what matters. Analyse how UPSC asks, eliminates, repeats themes, and punishes shallow understanding.",
+      "imageUrl": null,
+      "imageCategory": "strategy",
+      "author": null,
+      "preferredTime": "any",
+      "weight": 5,
+      "enabled": true
+    },
+    {
+      "id": "motivation-011",
+      "category": "hard-truth",
+      "tone": "brutal",
+      "title": "Resources are not preparation",
+      "message": "Collecting PDFs feels productive because it avoids the harder work of learning, recalling, and being tested.",
+      "imageUrl": null,
+      "imageCategory": "hard-truth",
+      "author": null,
+      "preferredTime": "evening",
+      "weight": 3,
+      "enabled": true
+    },
+    {
+      "id": "motivation-012",
+      "category": "gentle",
+      "tone": "soft",
+      "title": "Begin with five questions",
+      "message": "When the whole syllabus feels heavy, reduce the decision: answer five questions and let momentum decide what follows.",
+      "imageUrl": null,
+      "imageCategory": "gentle",
+      "author": null,
+      "preferredTime": "morning",
+      "weight": 4,
+      "enabled": true
+    }
+  ]
+}

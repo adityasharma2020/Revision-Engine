@@ -136,6 +136,29 @@ export function Settings() {
     }
   };
 
+  const previewMotivation = async () => {
+    setPushBusy(true);
+    setPushMessage(null);
+    try {
+      const currentStatus = await syncWebPushSubscription(deviceNotifications);
+      if (currentStatus !== 'granted') throw new Error('Enable notifications on this device before sending a preview.');
+      const delivered = await sendTestNotification('motivation', deviceNotifications.motivationImages, deviceNotifications.motivationTone);
+      setPushMessage(delivered ? 'Motivational preview sent to this device.' : 'The preview could not be delivered.');
+    } catch (error) {
+      setPushMessage(error instanceof Error ? error.message : 'Motivational preview failed.');
+    } finally {
+      setPushBusy(false);
+    }
+  };
+
+  const toggleMotivationDay = (day: number) => {
+    const current = deviceNotifications.motivationDays;
+    const next = current.includes(day)
+      ? current.length === 1 ? current : current.filter((item) => item !== day)
+      : [...current, day].sort();
+    saveDeviceNotifications({ ...deviceNotifications, motivationDays: next });
+  };
+
   const clearDeviceOnly = async () => {
     await disableWebPush({ ...deviceNotifications, enabled: false }).catch(() => undefined);
     if (cloudAvailable) await signOut();
@@ -437,6 +460,34 @@ export function Settings() {
               disabled={!notificationsReady}
               onChange={(checked) => saveDeviceNotifications({ ...deviceNotifications, memoryNudges: checked })}
             />
+            <ToggleSetting
+              title="Motivational reminders"
+              description="Occasional UPSC-focused encouragement, kept separate from your Memory Nudges."
+              checked={deviceNotifications.motivation}
+              disabled={!notificationsReady}
+              onChange={(checked) => saveDeviceNotifications({ ...deviceNotifications, motivation: checked })}
+            />
+            {deviceNotifications.motivation && (
+              <details className={`${styles.motivationPanel} ${!notificationsReady ? styles.disabled : ''}`}>
+                <summary>
+                  <span><Icon name="sun" size={17} /></span>
+                  <div><strong>Motivation schedule</strong><small>{deviceNotifications.motivationTime} · {deviceNotifications.motivationTone === 'mixed' ? 'mixed intensity' : `${deviceNotifications.motivationTone} tone`} · {deviceNotifications.motivationImages ? 'images on' : 'text only'}</small></div>
+                  <Icon name="chevronDown" size={15} />
+                </summary>
+                <div className={styles.motivationControls}>
+                  <div className={styles.motivationFields}>
+                    <label><span>Delivery time</span><input type="time" value={deviceNotifications.motivationTime} disabled={!notificationsReady} onChange={(event) => saveDeviceNotifications({ ...deviceNotifications, motivationTime: event.target.value })} /></label>
+                    <label><span>Intensity</span><select value={deviceNotifications.motivationTone} disabled={!notificationsReady} onChange={(event) => saveDeviceNotifications({ ...deviceNotifications, motivationTone: event.target.value as DeviceNotificationSettings['motivationTone'] })}><option value="mixed">Mixed</option><option value="soft">Soft</option><option value="balanced">Balanced</option><option value="firm">Firm</option><option value="brutal">Raw / brutal</option></select></label>
+                  </div>
+                  <fieldset>
+                    <legend>Delivery days</legend>
+                    <div className={styles.motivationDays}>{['S', 'M', 'T', 'W', 'T', 'F', 'S'].map((label, day) => <button type="button" key={`${label}-${day}`} disabled={!notificationsReady} className={deviceNotifications.motivationDays.includes(day) ? styles.motivationDayActive : ''} aria-pressed={deviceNotifications.motivationDays.includes(day)} onClick={() => toggleMotivationDay(day)}>{label}</button>)}</div>
+                  </fieldset>
+                  <label className={styles.imageChoice}><input type="checkbox" checked={deviceNotifications.motivationImages} disabled={!notificationsReady} onChange={(event) => saveDeviceNotifications({ ...deviceNotifications, motivationImages: event.target.checked })} /><span><strong>Rich images</strong><small>Use a category image when its public URL is available; otherwise send a clean text notification.</small></span></label>
+                  <div className={styles.motivationPreview}><Button size="sm" variant="secondary" disabled={pushBusy || !notificationsReady} onClick={() => void previewMotivation()}><Icon name="bell" size={14} /> Send preview</Button><small>Preview only—never added to your notification history.</small></div>
+                </div>
+              </details>
+            )}
             <div className={`${styles.notificationSchedule} ${!notificationsReady ? styles.disabled : ''}`}>
               <label>
                 <span>Daily reminder</span>

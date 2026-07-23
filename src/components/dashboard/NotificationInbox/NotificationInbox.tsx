@@ -6,7 +6,24 @@ import { listInboxNotifications, markInboxRead, type InboxNotification } from '.
 import styles from './NotificationInbox.module.css';
 
 const destination = (url: string) => url ? (url.startsWith('/') ? url : `/${url}`) : '/';
-const iconFor = (type: string) => type === 'memory-nudge' ? 'sparkle' : type === 'weekly-summary' || type === 'milestone' ? 'chart' : 'target';
+const iconFor = (type: string) => type === 'memory-nudge' ? 'sparkle' : type === 'motivation' ? 'sun' : type === 'weekly-summary' || type === 'milestone' ? 'chart' : 'target';
+
+function InboxItem({ item, onOpen }: { item: InboxNotification; onOpen: () => void }) {
+  const image = typeof item.metadata.image === 'string' && /^https:\/\//i.test(item.metadata.image) ? item.metadata.image : '';
+  return (
+    <li className={item.readAt ? styles.read : ''}>
+      <Link to={destination(item.url)} onClick={onOpen}>
+        <span className={styles.historyIcon}><Icon name={iconFor(item.type)} size={17} /></span>
+        <div>
+          <span>{item.title}{!item.readAt && <i>New</i>}</span>
+          <p>{item.body}</p>
+          <time>{new Intl.DateTimeFormat(undefined, { weekday: 'short', day: 'numeric', month: 'short', hour: 'numeric', minute: '2-digit' }).format(new Date(item.deliveredAt))}</time>
+        </div>
+        {image ? <img className={styles.historyImage} src={image} alt="" loading="lazy" onError={(event) => { event.currentTarget.hidden = true; }} /> : <Icon name='chevronRight' size={16} />}
+      </Link>
+    </li>
+  );
+}
 
 export function NotificationInbox() {
   const { status } = useAuth();
@@ -63,6 +80,6 @@ export function NotificationInbox() {
         {unreadCount > 0 && <b>{unreadCount > 99 ? '99+' : unreadCount}</b>}
       </button>
     </div>
-    {historyOpen && <div className={styles.backdrop} onMouseDown={() => setHistoryOpen(false)}><section className={styles.modal} role='dialog' aria-modal='true' aria-labelledby='notification-history-title' onMouseDown={(event) => event.stopPropagation()}><header><div><span>Notifications</span><h2 id='notification-history-title'>Study updates</h2><p>Reminders and nudges stay here after the system notification disappears.</p></div><button aria-label='Close notifications' onClick={() => setHistoryOpen(false)}><Icon name='close' /></button></header><div className={styles.modalActions}><span>{unreadCount} unread</span><Button size='sm' disabled={busy || unreadCount === 0} onClick={() => void markRead(items.filter((item) => !item.readAt).map((item) => item.id))}>Mark all read</Button></div>{items.length ? <ol className={styles.history}>{items.map((item) => <li key={item.id} className={item.readAt ? styles.read : ''}><Link to={destination(item.url)} onClick={() => { void markRead([item.id]); setHistoryOpen(false); }}><span className={styles.historyIcon}><Icon name={iconFor(item.type)} size={17} /></span><div><span>{item.title}{!item.readAt && <i>New</i>}</span><p>{item.body}</p><time>{new Intl.DateTimeFormat(undefined, { weekday: 'short', day: 'numeric', month: 'short', hour: 'numeric', minute: '2-digit' }).format(new Date(item.deliveredAt))}</time></div><Icon name='chevronRight' size={16} /></Link></li>)}</ol> : <div className={styles.empty}><Icon name='bell' size={24} /><strong>No notifications yet</strong><p>Your study reminders and memory nudges will appear here.</p></div>}</section></div>}
+    {historyOpen && <div className={styles.backdrop} onMouseDown={() => setHistoryOpen(false)}><section className={styles.modal} role='dialog' aria-modal='true' aria-labelledby='notification-history-title' onMouseDown={(event) => event.stopPropagation()}><header><div><span>Notifications</span><h2 id='notification-history-title'>Study updates</h2><p>Reminders, motivation and nudges stay here after the system notification disappears.</p></div><button aria-label='Close notifications' onClick={() => setHistoryOpen(false)}><Icon name='close' /></button></header><div className={styles.modalActions}><span>{unreadCount} unread</span><Button size='sm' disabled={busy || unreadCount === 0} onClick={() => void markRead(items.filter((item) => !item.readAt).map((item) => item.id))}>Mark all read</Button></div>{items.length ? <ol className={styles.history}>{items.map((item) => <InboxItem key={item.id} item={item} onOpen={() => { void markRead([item.id]); setHistoryOpen(false); }} />)}</ol> : <div className={styles.empty}><Icon name='bell' size={24} /><strong>No notifications yet</strong><p>Your study reminders, motivation and memory nudges will appear here.</p></div>}</section></div>}
   </>;
 }

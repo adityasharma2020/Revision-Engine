@@ -148,10 +148,15 @@ export async function disableWebPush(preferences?: DeviceNotificationSettings): 
   await subscription?.unsubscribe();
 }
 
-export async function sendTestNotification(): Promise<number> {
+export async function sendTestNotification(
+  kind: 'standard' | 'motivation' = 'standard',
+  includeImage = true,
+  motivationTone: DeviceNotificationSettings['motivationTone'] = 'mixed',
+): Promise<number> {
   const client = getSupabase();
   if (!client) throw new Error('Cloud notification services are unavailable.');
-  const { data, error } = await client.functions.invoke<{ delivered?: number }>('test-notification');
+  const { key: deviceKey } = getNotificationDeviceIdentity();
+  const { data, error } = await client.functions.invoke<{ delivered?: number }>('test-notification', { body: { kind, deviceKey, includeImage, motivationTone } });
   if (error) {
     const response = (error as { context?: Response }).context;
     if (response) {

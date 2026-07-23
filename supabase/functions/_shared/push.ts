@@ -27,6 +27,9 @@ export type PushPayload = {
   body: string;
   tag: string;
   url: string;
+  image?: string;
+  imageAlt?: string;
+  timestamp?: number;
   actions?: Array<{ action: string; title: string; url?: string }>;
 };
 export type SubscriptionRow = { id: string; user_id: string; endpoint: string; p256dh: string; auth_key: string; preferences?: Record<string, unknown> };
