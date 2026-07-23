@@ -1,6 +1,10 @@
 import { env } from '../../config/env';
 import { getSupabase } from '../supabase/client';
-import type { DeviceNotificationSettings } from './DeviceNotificationSettings';
+import {
+  getNotificationDeviceIdentity,
+  normalizeDeviceNotificationSettings,
+  type DeviceNotificationSettings,
+} from './DeviceNotificationSettings';
 
 export type PushStatus = 'unsupported' | 'install-required' | 'unconfigured' | 'signed-out' | 'prompt' | 'granted' | 'denied';
 
@@ -47,17 +51,54 @@ async function registerCurrentDevice(userId: string, preferences: DeviceNotifica
   });
   const json = subscription.toJSON();
   if (!json.endpoint || !json.keys?.p256dh || !json.keys.auth) throw new Error('Browser returned an incomplete push subscription.');
-  const { error } = await client.from('push_subscriptions').upsert({
+  const device = getNotificationDeviceIdentity();
+  const row = {
     user_id: userId,
+    device_key: device.key,
+    device_name: device.name,
+    platform: device.platform,
     endpoint: json.endpoint,
     p256dh: json.keys.p256dh,
     auth_key: json.keys.auth,
     user_agent: navigator.userAgent,
     preferences,
     disabled_at: null,
+    last_seen_at: new Date().toISOString(),
     updated_at: new Date().toISOString(),
-  }, { onConflict: 'endpoint' });
+  };
+
+  // Prefer the stable installation key. Falling back to endpoint upsert also
+  // upgrades rows created before device identities were introduced.
+  const { data: existingRow, error: lookupError } = await client
+    .from('push_subscriptions')
+    .select('id')
+    .eq('user_id', userId)
+    .eq('device_key', device.key)
+    .maybeSingle();
+  if (lookupError) throw lookupError;
+  const { error } = existingRow
+    ? await client.from('push_subscriptions').update(row).eq('id', existingRow.id)
+    : await client.from('push_subscriptions').upsert(row, { onConflict: 'endpoint' });
   if (error) throw error;
+}
+
+/** Loads only this installation's cloud settings; another device never wins. */
+export async function loadCurrentDeviceNotificationSettings(
+  userId: string,
+): Promise<DeviceNotificationSettings | null> {
+  const client = getSupabase();
+  if (!client) return null;
+  const device = getNotificationDeviceIdentity();
+  const { data, error } = await client
+    .from('push_subscriptions')
+    .select('preferences')
+    .eq('user_id', userId)
+    .eq('device_key', device.key)
+    .maybeSingle();
+  if (error) throw error;
+  return data?.preferences
+    ? normalizeDeviceNotificationSettings(data.preferences as Partial<DeviceNotificationSettings>)
+    : null;
 }
 
 /**
@@ -89,12 +130,20 @@ export async function enableWebPush(preferences: DeviceNotificationSettings): Pr
   return 'granted';
 }
 
-export async function disableWebPush(): Promise<void> {
+export async function disableWebPush(preferences?: DeviceNotificationSettings): Promise<void> {
   const client = getSupabase();
   const registration = 'serviceWorker' in navigator ? await navigator.serviceWorker.ready : null;
   const subscription = await registration?.pushManager.getSubscription();
-  if (client && subscription) {
-    await client.from('push_subscriptions').update({ disabled_at: new Date().toISOString() }).eq('endpoint', subscription.endpoint);
+  if (client) {
+    const device = getNotificationDeviceIdentity();
+    const changes = {
+      disabled_at: new Date().toISOString(),
+      last_seen_at: new Date().toISOString(),
+      ...(preferences ? { preferences: { ...preferences, enabled: false } } : {}),
+    };
+    const query = client.from('push_subscriptions').update(changes);
+    if (subscription) await query.eq('endpoint', subscription.endpoint);
+    else await query.eq('device_key', device.key);
   }
   await subscription?.unsubscribe();
 }

@@ -65,8 +65,9 @@ export function AppShell() {
     const reconcile = () => {
       const pushStatus = getPushStatus(true);
       if (pushStatus === 'denied') {
-        updateDeviceNotifications({ ...deviceNotifications, enabled: false });
-        void disableWebPush().catch(() => undefined);
+        const next = { ...deviceNotifications, enabled: false };
+        updateDeviceNotifications(next);
+        void disableWebPush(next).catch(() => undefined);
         return;
       }
       if (pushStatus !== 'granted') return;

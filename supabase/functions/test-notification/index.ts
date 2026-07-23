@@ -8,13 +8,14 @@ Deno.serve(async (request) => {
     const admin = adminClient();
     const { data: auth, error: authError } = await admin.auth.getUser(token);
     if (authError || !auth.user) return Response.json({ error: 'Invalid session.' }, { status: 401, headers: corsHeaders });
-    const { data, error } = await admin.from('push_subscriptions').select('id,user_id,endpoint,p256dh,auth_key').eq('user_id', auth.user.id).is('disabled_at', null);
+    const { data, error } = await admin.from('push_subscriptions').select('id,user_id,endpoint,p256dh,auth_key,preferences').eq('user_id', auth.user.id).is('disabled_at', null);
     if (error) throw error;
-    if (!data?.length) return Response.json({ error: 'No active device subscription.' }, { status: 409, headers: corsHeaders });
+    const enabledDevices = (data as SubscriptionRow[] | null)?.filter((device) => device.preferences?.enabled !== false) ?? [];
+    if (!enabledDevices.length) return Response.json({ error: 'No device currently allows notifications.' }, { status: 409, headers: corsHeaders });
     let delivered = 0;
     let expired = 0;
     let lastDeliveryError: unknown = null;
-    for (const subscription of data as SubscriptionRow[]) {
+    for (const subscription of enabledDevices) {
       try {
         await deliver(subscription, {
           title: '✨ You’re all set',
@@ -36,7 +37,7 @@ Deno.serve(async (request) => {
     }
     if (!delivered && lastDeliveryError) throw lastDeliveryError;
     if (!delivered) return Response.json({ error: 'Your saved device subscriptions have expired. Re-enable notifications and try again.' }, { status: 410, headers: corsHeaders });
-    return Response.json({ delivered, expired, failed: data.length - delivered - expired }, { headers: corsHeaders });
+    return Response.json({ delivered, expired, failed: enabledDevices.length - delivered - expired }, { headers: corsHeaders });
   } catch (error) {
     const details = error && typeof error === 'object' ? {
       name: 'name' in error ? String(error.name) : 'PushDeliveryError',

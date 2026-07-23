@@ -2,10 +2,12 @@ import { createContext, useCallback, useContext, useEffect, useMemo, useState, t
 import { LocalStorageStore } from '../services/storage';
 import {
   defaultDeviceNotificationSettings,
+  loadCurrentDeviceNotificationSettings,
   normalizeDeviceNotificationSettings,
   type DeviceNotificationSettings,
-} from '../services/notifications/DeviceNotificationSettings';
+} from '../services/notifications';
 import { useAppSettings } from './AppSettingsContext';
+import { useAuth } from './AuthContext';
 
 const DEVICE_SETTINGS_KEY = '__device-notification-settings';
 
@@ -17,33 +19,42 @@ interface DeviceNotificationSettingsValue {
 
 const DeviceNotificationSettingsContext = createContext<DeviceNotificationSettingsValue | null>(null);
 
-/** Notification delivery choices are intentionally local to this browser installation. */
+/** Settings are keyed by installation locally and in Supabase. */
 export function DeviceNotificationSettingsProvider({ children }: { children: ReactNode }) {
   const { settings: legacySettings, ready: legacyReady } = useAppSettings();
+  const { status: authStatus, user } = useAuth();
   const [settings, setSettings] = useState(defaultDeviceNotificationSettings);
   const [ready, setReady] = useState(false);
 
   useEffect(() => {
-    if (!legacyReady) return;
+    if (!legacyReady || authStatus === 'loading') return;
     let active = true;
     const store = new LocalStorageStore();
-    void store.get<Partial<DeviceNotificationSettings>>(DEVICE_SETTINGS_KEY).then((stored) => {
-      if (!active) return;
+    void (async () => {
+      const stored = await store.get<Partial<DeviceNotificationSettings>>(DEVICE_SETTINGS_KEY);
       const migrated = normalizeDeviceNotificationSettings(stored ?? {
         ...legacySettings.notifications,
-        // Preserve an existing setup only on browsers where permission was
-        // actually granted. A cloud toggle must never enable another device.
+        // An account-level legacy toggle must never enable a new device.
         enabled: legacySettings.notifications.enabled
           && 'Notification' in window
           && Notification.permission === 'granted',
         timezone: Intl.DateTimeFormat().resolvedOptions().timeZone || legacySettings.notifications.timezone || 'UTC',
       });
-      setSettings(migrated);
+      let resolved = migrated;
+      if (authStatus === 'authenticated' && user) {
+        try {
+          resolved = await loadCurrentDeviceNotificationSettings(user.id) ?? migrated;
+        } catch (error) {
+          console.warn('[push] Could not load this device settings from Supabase.', error);
+        }
+      }
+      if (!active) return;
+      setSettings(resolved);
       setReady(true);
-      if (!stored) void store.set(DEVICE_SETTINGS_KEY, migrated);
-    });
+      await store.set(DEVICE_SETTINGS_KEY, resolved);
+    })();
     return () => { active = false; };
-  }, [legacyReady, legacySettings.notifications]);
+  }, [authStatus, legacyReady, legacySettings.notifications, user]);
 
   const update = useCallback((next: DeviceNotificationSettings | ((current: DeviceNotificationSettings) => DeviceNotificationSettings)) => {
     if (typeof next !== 'function') {

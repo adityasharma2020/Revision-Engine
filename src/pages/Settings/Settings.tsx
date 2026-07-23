@@ -66,8 +66,9 @@ export function Settings() {
     setPushMessage(null);
     try {
       if (!enabled) {
-        await disableWebPush();
-        updateDeviceNotifications({ ...deviceNotifications, enabled: false });
+        const next = { ...deviceNotifications, enabled: false };
+        await disableWebPush(next);
+        updateDeviceNotifications(next);
         setPushMessage('Notifications disabled on this device.');
         return;
       }
@@ -116,7 +117,7 @@ export function Settings() {
   };
 
   const clearDeviceOnly = async () => {
-    await disableWebPush().catch(() => undefined);
+    await disableWebPush({ ...deviceNotifications, enabled: false }).catch(() => undefined);
     if (cloudAvailable) await signOut();
     await createLocalStorageService().resetAll();
     updateDeviceNotifications({ ...deviceNotifications, enabled: false });
@@ -125,7 +126,7 @@ export function Settings() {
   };
 
   const clearDeviceAndArchiveCloud = async () => {
-    await disableWebPush().catch(() => undefined);
+    await disableWebPush({ ...deviceNotifications, enabled: false }).catch(() => undefined);
     await storage.resetAll();
     updateDeviceNotifications({ ...deviceNotifications, enabled: false });
     setCleared(true);
