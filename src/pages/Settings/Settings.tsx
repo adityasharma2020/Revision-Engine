@@ -159,6 +159,27 @@ export function Settings() {
     saveDeviceNotifications({ ...deviceNotifications, motivationDays: next });
   };
 
+  const updateMotivationTime = (index: number, time: string) => {
+    const next = [...deviceNotifications.motivationTimes];
+    next[index] = time;
+    saveDeviceNotifications({ ...deviceNotifications, motivationTimes: next });
+  };
+
+  const addMotivationTime = () => {
+    const candidates = ['12:00', '15:30', '17:00', '18:00', '20:00', '21:00', '23:00'];
+    const time = candidates.find((candidate) => !deviceNotifications.motivationTimes.includes(candidate));
+    if (!time || deviceNotifications.motivationTimes.length >= 5) return;
+    saveDeviceNotifications({ ...deviceNotifications, motivationTimes: [...deviceNotifications.motivationTimes, time] });
+  };
+
+  const removeMotivationTime = (index: number) => {
+    if (deviceNotifications.motivationTimes.length === 1) return;
+    saveDeviceNotifications({
+      ...deviceNotifications,
+      motivationTimes: deviceNotifications.motivationTimes.filter((_, itemIndex) => itemIndex !== index),
+    });
+  };
+
   const clearDeviceOnly = async () => {
     await disableWebPush({ ...deviceNotifications, enabled: false }).catch(() => undefined);
     if (cloudAvailable) await signOut();
@@ -471,12 +492,23 @@ export function Settings() {
               <details className={`${styles.motivationPanel} ${!notificationsReady ? styles.disabled : ''}`}>
                 <summary>
                   <span><Icon name="sun" size={17} /></span>
-                  <div><strong>Motivation schedule</strong><small>{deviceNotifications.motivationTime} · {deviceNotifications.motivationTone === 'mixed' ? 'mixed intensity' : `${deviceNotifications.motivationTone} tone`} · {deviceNotifications.motivationImages ? 'images on' : 'text only'}</small></div>
+                  <div><strong>Motivation schedule</strong><small>{deviceNotifications.motivationTimes.length} daily times · {deviceNotifications.motivationTone === 'mixed' ? 'mixed intensity' : `${deviceNotifications.motivationTone} tone`} · {deviceNotifications.motivationImages ? 'images on' : 'text only'}</small></div>
                   <Icon name="chevronDown" size={15} />
                 </summary>
                 <div className={styles.motivationControls}>
                   <div className={styles.motivationFields}>
-                    <label><span>Delivery time</span><input type="time" value={deviceNotifications.motivationTime} disabled={!notificationsReady} onChange={(event) => saveDeviceNotifications({ ...deviceNotifications, motivationTime: event.target.value })} /></label>
+                    <div className={styles.motivationScheduleEditor}>
+                      <span>Daily delivery times</span>
+                      <div className={styles.motivationTimeList}>
+                        {deviceNotifications.motivationTimes.map((time, index) => (
+                          <div className={styles.motivationTimeRow} key={`${time}-${index}`}>
+                            <input type="time" value={time} disabled={!notificationsReady} aria-label={`Motivation delivery time ${index + 1}`} onChange={(event) => updateMotivationTime(index, event.target.value)} />
+                            <button type="button" disabled={!notificationsReady || deviceNotifications.motivationTimes.length === 1} aria-label={`Remove ${time} reminder`} title="Remove time" onClick={() => removeMotivationTime(index)}><Icon name="trash" size={14} /></button>
+                          </div>
+                        ))}
+                      </div>
+                      {deviceNotifications.motivationTimes.length < 5 && <button type="button" className={styles.addMotivationTime} disabled={!notificationsReady} onClick={addMotivationTime}><Icon name="plus" size={14} /> Add time</button>}
+                    </div>
                     <label><span>Intensity</span><select value={deviceNotifications.motivationTone} disabled={!notificationsReady} onChange={(event) => saveDeviceNotifications({ ...deviceNotifications, motivationTone: event.target.value as DeviceNotificationSettings['motivationTone'] })}><option value="mixed">Mixed</option><option value="soft">Soft</option><option value="balanced">Balanced</option><option value="firm">Firm</option><option value="brutal">Raw / brutal</option></select></label>
                   </div>
                   <fieldset>

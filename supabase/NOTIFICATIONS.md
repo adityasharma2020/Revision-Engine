@@ -63,6 +63,8 @@ delivery key makes repeated Cron calls safe and prevents duplicate messages.
 - Daily revision: sent only when today's assignment is not complete.
 - Weekly summary: question and quiz totals for the preceding seven days.
 - Milestones: one notification for each 100-question lifetime milestone.
+- Motivation: up to five device-specific daily slots (defaults: 05:30, 19:00,
+  and 22:00 local time), each deduplicated independently.
 - Expired browser endpoints (HTTP 404/410) are disabled automatically.
 - A user can own multiple subscriptions, so each signed-in device receives the
   notification.

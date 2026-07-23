@@ -8,6 +8,7 @@ type NotificationPreferences = {
   milestones?: boolean;
   memoryNudges?: boolean;
   motivation?: boolean;
+  motivationTimes?: string[];
   motivationTime?: string;
   motivationDays?: number[];
   motivationTone?: MotivationTone | 'mixed';
@@ -84,21 +85,32 @@ Deno.serve(async (request) => {
       const milestone = Math.floor(lifetimeQuestions / 100) * 100;
       if (milestone >= 100) messages.push({ type: 'milestone', key: `questions-${milestone}`, payload: { title: `🏆 ${milestone} questions completed`, body: 'That is real momentum. Take a moment to see how far you’ve come.', tag: `milestone-${milestone}`, url: 'statistics', actions: [{ action: 'view-milestone', title: 'See achievement', url: 'statistics' }] } });
     }
-    if (preferences.motivation && (preferences.motivationDays ?? [0, 1, 2, 3, 4, 5, 6]).includes(clock.weekday) && isDue(clock.time, preferences.motivationTime ?? '08:00')) {
+    const defaultMotivationTimes = ['05:30', '19:00', '22:00'];
+    const configuredMotivationTimes = preferences.motivationTimes?.length
+      ? preferences.motivationTimes
+      : preferences.motivationTime
+        ? [preferences.motivationTime, '19:00', '22:00']
+        : defaultMotivationTimes;
+    const dueMotivationTimes = [...new Set(configuredMotivationTimes)]
+      .filter((time) => /^([01]\d|2[0-3]):[0-5]\d$/.test(time) && isDue(clock.time, time))
+      .slice(0, 5);
+    if (preferences.motivation && (preferences.motivationDays ?? [0, 1, 2, 3, 4, 5, 6]).includes(clock.weekday) && dueMotivationTimes.length) {
       try {
         const feed = await loadMotivationFeed();
         const { data: recent } = await admin.from('notification_inbox').select('metadata').eq('user_id', subscription.user_id).eq('notification_type', 'motivation').order('delivered_at', { ascending: false }).limit(12);
         const recentIds = (recent ?? []).map((item) => String(item.metadata?.quoteId ?? '')).filter(Boolean);
-        const selected = chooseMotivation(feed, preferences.motivationTone ?? 'mixed', clock.time, recentIds);
-        if (selected) {
+        for (const scheduledTime of dueMotivationTimes) {
+          const selected = chooseMotivation(feed, preferences.motivationTone ?? 'mixed', scheduledTime, recentIds);
+          if (!selected) continue;
           const image = preferences.motivationImages === false ? undefined : await resolveMotivationImage(feed, selected);
+          const slotKey = scheduledTime.replace(':', '');
           messages.push({
             type: 'motivation',
-            key: clock.date,
+            key: `${clock.date}-${slotKey}`,
             payload: {
               title: selected.title,
               body: '',
-              tag: `motivation-${clock.date}`,
+              tag: `motivation-${clock.date}-${slotKey}`,
               url: 'revision',
               image,
               imageAlt: image ? `Motivational image for ${selected.category}` : undefined,
@@ -106,8 +118,9 @@ Deno.serve(async (request) => {
               actions: [{ action: 'start-revision', title: 'Start revision', url: 'revision' }],
             },
             inboxBody: selected.message,
-            metadata: { quoteId: selected.id, category: selected.category, tone: selected.tone, author: selected.author ?? null, image: image ?? null },
+            metadata: { quoteId: selected.id, category: selected.category, tone: selected.tone, author: selected.author ?? null, image: image ?? null, scheduledTime },
           });
+          recentIds.unshift(selected.id);
         }
       } catch (motivationError) {
         console.error('[motivation] Could not prepare scheduled reminder.', motivationError);

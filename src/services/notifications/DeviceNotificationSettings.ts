@@ -5,7 +5,7 @@ export interface DeviceNotificationSettings {
   readonly milestones: boolean;
   readonly memoryNudges: boolean;
   readonly motivation: boolean;
-  readonly motivationTime: string;
+  readonly motivationTimes: readonly string[];
   readonly motivationDays: readonly number[];
   readonly motivationTone: 'mixed' | 'soft' | 'balanced' | 'firm' | 'brutal';
   readonly motivationImages: boolean;
@@ -73,7 +73,7 @@ export function defaultDeviceNotificationSettings(): DeviceNotificationSettings 
     milestones: true,
     memoryNudges: true,
     motivation: false,
-    motivationTime: '08:00',
+    motivationTimes: ['05:30', '19:00', '22:00'],
     motivationDays: [0, 1, 2, 3, 4, 5, 6],
     motivationTone: 'mixed',
     motivationImages: true,
@@ -88,13 +88,25 @@ export function normalizeDeviceNotificationSettings(
   value?: Partial<DeviceNotificationSettings> | null,
 ): DeviceNotificationSettings {
   const defaults = defaultDeviceNotificationSettings();
+  const legacyValue = value as (Partial<DeviceNotificationSettings> & { motivationTime?: unknown }) | null | undefined;
   const tone = value?.motivationTone;
   const days = Array.isArray(value?.motivationDays)
     ? [...new Set(value.motivationDays.filter((day) => Number.isInteger(day) && day >= 0 && day <= 6))]
     : defaults.motivationDays;
+  const configuredTimes = Array.isArray(value?.motivationTimes)
+    ? value.motivationTimes
+    : typeof legacyValue?.motivationTime === 'string'
+      ? [legacyValue.motivationTime, '19:00', '22:00']
+      : defaults.motivationTimes;
+  const motivationTimes = [...new Set(configuredTimes.filter((time): time is string => (
+    typeof time === 'string' && /^([01]\d|2[0-3]):[0-5]\d$/.test(time)
+  )))].slice(0, 5);
+  const cleanValue = value ? { ...value } as Record<string, unknown> : {};
+  delete cleanValue.motivationTime;
   return {
     ...defaults,
-    ...value,
+    ...cleanValue,
+    motivationTimes: motivationTimes.length ? motivationTimes : defaults.motivationTimes,
     motivationDays: days.length ? days : defaults.motivationDays,
     motivationTone: tone && ['mixed', 'soft', 'balanced', 'firm', 'brutal'].includes(tone) ? tone : defaults.motivationTone,
   };
