@@ -18,6 +18,7 @@ import {
 import type { MemoryNudge, NudgeKind } from "../../types";
 import styles from "./Nudges.module.css";
 import { Routes } from "../../constants/routes";
+import { useLibrary } from "../../hooks/useChapters";
 
 const KINDS: NudgeKind[] = [
   "fact",
@@ -39,6 +40,16 @@ const blank = {
   cooldownHours: 24,
 };
 type EditorValue = typeof blank;
+
+function titleFromContent(content: string, kind: NudgeKind) {
+  const firstThought = content.trim().split(/[.!?\n]/)[0]?.trim();
+  if (firstThought) {
+    return firstThought.length > 72
+      ? `${firstThought.slice(0, 69).trimEnd()}…`
+      : firstThought;
+  }
+  return `${kind[0].toUpperCase()}${kind.slice(1)} to remember`;
+}
 
 export function Nudges() {
   const { status } = useAuth();
@@ -531,6 +542,7 @@ function NudgeEditor({
   onClose: () => void;
   onSave: (value: EditorValue) => Promise<void>;
 }) {
+  const library = useLibrary();
   const [value, setValue] = useState<EditorValue>(
     nudge
       ? {
@@ -546,12 +558,26 @@ function NudgeEditor({
         }
       : blank
   );
+  const initialChapterId = nudge?.sourceUrl?.startsWith("/chapter/")
+    ? nudge.sourceUrl.replace("/chapter/", "")
+    : "";
+  const [advancedOpen, setAdvancedOpen] = useState(false);
+  const [sourceMode, setSourceMode] = useState<"none" | "chapter" | "external">(
+    initialChapterId ? "chapter" : nudge?.source || nudge?.sourceUrl ? "external" : "none"
+  );
+  const [chapterId, setChapterId] = useState(initialChapterId);
   const [saving, setSaving] = useState(false);
   const submit = async (event: FormEvent) => {
     event.preventDefault();
     setSaving(true);
     try {
-      await onSave(value);
+      await onSave({
+        ...value,
+        title: value.title.trim() || titleFromContent(value.content, value.kind),
+        source: sourceMode === "none" ? "" : value.source.trim(),
+        sourceUrl: sourceMode === "none" ? "" : value.sourceUrl.trim(),
+        tags: value.tags.filter(Boolean),
+      });
     } finally {
       setSaving(false);
     }
@@ -572,126 +598,162 @@ function NudgeEditor({
             <Icon name='close' />
           </button>
         </header>
-        <div className={styles.fields}>
+        <p className={styles.quickHint}>
+          Only the memory is required. Everything else has a sensible default.
+        </p>
+        <div className={styles.quickFields}>
           <label>
-            Type
-            <select
-              value={value.kind}
-              onChange={(event) =>
-                setValue({ ...value, kind: event.target.value as NudgeKind })
-              }
-            >
-              {KINDS.map((kind) => (
-                <option key={kind}>{kind}</option>
-              ))}
-            </select>
-          </label>
-          <label>
-            Title
-            <input
-              required
-              maxLength={120}
-              value={value.title}
-              onChange={(event) =>
-                setValue({ ...value, title: event.target.value })
-              }
-            />
-          </label>
-          <label className={styles.wide}>
-            Content
+            What should return later? <strong>Required</strong>
             <textarea
+              autoFocus
               required
               maxLength={500}
-              rows={4}
+              rows={5}
               value={value.content}
               onChange={(event) =>
                 setValue({ ...value, content: event.target.value })
               }
+              placeholder='Paste a fact, insight, mistake, quote, or anything you do not want to forget…'
             />
+            <small>{value.content.length}/500</small>
           </label>
-          <label className={styles.wide}>
-            Context
-            <textarea
-              rows={2}
-              value={value.context}
-              onChange={(event) =>
-                setValue({ ...value, context: event.target.value })
-              }
-            />
-          </label>
-          <label>
-            Source
-            <input
-              value={value.source}
-              onChange={(event) =>
-                setValue({ ...value, source: event.target.value })
-              }
-            />
-          </label>
-          <label>
-            Source URL
-            <input
-              type='url'
-              value={value.sourceUrl}
-              onChange={(event) =>
-                setValue({ ...value, sourceUrl: event.target.value })
-              }
-            />
-          </label>
-          <label>
-            Tags
-            <input
-              value={value.tags.join(", ")}
-              onChange={(event) =>
-                setValue({
-                  ...value,
-                  tags: event.target.value
-                    .split(",")
-                    .map((item) => item.trim()),
-                })
-              }
-              placeholder='history, economy'
-            />
-          </label>
-          <label>
-            Priority
-            <select
-              value={value.priority}
-              onChange={(event) =>
-                setValue({ ...value, priority: Number(event.target.value) })
-              }
-            >
-              {[1, 2, 3, 4, 5].map((item) => (
-                <option value={item} key={item}>
-                  {item} —{" "}
-                  {item === 5
-                    ? "Crucial"
-                    : item === 1
-                    ? "Occasional"
-                    : "Normal"}
-                </option>
-              ))}
-            </select>
-          </label>
-          <label>
-            Minimum cooldown
-            <select
-              value={value.cooldownHours}
-              onChange={(event) =>
-                setValue({
-                  ...value,
-                  cooldownHours: Number(event.target.value),
-                })
-              }
-            >
-              {[6, 12, 24, 48, 72, 168, 336, 720].map((item) => (
-                <option value={item} key={item}>
-                  {item < 24 ? `${item} hours` : `${item / 24} days`}
-                </option>
-              ))}
-            </select>
-          </label>
+          <fieldset className={styles.kindPicker}>
+            <legend>Type <span>Optional</span></legend>
+            {KINDS.map((kind) => (
+              <button
+                type='button'
+                key={kind}
+                className={value.kind === kind ? styles.kindActive : ""}
+                onClick={() => setValue({ ...value, kind })}
+              >
+                {kind}
+              </button>
+            ))}
+          </fieldset>
         </div>
+        <button
+          className={styles.advancedToggle}
+          type='button'
+          aria-expanded={advancedOpen}
+          onClick={() => setAdvancedOpen((open) => !open)}
+        >
+          <span>
+            <Icon name='settings' size={16} />
+            <span><strong>Customize</strong><small>Title, context, source and delivery</small></span>
+          </span>
+          <Icon className={advancedOpen ? styles.chevronOpen : ""} name='chevronRight' size={16} />
+        </button>
+        {advancedOpen && (
+          <div className={styles.advancedFields}>
+            <label>
+              Custom title <span>Optional</span>
+              <input
+                maxLength={120}
+                value={value.title}
+                placeholder={titleFromContent(value.content, value.kind)}
+                onChange={(event) => setValue({ ...value, title: event.target.value })}
+              />
+            </label>
+            <label>
+              Helpful context <span>Optional</span>
+              <textarea
+                rows={2}
+                value={value.context}
+                placeholder='Why this matters or where it applies'
+                onChange={(event) => setValue({ ...value, context: event.target.value })}
+              />
+            </label>
+            <label>
+              Source
+              <select
+                value={sourceMode}
+                onChange={(event) => {
+                  const mode = event.target.value as typeof sourceMode;
+                  setSourceMode(mode);
+                  if (mode === "none") setValue({ ...value, source: "", sourceUrl: "" });
+                }}
+              >
+                <option value='none'>No source</option>
+                <option value='chapter'>Chapter in my library</option>
+                <option value='external'>External link or reference</option>
+              </select>
+            </label>
+            {sourceMode === "chapter" && (
+              <label>
+                Library chapter
+                <select
+                  value={chapterId}
+                  onChange={(event) => {
+                    const id = event.target.value;
+                    const chapter = library.status === "success"
+                      ? library.data.find((item) => item.id === id)
+                      : undefined;
+                    setChapterId(id);
+                    setValue({
+                      ...value,
+                      source: chapter?.title ?? "",
+                      sourceUrl: id ? Routes.chapter(id) : "",
+                    });
+                  }}
+                >
+                  <option value=''>Select a chapter…</option>
+                  {library.status === "success" && library.data.map((chapter) => (
+                    <option key={chapter.id} value={chapter.id}>
+                      {chapter.subject} · {chapter.title}
+                    </option>
+                  ))}
+                </select>
+              </label>
+            )}
+            {sourceMode === "external" && (
+              <div className={styles.sourcePair}>
+                <label>
+                  Source name <span>Optional</span>
+                  <input
+                    value={value.source}
+                    placeholder='Book, article, lecture…'
+                    onChange={(event) => setValue({ ...value, source: event.target.value })}
+                  />
+                </label>
+                <label>
+                  URL <span>Optional</span>
+                  <input
+                    type='url'
+                    value={value.sourceUrl}
+                    placeholder='https://…'
+                    onChange={(event) => setValue({ ...value, sourceUrl: event.target.value })}
+                  />
+                </label>
+              </div>
+            )}
+            <div className={styles.sourcePair}>
+              <label>
+                Tags <span>Optional</span>
+                <input
+                  value={value.tags.join(", ")}
+                  onChange={(event) => setValue({ ...value, tags: event.target.value.split(",").map((item) => item.trim()) })}
+                  placeholder='history, economy'
+                />
+              </label>
+              <label>
+                Priority
+                <select value={value.priority} onChange={(event) => setValue({ ...value, priority: Number(event.target.value) })}>
+                  {[1, 2, 3, 4, 5].map((item) => (
+                    <option value={item} key={item}>{item} — {item === 5 ? "Crucial" : item === 1 ? "Occasional" : "Normal"}</option>
+                  ))}
+                </select>
+              </label>
+            </div>
+            <label>
+              Minimum time before repeating
+              <select value={value.cooldownHours} onChange={(event) => setValue({ ...value, cooldownHours: Number(event.target.value) })}>
+                {[6, 12, 24, 48, 72, 168, 336, 720].map((item) => (
+                  <option value={item} key={item}>{item < 24 ? `${item} hours` : `${item / 24} days`}</option>
+                ))}
+              </select>
+            </label>
+          </div>
+        )}
         <footer>
           <Button onClick={onClose}>Cancel</Button>
           <Button variant='primary' type='submit' disabled={saving}>

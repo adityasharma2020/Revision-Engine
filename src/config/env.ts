@@ -20,7 +20,7 @@ const supabaseAnonKey = str(import.meta.env.VITE_SUPABASE_ANON_KEY);
 const vapidPublicKey = str(import.meta.env.VITE_VAPID_PUBLIC_KEY);
 
 export const env = {
-  appName: str(import.meta.env.VITE_APP_NAME, 'UPSC Revision Engine'),
+  appName: str(import.meta.env.VITE_APP_NAME, 'Revision Engine'),
   environment: str(import.meta.env.VITE_ENVIRONMENT, 'development'),
   analyticsEnabled: bool(import.meta.env.VITE_ENABLE_ANALYTICS, false),
 

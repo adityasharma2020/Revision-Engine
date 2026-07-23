@@ -74,6 +74,7 @@
   flex-wrap: wrap;
   gap: var(--space-2);
 }
+.mobileTimeSelect { display: none; }
 
 .timeButton,
 .timeActive {
@@ -273,9 +274,10 @@
   }
   .secondaryMetrics { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .filters { padding: var(--space-3); }
-  .timeOptions { display: grid; width: 100%; grid-template-columns: repeat(2, minmax(0, 1fr)); }
-  .timeOptions > :last-child:nth-child(odd) { grid-column: 1 / -1; }
-  .timeButton, .timeActive { padding-inline: var(--space-1); }
+  .timeOptions { display: none; }
+  .mobileTimeSelect { display: flex; width: 100%; flex-direction: column; gap: 5px; }
+  .mobileTimeSelect > span { color: var(--text-tertiary); font-size: 10px; font-weight: var(--weight-semibold); letter-spacing: var(--tracking-wide); text-transform: uppercase; }
+  .mobileTimeSelect select { width: 100%; height: 40px; padding: 0 var(--space-3); color: var(--text-primary); background: var(--bg-sunken); border: 1px solid var(--border-strong); border-radius: var(--radius-md); }
 
   .card {
     padding: var(--space-4);
@@ -287,6 +289,15 @@
     gap: var(--space-1);
   }
   .nudgeGrid { grid-template-columns: 1fr; }
+  .nudgeAnalytics { overflow: hidden; }
+  .activityTable thead { display: none; }
+  .activityTable, .activityTable tbody, .activityTable tr, .activityTable td { display: block; width: 100%; }
+  .activityTable tbody { display: flex; flex-direction: column; gap: var(--space-2); }
+  .activityTable tr { padding: var(--space-3); background: var(--bg-sunken); border: 1px solid var(--border); border-radius: var(--radius-md); }
+  .activityTable td { display: grid; grid-template-columns: 68px minmax(0, 1fr); gap: var(--space-2); padding: 5px 0; text-align: left; border: 0; overflow-wrap: anywhere; }
+  .activityTable td::before { content: attr(data-label); color: var(--text-tertiary); font-size: 10px; font-weight: var(--weight-semibold); letter-spacing: var(--tracking-wide); text-transform: uppercase; }
+  .activityTable .num { white-space: normal; }
+  .activityTable tr:hover td { background: transparent; }
 }
 
 @media (min-width: 561px) and (max-width: 860px) {

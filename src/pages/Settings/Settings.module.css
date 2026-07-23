@@ -239,13 +239,24 @@
   .pushActions { align-items: flex-start; flex-direction: column; }
   .addonCard { grid-template-columns: 40px 1fr; }
   .addonCard > button { grid-column: 1 / -1; width: 100%; }
-  .nudgeModal { padding: var(--space-4); border-radius: var(--radius-xl) var(--radius-xl) 0 0; }
+  .modalBackdrop { align-items: end; padding: var(--space-3) 0 0; }
+  .nudgeModal { width: 100%; max-height: calc(100dvh - var(--space-3)); padding: var(--space-4); overflow-x: hidden; border-radius: var(--radius-xl) var(--radius-xl) 0 0; }
+  .nudgeModal > header h2 { font-size: var(--text-lg); line-height: var(--leading-tight); }
+  .nudgeModal > header p { font-size: var(--text-xs); }
   .controlGrid { grid-template-columns: 1fr; }
   .frequencyPresets { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .frequencyPresets button { padding: var(--space-2); }
+  .frequencyPresets button span { white-space: normal; }
   .nudgeSummary { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .nudgePanel { min-height: 0; }
   .dayPicker { grid-template-columns: repeat(7, 1fr); }
-  .dayPicker button { width: 34px; height: 34px; }
-  .nudgeModal > footer { align-items: stretch; flex-direction: column; }
-  .nudgeModal > footer > div { flex-direction: column-reverse; }
+  .dayPicker button { width: 100%; max-width: 36px; height: auto; aspect-ratio: 1; }
+  .windows > div, .quiet { display: grid; grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr); }
+  .windows input, .quiet input { width: 100%; min-width: 0; }
+  .windows > div > button { grid-column: 1 / -1; justify-self: end; }
+  .nudgeModal > footer { position: sticky; bottom: calc(-1 * var(--space-4)); z-index: 1; align-items: stretch; flex-direction: column; margin: var(--space-4) calc(-1 * var(--space-4)) 0; padding: var(--space-3) var(--space-4) var(--space-4); background: var(--surface); border-top: 1px solid var(--border); }
+  .nudgeModal > footer > div { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .nudgeModal > footer > div > * { width: 100%; justify-content: center; }
+  .addonIntro { align-items: flex-start; padding: var(--space-4); }
+  .addonIntro h2 { font-size: var(--text-md); }
 }

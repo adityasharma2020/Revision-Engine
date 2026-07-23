@@ -18,9 +18,9 @@ export default defineConfig({
       registerType: 'autoUpdate',
       includeAssets: ['favicon.svg', 'app-icon.svg', 'app-icon-192.png', 'app-icon-512.png', 'notification-badge.png', 'push-handler.js'],
       manifest: {
-        name: 'UPSC Revision Engine',
+        name: 'Revision Engine',
         short_name: 'Revision',
-        description: 'A calm, offline-first revision system for UPSC preparation.',
+        description: 'A calm, offline-first system for lasting learning.',
         theme_color: '#5b5bd6',
         background_color: '#0d0d0f',
         display: 'standalone',

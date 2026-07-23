@@ -231,6 +231,7 @@ export function dailyActivity(
   progress: ProgressMap,
   meta: ChapterMetaMap,
   days = 14,
+  endAt = Date.now(),
 ): DayActivity[] {
   const includedResults = quizResults.filter((result) => result.includedInAnalytics !== false);
   const { attempts } = collectAttempts(includedResults, progress, meta);
@@ -246,7 +247,7 @@ export function dailyActivity(
   includedResults.forEach((r) => bump(r.takenAt, 0, r.durationMs));
 
   const out: DayActivity[] = [];
-  const today = new Date();
+  const today = new Date(endAt);
   today.setHours(0, 0, 0, 0);
   for (let i = days - 1; i >= 0; i -= 1) {
     const d = new Date(today.getTime() - i * DAY);

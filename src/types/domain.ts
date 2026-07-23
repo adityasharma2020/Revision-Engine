@@ -1,5 +1,5 @@
 /**
- * Core domain model for the UPSC Revision Engine.
+ * Core domain model for Revision Engine.
  *
  * These types are the single source of truth for the shape of chapter data.
  * Chapter JSON files (public/chapters/*.json) are validated against them at

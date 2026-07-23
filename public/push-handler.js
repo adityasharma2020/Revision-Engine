@@ -2,7 +2,7 @@
 self.addEventListener('push', (event) => {
   let payload = {};
   try { payload = event.data ? event.data.json() : {}; } catch { payload = { body: event.data?.text() }; }
-  event.waitUntil(self.registration.showNotification(payload.title || 'UPSC Revision Engine', {
+  event.waitUntil(self.registration.showNotification(payload.title || 'Revision Engine', {
     body: payload.body || 'You have a new study update.',
     icon: new URL('app-icon-192.png', self.registration.scope).href,
     badge: new URL('notification-badge.png', self.registration.scope).href,

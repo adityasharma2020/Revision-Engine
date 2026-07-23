@@ -22,7 +22,7 @@ import { humanizeDuration } from '../../utils/time';
 import styles from './Statistics.module.css';
 import { Routes } from '../../constants/routes';
 
-type TimeRange = 'today' | 'week' | 'month' | 'year' | 'all';
+type TimeRange = 'today' | 'yesterday' | 'week' | 'month' | 'year' | 'all';
 type QuestionView = 'all' | 'weak' | 'mastered' | 'skipped';
 type QuestionSort = 'attempts' | 'wrong' | 'accuracy' | 'reviews' | 'recent';
 type AnalyticsTab = 'overview' | 'questions' | 'nudges';
@@ -31,7 +31,9 @@ function startOfRange(range: TimeRange, now = new Date()): number {
   if (range === 'all') return 0;
   const start = new Date(now);
   start.setHours(0, 0, 0, 0);
-  if (range === 'week') {
+  if (range === 'yesterday') {
+    start.setDate(start.getDate() - 1);
+  } else if (range === 'week') {
     const daysSinceMonday = (start.getDay() + 6) % 7;
     start.setDate(start.getDate() - daysSinceMonday);
   } else if (range === 'month') {
@@ -42,8 +44,16 @@ function startOfRange(range: TimeRange, now = new Date()): number {
   return start.getTime();
 }
 
+function endOfRange(range: TimeRange, now = new Date()): number {
+  if (range !== 'yesterday') return Number.POSITIVE_INFINITY;
+  const end = new Date(now);
+  end.setHours(0, 0, 0, 0);
+  return end.getTime();
+}
+
 const TIME_RANGE_LABELS: Record<TimeRange, string> = {
   today: 'Today',
+  yesterday: 'Yesterday',
   week: 'This week',
   month: 'This month',
   year: 'This year',
@@ -117,18 +127,19 @@ export function Statistics() {
   // Filter the source data to the selected scope (empty = all).
   const { fQuiz, fProgress } = useMemo(() => {
     const cutoff = startOfRange(timeRange);
+    const end = endOfRange(timeRange);
     const filteredProgress: ProgressMap = {};
     for (const [id, p] of Object.entries(progress)) {
       if (selected.size > 0 && !selected.has(id)) continue;
       const attempts = Object.fromEntries(
-        Object.entries(p.attempts).filter(([, attempt]) => attempt.attemptedAt >= cutoff),
+        Object.entries(p.attempts).filter(([, attempt]) => attempt.attemptedAt >= cutoff && attempt.attemptedAt < end),
       );
       if (Object.keys(attempts).length > 0) filteredProgress[id] = { ...p, attempts };
     }
     return {
       fQuiz: quizResults.filter(
         (result) =>
-          result.takenAt >= cutoff && (selected.size === 0 || selected.has(result.chapterId)),
+          result.takenAt >= cutoff && result.takenAt < end && (selected.size === 0 || selected.has(result.chapterId)),
       ),
       fProgress: filteredProgress,
     };
@@ -140,6 +151,7 @@ export function Statistics() {
   );
   const trend = useMemo(() => accuracyTrend(fQuiz), [fQuiz]);
   const activityDays = useMemo(() => {
+    if (timeRange === 'yesterday') return 1;
     if (timeRange !== 'all') {
       return Math.max(1, Math.floor((Date.now() - startOfRange(timeRange)) / 86_400_000) + 1);
     }
@@ -154,8 +166,8 @@ export function Statistics() {
     return Math.max(7, Math.ceil((Date.now() - first) / (24 * 60 * 60 * 1000)) + 1);
   }, [fProgress, fQuiz, timeRange]);
   const activity = useMemo(
-    () => dailyActivity(fQuiz, fProgress, meta, activityDays),
-    [activityDays, fQuiz, fProgress, meta],
+    () => dailyActivity(fQuiz, fProgress, meta, activityDays, timeRange === 'yesterday' ? endOfRange(timeRange) - 1 : Date.now()),
+    [activityDays, fQuiz, fProgress, meta, timeRange],
   );
   const chapterStats = useMemo(
     () => chapterAnalytics(fQuiz, fProgress, meta),
@@ -163,9 +175,10 @@ export function Statistics() {
   );
   const dailyQuizResults = useMemo(() => {
     const cutoff = startOfRange(timeRange);
+    const end = endOfRange(timeRange);
     return quizResults
       .filter((result) => {
-        if (result.takenAt < cutoff) return false;
+        if (result.takenAt < cutoff || result.takenAt >= end) return false;
         if (result.purpose !== 'daily-revision' && result.chapterId !== 'daily-revision') return false;
         return selected.size === 0 || result.perQuestion?.some((item) => selected.has(item.chapterId ?? ''));
       })
@@ -173,10 +186,11 @@ export function Statistics() {
   }, [quizResults, selected, timeRange]);
   const questionStats = useMemo(() => {
     const cutoff = startOfRange(timeRange);
+    const end = endOfRange(timeRange);
     const monthCutoff = Date.now() - 30 * 86_400_000;
     const stats = new Map<string, QuestionStat>();
     for (const result of quizResults) {
-      if (result.takenAt < cutoff) continue;
+      if (result.takenAt < cutoff || result.takenAt >= end) continue;
       for (const item of result.perQuestion ?? []) {
         const chapterId = item.chapterId ?? result.chapterId;
         if (selected.size > 0 && !selected.has(chapterId)) continue;
@@ -202,7 +216,7 @@ export function Statistics() {
     }
     for (const attempt of questionAttemptLog) {
       if (attempt.type !== 'prelims') continue;
-      if (attempt.attemptedAt < cutoff) continue;
+      if (attempt.attemptedAt < cutoff || attempt.attemptedAt >= end) continue;
       if (selected.size > 0 && !selected.has(attempt.chapterId)) continue;
       const key = `${attempt.chapterId}:${attempt.questionId}`;
       const current = stats.get(key) ?? {
@@ -292,6 +306,7 @@ export function Statistics() {
               <div className={styles.timeOptions} aria-label="Analytics time range">
               {([
                 ['today', 'Today'],
+                ['yesterday', 'Yesterday'],
                 ['week', 'This week'],
                 ['month', 'This month'],
                 ['year', 'This year'],
@@ -308,6 +323,12 @@ export function Statistics() {
                 </button>
               ))}
               </div>
+              <label className={styles.mobileTimeSelect}>
+                <span>Time range</span>
+                <select value={timeRange} onChange={(event) => setTimeRange(event.target.value as TimeRange)}>
+                  {Object.entries(TIME_RANGE_LABELS).map(([value, label]) => <option value={value} key={value}>{label}</option>)}
+                </select>
+              </label>
             </div>
 
             {analyticsTab !== 'nudges' && scopeChapters.length > 0 && (
@@ -520,7 +541,11 @@ export function Statistics() {
 
 function NudgeAnalytics({ data, range, loading, error }: { data: NudgeAnalyticsData; range: TimeRange; loading: boolean; error: string }) {
   const cutoff = startOfRange(range);
-  const interactions = data.interactions.filter((item) => new Date(item.createdAt).getTime() >= cutoff);
+  const end = endOfRange(range);
+  const interactions = data.interactions.filter((item) => {
+    const createdAt = new Date(item.createdAt).getTime();
+    return createdAt >= cutoff && createdAt < end;
+  });
   const productionDeliveries = interactions.filter((item) => item.action === 'delivered' && item.metadata.test !== true);
   const testDeliveries = interactions.filter((item) => item.action === 'delivered' && item.metadata.test === true);
   const opened = interactions.filter((item) => item.action === 'opened');
@@ -581,7 +606,7 @@ function NudgeAnalytics({ data, range, loading, error }: { data: NudgeAnalyticsD
 
     <section className={`${styles.card} ${styles.standaloneCard}`}>
       <div className={styles.cardHead}><div><h2 className={styles.cardTitle}>Recent nudge activity</h2><span className={styles.cardHint}>A transparent audit of delivery and review events. Test deliveries are clearly marked.</span></div><span className={styles.cardHint}>{TIME_RANGE_LABELS[range]}</span></div>
-      {recent.length ? <div className={styles.tableWrap}><table className={styles.table}><thead><tr><th>Activity</th><th>Nudge</th><th className={styles.num}>When</th></tr></thead><tbody>{recent.map((item) => { const nudge = byId.get(item.nudgeId); return <tr key={item.id}><td><span className={`${styles.activityPill} ${item.action === 'forgot' ? styles.activityDanger : ''}`}>{actionLabel[item.action] ?? item.action}{item.metadata.test === true ? ' · test' : ''}</span></td><td>{nudge ? <Link className={styles.nudgeTitleLink} to={`${Routes.nudges}?id=${nudge.id}`}>{nudge.title}</Link> : 'Deleted nudge'}</td><td className={styles.num}>{new Intl.DateTimeFormat(undefined, { day: 'numeric', month: 'short', hour: 'numeric', minute: '2-digit' }).format(new Date(item.createdAt))}</td></tr>; })}</tbody></table></div> : <p className={styles.cardHint}>No nudge activity in this date range.</p>}
+      {recent.length ? <div className={styles.tableWrap}><table className={`${styles.table} ${styles.activityTable}`}><thead><tr><th>Activity</th><th>Nudge</th><th className={styles.num}>When</th></tr></thead><tbody>{recent.map((item) => { const nudge = byId.get(item.nudgeId); return <tr key={item.id}><td data-label='Activity'><span className={`${styles.activityPill} ${item.action === 'forgot' ? styles.activityDanger : ''}`}>{actionLabel[item.action] ?? item.action}{item.metadata.test === true ? ' · test' : ''}</span></td><td data-label='Nudge'>{nudge ? <Link className={styles.nudgeTitleLink} to={`${Routes.nudges}?id=${nudge.id}`}>{nudge.title}</Link> : 'Deleted nudge'}</td><td data-label='When' className={styles.num}>{new Intl.DateTimeFormat(undefined, { day: 'numeric', month: 'short', hour: 'numeric', minute: '2-digit' }).format(new Date(item.createdAt))}</td></tr>; })}</tbody></table></div> : <p className={styles.cardHint}>No nudge activity in this date range.</p>}
     </section>
   </section>;
 }
