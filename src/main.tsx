@@ -26,6 +26,18 @@ window.addEventListener('wheel', (event) => {
   if (event.ctrlKey || event.metaKey) event.preventDefault();
 }, { passive: false });
 
+// Some Android WebViews and browsers ignore `user-scalable=no` when a pinch
+// begins over nested canvas/SVG content. Cancel only native multi-touch zoom;
+// the PDF reader continues to consume the corresponding Pointer Events.
+document.addEventListener('touchmove', (event) => {
+  if (event.touches.length > 1) event.preventDefault();
+}, { passive: false, capture: true });
+
+// Safari exposes native page pinch through non-standard gesture events.
+const preventPageGesture = (event: Event) => event.preventDefault();
+document.addEventListener('gesturestart', preventPageGesture, { passive: false });
+document.addEventListener('gesturechange', preventPageGesture, { passive: false });
+
 // An installed production worker on localhost can otherwise keep serving an
 // obsolete UI while developing. Production uses auto-update + skipWaiting.
 if (import.meta.env.DEV && 'serviceWorker' in navigator) {

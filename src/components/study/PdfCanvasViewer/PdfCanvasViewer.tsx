@@ -95,9 +95,9 @@ function pdfPoint(x: number, y: number, rotation: number): PdfAnnotationPoint {
   return { x, y: 1 - y, pressure: .5 };
 }
 
-function AnnotationLayer({ pageNumber, rotation, annotations, editing, tool, color, size, advanced, onPrepare, onBegin, onExtend, onEnd, onCancel, onPan, onPinch, onTwoFingerTap, onErase }: {
+function AnnotationLayer({ pageNumber, rotation, annotations, editing, tool, color, size, advanced, onPrepare, onBegin, onExtend, onEnd, onCancel, onPan, onPinch, onTwoFingerTap, onStylusButton, onErase }: {
   pageNumber: number; rotation: number; annotations: readonly PdfInkAnnotation[]; editing: boolean; tool: InkTool; color: string; size: number; advanced: AdvancedToolPreferences;
-  onPrepare: () => void; onBegin: (annotation: PdfInkAnnotation) => void; onExtend: (id: string, points: readonly PdfAnnotationPoint[]) => void; onEnd: () => void; onCancel: () => void; onPan: (dx: number, dy: number) => void; onPinch: (factor: number, clientX?: number, clientY?: number) => void; onTwoFingerTap: () => void; onErase: (page: number, point: PdfAnnotationPoint, mode: EraserMode) => void;
+  onPrepare: () => void; onBegin: (annotation: PdfInkAnnotation) => void; onExtend: (id: string, points: readonly PdfAnnotationPoint[]) => void; onEnd: () => void; onCancel: () => void; onPan: (dx: number, dy: number) => void; onPinch: (factor: number, clientX?: number, clientY?: number) => void; onTwoFingerTap: () => void; onStylusButton: () => void; onErase: (page: number, point: PdfAnnotationPoint, mode: EraserMode) => void;
 }) {
   const activeId = useRef<string | null>(null);
   const activePointsRef = useRef<PdfAnnotationPoint[]>([]);
@@ -126,7 +126,7 @@ function AnnotationLayer({ pageNumber, rotation, annotations, editing, tool, col
       lastPointRef.current = smoothed; return smoothed;
     });
   };
-  const barrelEraser = (event: ReactPointerEvent<SVGSVGElement>) => event.pointerType === 'pen' && (event.button === 2 || (event.buttons & 2) !== 0);
+  const barrelEraser = (event: ReactPointerEvent<SVGSVGElement>) => event.pointerType === 'pen' && (event.button === 2 || event.button === 5 || (event.buttons & 2) !== 0 || (event.buttons & 32) !== 0);
   const drawSegment = useCallback((from: PdfAnnotationPoint, to: PdfAnnotationPoint, annotationTool = tool, annotationColor = color, annotationSize = size, opacity = annotationTool === 'highlighter' ? advanced.highlighterOpacity : .95, pressureEnabled = advanced.penPressure, target = canvasRef.current) => {
     const canvas = target; const context = canvas?.getContext('2d'); if (!canvas || !context) return;
     const bounds = canvas.getBoundingClientRect(); const ratio = Math.min(devicePixelRatio || 1, 2); const pixelWidth = Math.max(1, Math.round(bounds.width * ratio)); const pixelHeight = Math.max(1, Math.round(bounds.height * ratio));
@@ -138,23 +138,26 @@ function AnnotationLayer({ pageNumber, rotation, annotations, editing, tool, col
     const pressure = pressureEnabled && annotationTool === 'pen' ? (from.pressure + to.pressure) / 2 : .5;
     context.lineWidth = annotationSize * (annotationTool === 'highlighter' ? 5 : 1.5 + pressure * 1.4); context.lineCap = 'round'; context.lineJoin = 'round'; context.stroke(); context.restore();
   }, [advanced.highlighterOpacity, advanced.penPressure, color, rotation, size, tool]);
-  const drawPenCurve = useCallback((canvas: HTMLCanvasElement, points: readonly PdfAnnotationPoint[], annotationColor: string, annotationSize: number, opacity: number, pressureEnabled: boolean, incremental = false) => {
-    if (points.length < 2) return;
+  const drawPenCurve = useCallback((canvas: HTMLCanvasElement, points: readonly PdfAnnotationPoint[], annotationColor: string, annotationSize: number, opacity: number, pressureEnabled: boolean, incremental = false, startsStroke = false) => {
+    if (!points.length) return;
     const bounds = canvas.getBoundingClientRect(); const ratio = Math.min(devicePixelRatio || 1, 2); const pixelWidth = Math.max(1, Math.round(bounds.width * ratio)); const pixelHeight = Math.max(1, Math.round(bounds.height * ratio));
     if (canvas.width !== pixelWidth || canvas.height !== pixelHeight) { canvas.width = pixelWidth; canvas.height = pixelHeight; }
     const context = canvas.getContext('2d'); if (!context) return;
-    const totalPoints = points.length; const visiblePoints = incremental ? points.slice(-3) : points;
-    const screen = visiblePoints.map((point) => { const transformed = screenPoint(point, rotation); return { x: transformed.x * bounds.width, y: transformed.y * bounds.height, pressure: point.pressure }; });
+    const screen = points.map((point) => { const transformed = screenPoint(point, rotation); return { x: transformed.x * bounds.width, y: transformed.y * bounds.height, pressure: point.pressure }; });
     const stroke = (start: { x: number; y: number }, control: { x: number; y: number; pressure: number }, end: { x: number; y: number }) => {
       context.beginPath(); context.moveTo(start.x, start.y); context.quadraticCurveTo(control.x, control.y, end.x, end.y); context.strokeStyle = annotationColor; context.globalAlpha = opacity;
       context.lineWidth = annotationSize * (1.5 + (pressureEnabled ? control.pressure : .5) * 1.4); context.lineCap = 'round'; context.lineJoin = 'round'; context.stroke();
     };
     context.save(); context.scale(canvas.width / Math.max(1, bounds.width), canvas.height / Math.max(1, bounds.height));
-    if (screen.length === 2) {
+    if (screen.length === 1 && !incremental) {
+      const point = screen[0]!; context.beginPath(); context.arc(point.x, point.y, annotationSize * (1.5 + (pressureEnabled ? point.pressure : .5) * 1.4) / 2, 0, Math.PI * 2); context.fillStyle = annotationColor; context.globalAlpha = opacity; context.fill();
+    } else if (screen.length === 2) {
       if (!incremental) { const first = screen[0]!; const last = screen[1]!; stroke(first, first, last); }
     } else if (incremental) {
-      const first = screen.at(-3)!; const control = screen.at(-2)!; const last = screen.at(-1)!;
-      stroke(totalPoints === 3 ? first : { x: (first.x + control.x) / 2, y: (first.y + control.y) / 2 }, control, { x: (control.x + last.x) / 2, y: (control.y + last.y) / 2 });
+      for (let index = 1; index < screen.length - 1; index += 1) {
+        const previous = screen[index - 1]!; const control = screen[index]!; const next = screen[index + 1]!;
+        stroke(startsStroke && index === 1 ? previous : { x: (previous.x + control.x) / 2, y: (previous.y + control.y) / 2 }, control, { x: (control.x + next.x) / 2, y: (control.y + next.y) / 2 });
+      }
     } else {
       for (let index = 1; index < screen.length - 1; index += 1) {
         const previous = screen[index - 1]!; const control = screen[index]!; const next = screen[index + 1]!;
@@ -212,11 +215,12 @@ function AnnotationLayer({ pageNumber, rotation, annotations, editing, tool, col
       }
     }
     const temporaryEraser = barrelEraser(event);
+    if (temporaryEraser) { event.preventDefault(); event.currentTarget.setPointerCapture(event.pointerId); onStylusButton(); return; }
     if (event.button > 0 && !temporaryEraser) return;
     event.preventDefault(); event.currentTarget.setPointerCapture(event.pointerId);
     const point = pointsFromEvent(event)[0];
     if (!point) return;
-    if (tool === 'eraser' || temporaryEraser) { onPrepare(); updateEraserCursor(point, true, event.currentTarget); pointerModeRef.current = 'erase'; onErase(pageNumber, point, advanced.eraserMode); return; }
+    if (tool === 'eraser') { onPrepare(); updateEraserCursor(point, true, event.currentTarget); pointerModeRef.current = 'erase'; onErase(pageNumber, point, advanced.eraserMode); return; }
     const id = crypto.randomUUID?.() ?? `ink-${Date.now()}`;
     activeId.current = id; pointerModeRef.current = 'draw'; lastPointRef.current = point;
     activePointsRef.current = [point];
@@ -250,10 +254,8 @@ function AnnotationLayer({ pageNumber, rotation, annotations, editing, tool, col
     if (erasing) { if (event.buttons || event.pressure) onErase(pageNumber, points.at(-1)!, advanced.eraserMode); return; }
     if (activeId.current) {
       const liveCanvas = liveCanvasRef.current;
-      for (const point of points) {
-        activePointsRef.current.push(point);
-        if (liveCanvas && tool === 'pen') drawPenCurve(liveCanvas, activePointsRef.current, color, size, .95, advanced.penPressure, true);
-      }
+      const previousLength = activePointsRef.current.length; activePointsRef.current.push(...points);
+      if (liveCanvas && tool === 'pen') drawPenCurve(liveCanvas, activePointsRef.current.slice(Math.max(0, previousLength - 2)), color, size, .95, advanced.penPressure, true, previousLength <= 2);
       if (liveCanvas && tool === 'highlighter') { clearLiveCanvas(); const visible = advanced.highlighterStraight && activePointsRef.current.length > 1 ? [activePointsRef.current[0]!, activePointsRef.current.at(-1)!] : activePointsRef.current; drawHighlighterPath(liveCanvas, visible, color, size, advanced.highlighterOpacity); }
     }
   };
@@ -266,7 +268,13 @@ function AnnotationLayer({ pageNumber, rotation, annotations, editing, tool, col
       }
       return;
     }
-    if (activeId.current) { onExtend(activeId.current, activePointsRef.current.slice(1)); onEnd(); requestAnimationFrame(clearLiveCanvas); }
+    if (activeId.current) {
+      if (event) {
+        const finalPoint = pointsFromEvent(event).at(-1); const previous = activePointsRef.current.at(-1);
+        if (finalPoint && previous && Math.hypot(finalPoint.x - previous.x, finalPoint.y - previous.y) > .0002) activePointsRef.current.push(finalPoint);
+      }
+      onExtend(activeId.current, activePointsRef.current.slice(1)); onEnd(); requestAnimationFrame(clearLiveCanvas);
+    }
     else if (pointerModeRef.current === 'erase') onEnd();
     activeId.current = null; activePointsRef.current = []; pointerModeRef.current = null; lastPointRef.current = null;
   };
@@ -275,10 +283,10 @@ function AnnotationLayer({ pageNumber, rotation, annotations, editing, tool, col
   </svg></>;
 }
 
-function PdfPage({ document, pageNumber, width, zoom, rotation, register, annotations, hideNativeAnnotations, editing, tool, color, inkSize, advanced, onPrepare, onBegin, onExtend, onEnd, onCancel, onPan, onPinch, onTwoFingerTap, onErase, onNavigate }: {
+function PdfPage({ document, pageNumber, width, zoom, rotation, register, annotations, hideNativeAnnotations, editing, tool, color, inkSize, advanced, onPrepare, onBegin, onExtend, onEnd, onCancel, onPan, onPinch, onTwoFingerTap, onStylusButton, onErase, onNavigate }: {
   document: PDFDocumentProxy; pageNumber: number; width: number; zoom: number; rotation: number; register: (page: number, node: HTMLElement | null) => void;
   annotations: readonly PdfInkAnnotation[]; hideNativeAnnotations: boolean; editing: boolean; tool: InkTool; color: string; inkSize: number; advanced: AdvancedToolPreferences;
-  onPrepare: () => void; onBegin: (annotation: PdfInkAnnotation) => void; onExtend: (id: string, points: readonly PdfAnnotationPoint[]) => void; onEnd: () => void; onCancel: () => void; onPan: (dx: number, dy: number) => void; onPinch: (factor: number, clientX?: number, clientY?: number) => void; onTwoFingerTap: () => void; onErase: (page: number, point: PdfAnnotationPoint, mode: EraserMode) => void;
+  onPrepare: () => void; onBegin: (annotation: PdfInkAnnotation) => void; onExtend: (id: string, points: readonly PdfAnnotationPoint[]) => void; onEnd: () => void; onCancel: () => void; onPan: (dx: number, dy: number) => void; onPinch: (factor: number, clientX?: number, clientY?: number) => void; onTwoFingerTap: () => void; onStylusButton: () => void; onErase: (page: number, point: PdfAnnotationPoint, mode: EraserMode) => void;
   onNavigate: (destination: string | readonly unknown[] | undefined, action?: string) => void;
 }) {
   const hostRef = useRef<HTMLElement | null>(null);
@@ -378,7 +386,7 @@ function PdfPage({ document, pageNumber, width, zoom, rotation, register, annota
         ? <a key={link.id} href={link.url} target="_blank" rel="noreferrer" aria-label="Open PDF link" style={{ left: `${link.left * 100}%`, top: `${link.top * 100}%`, width: `${link.width * 100}%`, height: `${link.height * 100}%` }} />
         : <button key={link.id} type="button" aria-label="Follow PDF link" style={{ left: `${link.left * 100}%`, top: `${link.top * 100}%`, width: `${link.width * 100}%`, height: `${link.height * 100}%` }} onClick={() => onNavigate(link.dest, link.action)} />)}
     </div>}
-    {(editing || annotations.length > 0) && <AnnotationLayer pageNumber={pageNumber} rotation={rotation} annotations={annotations} editing={editing} tool={tool} color={color} size={inkSize} advanced={advanced} onPrepare={onPrepare} onBegin={onBegin} onExtend={onExtend} onEnd={onEnd} onCancel={onCancel} onPan={onPan} onPinch={onPinch} onTwoFingerTap={onTwoFingerTap} onErase={onErase} />}
+    {(editing || annotations.length > 0) && <AnnotationLayer pageNumber={pageNumber} rotation={rotation} annotations={annotations} editing={editing} tool={tool} color={color} size={inkSize} advanced={advanced} onPrepare={onPrepare} onBegin={onBegin} onExtend={onExtend} onEnd={onEnd} onCancel={onCancel} onPan={onPan} onPinch={onPinch} onTwoFingerTap={onTwoFingerTap} onStylusButton={onStylusButton} onErase={onErase} />}
   </section>;
 }
 
@@ -698,6 +706,7 @@ export function PdfCanvasViewer({ url, name, className, fileHandle, controlsInHe
   };
   const undo = () => { const previous = historyRef.current.pop(); if (!previous) return; setPdfSaveDirty(true); futureRef.current.push(annotations); setAnnotations(previous); };
   const redo = () => { const next = futureRef.current.pop(); if (!next) return; setPdfSaveDirty(true); historyRef.current.push(annotations); setAnnotations(next); };
+  const toggleStylusTool = () => { setTool((current) => current === 'eraser' ? 'pen' : 'eraser'); setToolSettingsOpen(false); };
   const gestureUndo = () => { const now = performance.now(); if (now - lastGestureUndoRef.current < 500) return; lastGestureUndoRef.current = now; undo(); };
   const undoGestureDown = (event: ReactPointerEvent<HTMLDivElement>) => {
     if (!editing || event.pointerType !== 'touch') return;
@@ -718,7 +727,6 @@ export function PdfCanvasViewer({ url, name, className, fileHandle, controlsInHe
     const gesture = undoGestureRef.current; undoGestureRef.current = null;
     if (editing && gesture && !gesture.moved && performance.now() - gesture.startedAt < 650) gestureUndo();
   };
-  const clearPage = () => { const next = annotations.filter((item) => item.page !== pageNumber); if (next.length !== annotations.length) { setPdfSaveDirty(true); commitSnapshot(annotations); setAnnotations(next); } };
   const createAnnotatedPdf = async (editable: boolean) => {
     if (!document) throw new Error('PDF is unavailable.');
     const [{ createAnnotatedPdf: encode }, bytes] = await Promise.all([import('../../../services/pdf/PdfEditableAnnotationCodec'), document.getData()]);
@@ -850,7 +858,7 @@ export function PdfCanvasViewer({ url, name, className, fileHandle, controlsInHe
       {editing && !toolbarCollapsed && <div ref={inkToolbarRef} className={styles.inkToolbar} aria-label="Annotation tools">
         {(['pen', 'highlighter', 'eraser'] as const).map((value) => <button type="button" key={value} className={tool === value ? styles.toolActive : ''} onClick={() => { if (tool === value) setToolSettingsOpen((open) => !open); else { setTool(value); setToolSettingsOpen(false); } }} onDoubleClick={() => setToolSettingsOpen(true)} aria-label={value} title={tool === value ? 'Click again for tool settings' : value}><Icon name={value === 'pen' ? 'pencil' : value === 'highlighter' ? 'highlighter' : 'eraser'} size={17} /></button>)}
         <span className={styles.inkDivider} /><input type="color" value={color} onChange={(event) => { if (tool !== 'eraser') setToolColors((current) => ({ ...current, [tool]: event.target.value })); }} aria-label="Ink colour" disabled={tool === 'eraser'} /><input type="range" min="1" max={tool === 'eraser' ? 12 : 6} step="1" value={inkSize} onChange={(event) => setToolSizes((current) => ({ ...current, [tool]: Number(event.target.value) }))} aria-label={`${tool} thickness`} title={`${tool} thickness: ${inkSize}`} />
-        <span className={styles.inkDivider} /><button type="button" onClick={undo} disabled={!historyRef.current.length} aria-label="Undo"><Icon name="undo" size={16} /></button><button type="button" onClick={redo} disabled={!futureRef.current.length} aria-label="Redo"><Icon name="redo" size={16} /></button><button type="button" onClick={clearPage} disabled={!annotations.some((item) => item.page === pageNumber)} aria-label="Clear annotations on this page"><Icon name="trash" size={16} /></button><button type="button" className={toolbarPinned ? styles.pinActive : ''} onClick={toggleToolbarPinned} aria-pressed={toolbarPinned} aria-label={toolbarPinned ? 'Allow toolbar to minimize while drawing' : 'Keep toolbar open while drawing'} title={toolbarPinned ? 'Toolbar locked open' : 'Auto-minimize toolbar'}><Icon name={toolbarPinned ? 'lock' : 'unlock'} size={15} /></button><span className={cx(styles.savedState, (saving || autosaveState === 'saving') && styles.savingState, !pdfSaveDirty && styles.pdfSavedState)}>{saveNotice || (saving ? 'Writing PDF…' : pdfSaveDirty ? autosaveState === 'saving' ? 'Backing up…' : 'Not saved to PDF' : 'Saved to PDF')}</span>
+        <span className={styles.inkDivider} /><button type="button" onClick={undo} disabled={!historyRef.current.length} aria-label="Undo"><Icon name="undo" size={16} /></button><button type="button" onClick={redo} disabled={!futureRef.current.length} aria-label="Redo"><Icon name="redo" size={16} /></button><button type="button" className={toolbarPinned ? styles.pinActive : ''} onClick={toggleToolbarPinned} aria-pressed={toolbarPinned} aria-label={toolbarPinned ? 'Allow toolbar to minimize while drawing' : 'Keep toolbar open while drawing'} title={toolbarPinned ? 'Toolbar locked open' : 'Auto-minimize toolbar'}><Icon name={toolbarPinned ? 'lock' : 'unlock'} size={15} /></button><span className={cx(styles.savedState, (saving || autosaveState === 'saving') && styles.savingState, !pdfSaveDirty && styles.pdfSavedState)}>{saveNotice || (saving ? 'Writing PDF…' : pdfSaveDirty ? autosaveState === 'saving' ? 'Backing up…' : 'Not saved to PDF' : 'Saved to PDF')}</span>
       </div>}
       {editing && !toolbarCollapsed && toolSettingsOpen && <section ref={toolSettingsRef} className={styles.toolSettings} aria-label={`${tool} advanced settings`}>
         <header><div><strong>{tool[0]!.toUpperCase()}{tool.slice(1)} settings</strong><small>Saved automatically on this device</small></div><button type="button" onClick={() => setToolSettingsOpen(false)} aria-label="Close tool settings"><Icon name="close" size={14} /></button></header>
@@ -866,7 +874,7 @@ export function PdfCanvasViewer({ url, name, className, fileHandle, controlsInHe
     </>}
     <div ref={viewportRef} className={cx(styles.viewport, viewMode === 'page' && styles.pageMode, editing && styles.editViewport)} onPointerDownCapture={undoGestureDown} onPointerMoveCapture={undoGestureMove} onPointerUpCapture={undoGestureEnd} onPointerCancelCapture={undoGestureEnd} onPointerDown={readerGestureDown} onPointerMove={readerGestureMove} onPointerUp={readerGestureEnd} onPointerCancel={readerGestureEnd} onDoubleClick={(event) => { if (!editing && (event.target as Element).closest(`.${styles.page}`)) setZoom(1); }}>
       {loading && <div className={styles.status}><span className={styles.spinner} /><strong>Opening PDF…</strong><small>{name}</small></div>}{error && <div className={styles.status}><Icon name="book" size={24} /><strong>Unable to open PDF</strong><small>{error}</small></div>}
-      {!error && document && visiblePages.map((page) => <PdfPage key={page} document={document} pageNumber={page} width={width} zoom={zoom} rotation={rotation} register={(number, node) => { if (node) pageRefs.current.set(number, node); else pageRefs.current.delete(number); }} annotations={annotationsByPage.get(page) ?? []} hideNativeAnnotations={nativeInkImported} editing={editing} tool={tool} color={color} inkSize={inkSize} advanced={advanced} onPrepare={prepareStroke} onBegin={begin} onExtend={extend} onEnd={end} onCancel={cancelStroke} onPan={panAnnotations} onPinch={zoomPdf} onTwoFingerTap={gestureUndo} onErase={erase} onNavigate={(destination, action) => void followLink(destination, action)} />)}
+      {!error && document && visiblePages.map((page) => <PdfPage key={page} document={document} pageNumber={page} width={width} zoom={zoom} rotation={rotation} register={(number, node) => { if (node) pageRefs.current.set(number, node); else pageRefs.current.delete(number); }} annotations={annotationsByPage.get(page) ?? []} hideNativeAnnotations={nativeInkImported} editing={editing} tool={tool} color={color} inkSize={inkSize} advanced={advanced} onPrepare={prepareStroke} onBegin={begin} onExtend={extend} onEnd={end} onCancel={cancelStroke} onPan={panAnnotations} onPinch={zoomPdf} onTwoFingerTap={gestureUndo} onStylusButton={toggleStylusTool} onErase={erase} onNavigate={(destination, action) => void followLink(destination, action)} />)}
     </div>
     {saveDialogOpen && <div className={styles.saveBackdrop} role="presentation" onPointerDown={() => setSaveDialogOpen(false)}><section className={styles.saveDialog} role="dialog" aria-modal="true" aria-labelledby="pdf-save-title" onPointerDown={(event) => event.stopPropagation()}>
       <header><span><Icon name="save" size={18} /></span><div><strong id="pdf-save-title">Save {annotationFormat === 'editable' ? 'editable' : 'flattened'} PDF</strong><small>{annotationFormat === 'editable' ? 'Marks remain selectable and erasable after reopening.' : 'Marks become permanent page content.'}</small></div><button type="button" onClick={() => setSaveDialogOpen(false)} aria-label="Close"><Icon name="close" size={16} /></button></header>
