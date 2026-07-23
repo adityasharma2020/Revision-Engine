@@ -63,7 +63,7 @@ async function buildMotivationPreview(includeImage: boolean, tone: MotivationTon
   const image = includeImage ? await resolveMotivationImage(feed, selected) : undefined;
   return {
     title: selected.title,
-    body: selected.message,
+    body: '',
     tag: `motivation-preview-${Date.now()}`,
     url: 'revision',
     image,

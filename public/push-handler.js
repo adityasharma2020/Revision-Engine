@@ -3,7 +3,7 @@ self.addEventListener('push', (event) => {
   let payload = {};
   try { payload = event.data ? event.data.json() : {}; } catch { payload = { body: event.data?.text() }; }
   const options = {
-    body: payload.body || 'You have a new study update.',
+    ...(typeof payload.body === 'string' && payload.body.trim() ? { body: payload.body } : {}),
     icon: new URL('app-icon-192.png', self.registration.scope).href,
     badge: new URL('notification-badge.png', self.registration.scope).href,
     tag: payload.tag || 'study-update',

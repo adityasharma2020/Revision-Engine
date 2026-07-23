@@ -61,7 +61,7 @@ Deno.serve(async (request) => {
     if (!preferences.enabled) continue;
     let clock: ReturnType<typeof localParts>;
     try { clock = localParts(preferences.timezone || 'UTC'); } catch { clock = localParts('UTC'); }
-    const messages: Array<{ type: string; key: string; payload: PushPayload; metadata?: Record<string, unknown> }> = [];
+    const messages: Array<{ type: string; key: string; payload: PushPayload; inboxBody?: string; metadata?: Record<string, unknown> }> = [];
     let cachedResults: Array<Record<string, unknown>> | null = null;
     const getResults = async () => {
       if (cachedResults) return cachedResults;
@@ -97,7 +97,7 @@ Deno.serve(async (request) => {
             key: clock.date,
             payload: {
               title: selected.title,
-              body: selected.message,
+              body: '',
               tag: `motivation-${clock.date}`,
               url: 'revision',
               image,
@@ -105,6 +105,7 @@ Deno.serve(async (request) => {
               timestamp: Date.now(),
               actions: [{ action: 'start-revision', title: 'Start revision', url: 'revision' }],
             },
+            inboxBody: selected.message,
             metadata: { quoteId: selected.id, category: selected.category, tone: selected.tone, author: selected.author ?? null, image: image ?? null },
           });
         }
@@ -129,7 +130,7 @@ Deno.serve(async (request) => {
           if (status === 404 || status === 410) await admin.from('push_subscriptions').update({ disabled_at: new Date().toISOString() }).eq('id', subscription.id);
         }
       }
-      if (successful) await admin.from('notification_inbox').upsert({ user_id: subscription.user_id, notification_type: message.type, dedupe_key: message.key, title: message.payload.title, body: message.payload.body, url: message.payload.url, metadata: message.metadata ?? {} }, { onConflict: 'user_id,notification_type,dedupe_key' });
+      if (successful) await admin.from('notification_inbox').upsert({ user_id: subscription.user_id, notification_type: message.type, dedupe_key: message.key, title: message.payload.title, body: message.inboxBody ?? message.payload.body, url: message.payload.url, metadata: message.metadata ?? {} }, { onConflict: 'user_id,notification_type,dedupe_key' });
     }
   }
   const { data: nudgePreferenceRows } = await admin.from('nudge_preferences').select('*').eq('enabled', true);
