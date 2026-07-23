@@ -42,7 +42,7 @@ export function Settings() {
       }
       const nextStatus = await enableWebPush();
       if (nextStatus !== 'granted') {
-        const messages = { unsupported: 'This browser does not support Web Push.', unconfigured: 'Web Push needs its public VAPID key.', 'signed-out': 'Sign in before enabling cross-device notifications.', denied: 'Notifications are blocked in browser settings.', prompt: 'Notification permission was not granted.', granted: '' };
+        const messages = { unsupported: 'This browser does not support Web Push.', 'install-required': 'On iPhone or iPad, add this app to the Home Screen and open it from its icon first.', unconfigured: 'Web Push needs its public VAPID key.', 'signed-out': 'Sign in before enabling cross-device notifications.', denied: 'Notifications are blocked in browser settings.', prompt: 'Notification permission was not granted.', granted: '' };
         setPushMessage(messages[nextStatus]);
         return;
       }

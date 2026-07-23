@@ -7,13 +7,16 @@ self.addEventListener('push', (event) => {
     icon: './icon.svg',
     badge: './icon.svg',
     tag: payload.tag || 'study-update',
-    data: { url: payload.url || './' },
+    renotify: true,
+    actions: Array.isArray(payload.actions) ? payload.actions.map(({ action, title }) => ({ action, title })) : [],
+    data: { url: payload.url || './', actions: payload.actions || [] },
   }));
 });
 
 self.addEventListener('notificationclick', (event) => {
   event.notification.close();
-  const destination = new URL(event.notification.data?.url || './', self.registration.scope).href;
+  const selectedAction = event.notification.data?.actions?.find((item) => item.action === event.action);
+  const destination = new URL(selectedAction?.url || event.notification.data?.url || './', self.registration.scope).href;
   event.waitUntil(self.clients.matchAll({ type: 'window', includeUncontrolled: true }).then((clients) => {
     const existing = clients.find((client) => client.url.startsWith(self.registration.scope));
     if (existing) { existing.navigate(destination); return existing.focus(); }

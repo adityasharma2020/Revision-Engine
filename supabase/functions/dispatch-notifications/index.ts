@@ -64,18 +64,18 @@ Deno.serve(async (request) => {
     };
     if (preferences.dailyRevision && isDue(clock.time, preferences.dailyReminderTime)) {
       const { data: assignment } = await admin.from('user_state').select('value').eq('user_id', row.user_id).eq('key', 'daily-revision-assignment').eq('is_deleted', false).maybeSingle();
-      if (assignment?.value?.status !== 'completed' || assignment.value?.dateKey !== clock.date) messages.push({ type: 'daily-revision', key: clock.date, payload: { title: 'Daily revision is waiting', body: 'A short review now will keep your learning rhythm intact.', tag: `daily-${clock.date}`, url: 'revision' } });
+      if (assignment?.value?.status !== 'completed' || assignment.value?.dateKey !== clock.date) messages.push({ type: 'daily-revision', key: clock.date, payload: { title: '🎯 Your daily review is ready', body: 'A few focused questions now will protect what you’ve already learned.', tag: `daily-${clock.date}`, url: 'revision', actions: [{ action: 'start-review', title: 'Start review', url: 'revision' }] } });
     }
     if (preferences.weeklySummary && clock.weekday === (preferences.weeklySummaryDay ?? 0) && isDue(clock.time, preferences.weeklySummaryTime)) {
       const since = Date.now() - 7 * 86_400_000;
       const results = (await getResults()).filter((item) => Number(item.takenAt) >= since);
       const questions = results.reduce((sum, item) => sum + Number(item.totalQuestions ?? 0), 0);
-      messages.push({ type: 'weekly-summary', key: clock.date, payload: { title: 'Your weekly progress', body: `${questions} questions across ${results.length} ${results.length === 1 ? 'quiz' : 'quizzes'} this week.`, tag: `weekly-${clock.date}`, url: 'statistics' } });
+      messages.push({ type: 'weekly-summary', key: clock.date, payload: { title: '📊 Your week in learning', body: `${questions} questions · ${results.length} ${results.length === 1 ? 'quiz' : 'quizzes'} completed. See how your consistency is building.`, tag: `weekly-${clock.date}`, url: 'statistics', actions: [{ action: 'view-progress', title: 'View progress', url: 'statistics' }] } });
     }
     if (preferences.milestones) {
       const lifetimeQuestions = (await getResults()).reduce((sum, item) => sum + Number(item.totalQuestions ?? 0), 0);
       const milestone = Math.floor(lifetimeQuestions / 100) * 100;
-      if (milestone >= 100) messages.push({ type: 'milestone', key: `questions-${milestone}`, payload: { title: `${milestone} questions completed`, body: 'A meaningful learning milestone—keep building on it.', tag: `milestone-${milestone}`, url: 'statistics' } });
+      if (milestone >= 100) messages.push({ type: 'milestone', key: `questions-${milestone}`, payload: { title: `🏆 ${milestone} questions completed`, body: 'That is real momentum. Take a moment to see how far you’ve come.', tag: `milestone-${milestone}`, url: 'statistics', actions: [{ action: 'view-milestone', title: 'See achievement', url: 'statistics' }] } });
     }
     if (!messages.length) continue;
     const { data: subscriptions } = await admin.from('push_subscriptions').select('id,user_id,endpoint,p256dh,auth_key').eq('user_id', row.user_id).is('disabled_at', null);
@@ -113,11 +113,11 @@ Deno.serve(async (request) => {
     if (!selected) continue;
     const { data: subscriptions } = await admin.from('push_subscriptions').select('id,user_id,endpoint,p256dh,auth_key').eq('user_id', preferences.user_id).is('disabled_at', null);
     if (!subscriptions?.length) continue;
-    const title = preferences.privacy_mode ? 'A memory nudge is ready' : String(selected.title);
-    const body = preferences.privacy_mode ? 'Tap to review it privately.' : String(selected.content);
+    const title = preferences.privacy_mode ? '🧠 A memory nudge is ready' : `🧠 ${String(selected.title)}`;
+    const body = preferences.privacy_mode ? 'One important idea is ready for a quick private review.' : String(selected.content);
     let successful = false;
     for (const subscription of subscriptions as SubscriptionRow[]) {
-      try { await deliver(subscription, { title, body, tag: `nudge-${selected.id}`, url: `nudges?id=${selected.id}` }); successful = true; delivered += 1; }
+      try { await deliver(subscription, { title, body, tag: `nudge-${selected.id}`, url: `nudges?id=${selected.id}`, actions: [{ action: 'review-nudge', title: 'Review now', url: `nudges?id=${selected.id}` }] }); successful = true; delivered += 1; }
       catch (pushError) { const status = typeof pushError === 'object' && pushError && 'statusCode' in pushError ? Number(pushError.statusCode) : 0; if (status === 404 || status === 410) await admin.from('push_subscriptions').update({ disabled_at: new Date().toISOString() }).eq('id', subscription.id); }
     }
     if (successful) {

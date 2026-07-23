@@ -12,10 +12,11 @@ Deno.serve(async (request) => {
     if (error) throw error;
     if (!data?.length) return Response.json({ error: 'No active device subscription.' }, { status: 409, headers: corsHeaders });
     await Promise.all((data as SubscriptionRow[]).map((subscription) => deliver(subscription, {
-      title: 'Notifications are ready',
-      body: 'This device can now receive your study reminders.',
+      title: '✨ You’re all set',
+      body: 'Smart revision reminders and memory nudges will arrive here at the times you choose.',
       tag: 'notification-test',
       url: 'settings',
+      actions: [{ action: 'open-settings', title: 'Review preferences', url: 'settings' }],
     })));
     return Response.json({ delivered: data.length }, { headers: corsHeaders });
   } catch (error) {

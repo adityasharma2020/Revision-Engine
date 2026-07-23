@@ -22,7 +22,13 @@ export function configureWebPush() {
   return webpush;
 }
 
-export type PushPayload = { title: string; body: string; tag: string; url: string };
+export type PushPayload = {
+  title: string;
+  body: string;
+  tag: string;
+  url: string;
+  actions?: Array<{ action: string; title: string; url?: string }>;
+};
 export type SubscriptionRow = { id: string; user_id: string; endpoint: string; p256dh: string; auth_key: string };
 
 export async function deliver(subscription: SubscriptionRow, payload: PushPayload) {

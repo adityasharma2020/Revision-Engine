@@ -1,7 +1,7 @@
 import { env } from '../../config/env';
 import { getSupabase } from '../supabase/client';
 
-export type PushStatus = 'unsupported' | 'unconfigured' | 'signed-out' | 'prompt' | 'granted' | 'denied';
+export type PushStatus = 'unsupported' | 'install-required' | 'unconfigured' | 'signed-out' | 'prompt' | 'granted' | 'denied';
 
 function decodeVapidKey(value: string): Uint8Array<ArrayBuffer> {
   const padded = `${value}${'='.repeat((4 - value.length % 4) % 4)}`.replace(/-/g, '+').replace(/_/g, '/');
@@ -18,6 +18,9 @@ function sameKey(current: ArrayBuffer | null, expected: Uint8Array<ArrayBuffer>)
 }
 
 export function getPushStatus(authenticated: boolean): PushStatus {
+  const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
+  const standalone = window.matchMedia('(display-mode: standalone)').matches || Boolean((navigator as Navigator & { standalone?: boolean }).standalone);
+  if (isIOS && !standalone) return 'install-required';
   if (!('serviceWorker' in navigator) || !('PushManager' in window) || !('Notification' in window)) return 'unsupported';
   if (!env.pushConfigured || !env.supabaseConfigured) return 'unconfigured';
   if (!authenticated) return 'signed-out';
@@ -29,9 +32,14 @@ export async function enableWebPush(): Promise<PushStatus> {
   if (!client) return 'unconfigured';
   const { data: auth } = await client.auth.getUser();
   if (!auth.user) return 'signed-out';
+  const status = getPushStatus(true);
+  if (status === 'install-required' || status === 'unsupported' || status === 'unconfigured') return status;
   const permission = await Notification.requestPermission();
   if (permission !== 'granted') return permission === 'default' ? 'prompt' : permission;
-  const registration = await navigator.serviceWorker.ready;
+  const registration = await Promise.race([
+    navigator.serviceWorker.ready,
+    new Promise<never>((_, reject) => window.setTimeout(() => reject(new Error('The notification service worker did not become ready. Install or refresh the app, then try again.')), 10_000)),
+  ]);
   let existing = await registration.pushManager.getSubscription();
   const applicationServerKey = decodeVapidKey(env.vapidPublicKey);
   if (existing && !sameKey(existing.options.applicationServerKey, applicationServerKey)) {
