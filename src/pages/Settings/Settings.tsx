@@ -30,6 +30,7 @@ export function Settings() {
   const [pushMessage, setPushMessage] = useState<string | null>(null);
   const [nudgeSettingsOpen, setNudgeSettingsOpen] = useState(false);
   const [installMessage, setInstallMessage] = useState('');
+  const [refreshingApp, setRefreshingApp] = useState(false);
   const installState = useSyncExternalStore(subscribeToPwaInstall, getPwaInstallState, getPwaInstallState);
   const { preferences: revisionPreferences, update: updateRevisionPreferences } = useRevisionPreferences();
   const { settings: appSettings, update: updateAppSettings, reset: resetAppSettings } = useAppSettings();
@@ -59,6 +60,25 @@ export function Settings() {
     if (installState === 'installed') return;
     const result = await requestPwaInstall();
     setInstallMessage(result === 'accepted' ? 'Revision Engine was installed.' : result === 'dismissed' ? 'Installation was cancelled.' : /iPhone|iPad|iPod/i.test(navigator.userAgent) ? 'On iPhone or iPad: Share → Add to Home Screen.' : 'Open your browser menu and choose Install app or Add to Home screen.');
+  };
+
+  const refreshApplication = async () => {
+    if (refreshingApp) return;
+    setRefreshingApp(true);
+    try {
+      if ('serviceWorker' in navigator) {
+        const registrations = await navigator.serviceWorker.getRegistrations();
+        await Promise.all(registrations.map(async (registration) => {
+          await registration.update();
+          registration.waiting?.postMessage({ type: 'SKIP_WAITING' });
+        }));
+      }
+      // Chapter JSON uses a separate stale-while-revalidate cache. Removing
+      // only that cache forces fresh content without touching local app data.
+      if ('caches' in window) await caches.delete('chapter-content');
+    } finally {
+      window.location.reload();
+    }
   };
 
   const setNotificationsEnabled = async (enabled: boolean) => {
@@ -253,6 +273,18 @@ export function Settings() {
               </div>
               <Button variant={installState === 'available' ? 'primary' : 'secondary'} size='sm' disabled={installState === 'installed'} onClick={() => void installPwa()}>
                 <Icon name={installState === 'installed' ? 'check' : 'share'} size={15} /> {installState === 'installed' ? 'Installed' : installState === 'available' ? 'Install app' : 'How to install'}
+              </Button>
+            </div>
+          </section>
+
+          <section className={styles.group}>
+            <div className={styles.row}>
+              <div className={styles.rowText}>
+                <h3 className={styles.rowTitle}>Refresh application</h3>
+                <p className={styles.rowDesc}>Fetch the latest deployed app and chapter files. Your local data, settings and quiz history stay unchanged.</p>
+              </div>
+              <Button variant="secondary" size="sm" disabled={refreshingApp} onClick={() => void refreshApplication()}>
+                <Icon name="sync" size={15} /> {refreshingApp ? 'Refreshing…' : 'Refresh app'}
               </Button>
             </div>
           </section>
