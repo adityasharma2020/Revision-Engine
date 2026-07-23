@@ -8,6 +8,7 @@ import { abandonQuizDraft, findActiveQuizDraft } from '../../../hooks/useQuizSes
 import { Button } from '../../common/Button';
 import { Icon } from '../../common/Icon';
 import { Search } from '../../../pages/Search';
+import { StoragePressureNudge } from '../StoragePressureNudge';
 
 const SIDEBAR_KEY = 'revision-engine:sidebar-collapsed';
 const QUIZ_HISTORY_GUARD = '__revisionEngineQuizGuard';
@@ -200,6 +201,7 @@ export function AppShell() {
       <main className={styles.main}>
         <Outlet />
       </main>
+      <StoragePressureNudge />
       {searchOpen && (
         <div className={styles.searchBackdrop} onMouseDown={() => setSearchOpen(false)}>
           <section

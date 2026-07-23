@@ -1,6 +1,6 @@
 import { useDeferredValue, useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { Button, EmptyState, Tabs } from '../../components/common';
+import { Button, EmptyState, Icon, Tabs } from '../../components/common';
 import { Page, PageHeader } from '../../components/layout';
 import { BarChart } from '../../components/statistics/BarChart';
 import { ScopeFilter } from '../../components/statistics/ScopeFilter';
@@ -8,7 +8,9 @@ import { StatTile } from '../../components/statistics/StatTile';
 import { subjectStyle } from '../../constants/subjects';
 import { useUserData } from '../../context/UserDataContext';
 import { useLibrary } from '../../hooks/useChapters';
-import type { ProgressMap } from '../../types';
+import type { NudgeKind, ProgressMap } from '../../types';
+import { loadNudgeAnalytics, type NudgeAnalyticsData, type NudgeInteractionRecord } from '../../services/nudges';
+import { useAuth } from '../../context/AuthContext';
 import {
   accuracyTrend,
   chapterAnalytics,
@@ -23,7 +25,7 @@ import { Routes } from '../../constants/routes';
 type TimeRange = 'today' | 'week' | 'month' | 'year' | 'all';
 type QuestionView = 'all' | 'weak' | 'mastered' | 'skipped';
 type QuestionSort = 'attempts' | 'wrong' | 'accuracy' | 'reviews' | 'recent';
-type AnalyticsTab = 'overview' | 'questions';
+type AnalyticsTab = 'overview' | 'questions' | 'nudges';
 
 function startOfRange(range: TimeRange, now = new Date()): number {
   if (range === 'all') return 0;
@@ -66,6 +68,7 @@ interface QuestionStat {
 
 export function Statistics() {
   const { quizResults, progress, annotations, questionAttemptLog } = useUserData();
+  const { status: authStatus } = useAuth();
   const library = useLibrary();
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [timeRange, setTimeRange] = useState<TimeRange>('month');
@@ -77,7 +80,16 @@ export function Statistics() {
   const [questionSort, setQuestionSort] = useState<QuestionSort>('attempts');
   const [analyticsTab, setAnalyticsTab] = useState<AnalyticsTab>('overview');
   const [questionPage, setQuestionPage] = useState(1);
+  const [nudgeData, setNudgeData] = useState<NudgeAnalyticsData>({ nudges: [], interactions: [] });
+  const [nudgeLoading, setNudgeLoading] = useState(false);
+  const [nudgeError, setNudgeError] = useState('');
   const deferredQuestionSearch = useDeferredValue(questionSearch);
+
+  useEffect(() => {
+    if (authStatus !== 'authenticated') { setNudgeData({ nudges: [], interactions: [] }); return; }
+    setNudgeLoading(true); setNudgeError('');
+    void loadNudgeAnalytics().then(setNudgeData).catch((error) => setNudgeError(error instanceof Error ? error.message : 'Could not load Memory Nudge analytics.')).finally(() => setNudgeLoading(false));
+  }, [authStatus]);
 
   const summaries = useMemo(
     () => library.status === 'success' ? library.data : [],
@@ -252,8 +264,7 @@ export function Statistics() {
     visibleQuestionPage * questionPageSize,
   );
 
-  const hasAnyActivity =
-    quizResults.length > 0 || Object.keys(progress).length > 0;
+  const hasAnyActivity = quizResults.length > 0 || Object.keys(progress).length > 0 || nudgeData.nudges.length > 0 || nudgeData.interactions.length > 0;
   const scopeHasData = overview.answered > 0 || overview.quizzes > 0 || overview.chaptersRevised > 0;
 
   return (
@@ -275,8 +286,8 @@ export function Statistics() {
           <section className={styles.filters} aria-label="Analytics filters">
             <div className={styles.filterHead}>
               <div>
-                <strong>Filter your statistics</strong>
-                <span>The range and chapter selection apply to everything below.</span>
+                <strong>{analyticsTab === 'nudges' ? 'Filter nudge activity' : 'Filter your statistics'}</strong>
+                <span>{analyticsTab === 'nudges' ? 'The date range applies to deliveries, opens and feedback. Saved-content totals remain current.' : 'The range and chapter selection apply to everything below.'}</span>
               </div>
               <div className={styles.timeOptions} aria-label="Analytics time range">
               {([
@@ -299,7 +310,7 @@ export function Statistics() {
               </div>
             </div>
 
-            {scopeChapters.length > 0 && (
+            {analyticsTab !== 'nudges' && scopeChapters.length > 0 && (
               <ScopeFilter chapters={scopeChapters} selected={selected} onChange={setSelected} />
             )}
           </section>
@@ -307,13 +318,15 @@ export function Statistics() {
           <div className={styles.analyticsTabs}>
             <Tabs
               aria-label="Analytics sections"
-              items={[{ id: 'overview', label: 'Overview' }, { id: 'questions', label: 'Questions' }]}
+              items={[{ id: 'overview', label: 'Overview' }, { id: 'questions', label: 'Questions' }, { id: 'nudges', label: 'Memory Nudges' }]}
               value={analyticsTab}
               onChange={setAnalyticsTab}
             />
           </div>
 
-          {analyticsTab === 'questions' ? (
+          {analyticsTab === 'nudges' ? (
+            <NudgeAnalytics data={nudgeData} range={timeRange} loading={nudgeLoading} error={nudgeError} />
+          ) : analyticsTab === 'questions' ? (
             <QuestionAnalytics
               items={visibleQuestionStats}
               total={questionStats.length}
@@ -503,6 +516,74 @@ export function Statistics() {
       )}
     </Page>
   );
+}
+
+function NudgeAnalytics({ data, range, loading, error }: { data: NudgeAnalyticsData; range: TimeRange; loading: boolean; error: string }) {
+  const cutoff = startOfRange(range);
+  const interactions = data.interactions.filter((item) => new Date(item.createdAt).getTime() >= cutoff);
+  const productionDeliveries = interactions.filter((item) => item.action === 'delivered' && item.metadata.test !== true);
+  const testDeliveries = interactions.filter((item) => item.action === 'delivered' && item.metadata.test === true);
+  const opened = interactions.filter((item) => item.action === 'opened');
+  const remembered = interactions.filter((item) => item.action === 'remembered');
+  const forgotten = interactions.filter((item) => item.action === 'forgot');
+  const snoozed = interactions.filter((item) => item.action === 'snooze');
+  const responses = remembered.length + forgotten.length;
+  const recallRate = responses ? Math.round(remembered.length / responses * 100) : 0;
+  const current = data.nudges.filter((item) => !item.archived);
+  const active = current.filter((item) => item.active);
+  const ready = active.filter((item) => !item.nextEligibleAt || new Date(item.nextEligibleAt).getTime() <= Date.now());
+  const neverDelivered = active.filter((item) => item.sendCount === 0);
+  const byId = new Map(data.nudges.map((item) => [item.id, item]));
+  const kinds: NudgeKind[] = ['fact', 'data', 'quote', 'definition', 'mistake', 'reminder'];
+  const categoryRows = kinds.map((kind) => {
+    const saved = current.filter((item) => item.kind === kind).length;
+    const matching = (item: NudgeInteractionRecord) => byId.get(item.nudgeId)?.kind === kind;
+    const deliveries = productionDeliveries.filter(matching).length;
+    const reviews = opened.filter(matching).length;
+    const rememberedCount = remembered.filter(matching).length;
+    const forgottenCount = forgotten.filter(matching).length;
+    const decisions = rememberedCount + forgottenCount;
+    return { kind, saved, deliveries, reviews, remembered: rememberedCount, forgotten: forgottenCount, recall: decisions ? Math.round(rememberedCount / decisions * 100) : null };
+  }).filter((row) => row.saved > 0 || row.deliveries > 0 || row.reviews > 0);
+  const needsAttention = current.filter((item) => item.forgottenCount > 0).sort((a, b) => (b.forgottenCount - b.rememberedCount) - (a.forgottenCount - a.rememberedCount) || b.priority - a.priority).slice(0, 5);
+  const recent = interactions.slice().sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()).slice(0, 12);
+  const actionLabel: Record<string, string> = { delivered: 'Delivered', opened: 'Opened for review', remembered: 'Remembered', forgot: 'Forgotten', snooze: 'Snoozed', archive: 'Archived' };
+
+  if (loading) return <section className={`${styles.card} ${styles.nudgeLoading}`} aria-busy='true'><span /><div><h2 className={styles.cardTitle}>Loading Memory Nudge analytics</h2><p className={styles.cardHint}>Calculating retention and delivery signals…</p></div></section>;
+  if (error) return <EmptyState icon='chart' title='Could not load nudge analytics' description={error} />;
+  if (!data.nudges.length && !data.interactions.length) return <EmptyState icon='sparkle' title='No Memory Nudge data yet' description='Add your first nudge and its delivery and retention signals will appear here.' action={<Link className={styles.reviewLink} to={Routes.nudges}>Create a nudge</Link>} />;
+
+  return <section className={styles.nudgeAnalytics}>
+    <div className={styles.primaryTiles}>
+      <StatTile icon='sparkle' label='Saved nudges' value={String(current.length)} sublabel={`${active.length} active`} />
+      <StatTile icon='share' label='Real deliveries' value={String(productionDeliveries.length)} sublabel={TIME_RANGE_LABELS[range]} />
+      <StatTile icon='check' label='Recall signal' value={responses ? `${recallRate}%` : '—'} sublabel={responses ? `${remembered.length}/${responses} remembered` : 'No feedback yet'} />
+    </div>
+    <div className={styles.secondaryMetrics} aria-label='Memory Nudge operational statistics'>
+      <CompactMetric value={String(ready.length)} label='Ready to send' detail={`${active.length} active`} />
+      <CompactMetric value={String(neverDelivered.length)} label='Never delivered' />
+      <CompactMetric value={String(opened.length)} label='Reviews opened' detail='App + notification views' />
+      <CompactMetric value={String(snoozed.length)} label='Snoozed' />
+      <CompactMetric value={String(testDeliveries.length)} label='Test deliveries' detail='Excluded from real totals' />
+    </div>
+
+    <div className={styles.nudgeGrid}>
+      <section className={styles.card}>
+        <div className={styles.cardHead}><div><h2 className={styles.cardTitle}>Retention by category</h2><span className={styles.cardHint}>Use this to find content types that are being forgotten—not merely delivered.</span></div></div>
+        {categoryRows.length ? <div className={styles.tableWrap}><table className={styles.table}><thead><tr><th>Type</th><th className={styles.num}>Saved</th><th className={styles.num}>Delivered</th><th className={styles.num}>Reviews</th><th className={styles.num}>Remembered</th><th className={styles.num}>Forgotten</th><th className={styles.num}>Recall</th></tr></thead><tbody>{categoryRows.map((row) => <tr key={row.kind}><td className={styles.nudgeKind}>{row.kind}</td><td className={styles.num}>{row.saved}</td><td className={styles.num}>{row.deliveries}</td><td className={styles.num}>{row.reviews}</td><td className={styles.num}>{row.remembered}</td><td className={styles.num}>{row.forgotten}</td><td className={styles.num}>{row.recall === null ? '—' : `${row.recall}%`}</td></tr>)}</tbody></table></div> : <p className={styles.cardHint}>No category activity in this period.</p>}
+      </section>
+
+      <section className={styles.card}>
+        <div className={styles.cardHead}><div><h2 className={styles.cardTitle}>Needs attention</h2><span className={styles.cardHint}>Items with recorded “forgot” feedback, ordered by the strongest difficulty signal.</span></div></div>
+        {needsAttention.length ? <ol className={styles.attentionList}>{needsAttention.map((nudge) => <li key={nudge.id}><Link to={`${Routes.nudges}?id=${nudge.id}`}><span><strong>{nudge.title}</strong><small>{nudge.kind} · priority {nudge.priority}</small></span><b>{nudge.forgottenCount} forgot</b></Link></li>)}</ol> : <div className={styles.healthyState}><Icon name='check' size={18} /><span>No forgotten items recorded yet.</span></div>}
+      </section>
+    </div>
+
+    <section className={`${styles.card} ${styles.standaloneCard}`}>
+      <div className={styles.cardHead}><div><h2 className={styles.cardTitle}>Recent nudge activity</h2><span className={styles.cardHint}>A transparent audit of delivery and review events. Test deliveries are clearly marked.</span></div><span className={styles.cardHint}>{TIME_RANGE_LABELS[range]}</span></div>
+      {recent.length ? <div className={styles.tableWrap}><table className={styles.table}><thead><tr><th>Activity</th><th>Nudge</th><th className={styles.num}>When</th></tr></thead><tbody>{recent.map((item) => { const nudge = byId.get(item.nudgeId); return <tr key={item.id}><td><span className={`${styles.activityPill} ${item.action === 'forgot' ? styles.activityDanger : ''}`}>{actionLabel[item.action] ?? item.action}{item.metadata.test === true ? ' · test' : ''}</span></td><td>{nudge ? <Link className={styles.nudgeTitleLink} to={`${Routes.nudges}?id=${nudge.id}`}>{nudge.title}</Link> : 'Deleted nudge'}</td><td className={styles.num}>{new Intl.DateTimeFormat(undefined, { day: 'numeric', month: 'short', hour: 'numeric', minute: '2-digit' }).format(new Date(item.createdAt))}</td></tr>; })}</tbody></table></div> : <p className={styles.cardHint}>No nudge activity in this date range.</p>}
+    </section>
+  </section>;
 }
 
 function QuestionAnalytics({

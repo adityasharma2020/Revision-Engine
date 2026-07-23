@@ -18,6 +18,7 @@ import type { QuizSettings } from '../../types';
 import { QuizLaunchDialog } from '../../components/quiz/QuizLaunchDialog';
 import { ProgressOverview } from '../../components/dashboard/ProgressOverview';
 import { useAppSettings } from '../../context/AppSettingsContext';
+import { NotificationInbox } from '../../components/dashboard/NotificationInbox';
 
 export function Dashboard() {
   const state = useLibrary();
@@ -96,6 +97,7 @@ function HomeContent({ chapters }: { chapters: readonly ChapterSummary[] }) {
   return (
     <>
       {appSettings.dashboard.showActivityOverview && <ProgressOverview results={quizResults} />}
+      <NotificationInbox />
 
       <button type="button" onClick={openPreflight} className={`${styles.revisionHero} ${revisionPerformance ? styles[`revision_${revisionPerformance.tone}`] : ''}`}>
         <span className={styles.revisionMark}><Icon name="target" size={25} /></span>

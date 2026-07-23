@@ -28,6 +28,7 @@ export interface NudgeWindow { start: string; end: string }
 export interface NudgePreferences {
   enabled: boolean;
   maxPerDay: number;
+  deliveryIntervalMinutes: number;
   deliveryDays: number[];
   windows: NudgeWindow[];
   quietStart: string;
@@ -42,14 +43,15 @@ export interface NudgePreferences {
 
 export const DEFAULT_NUDGE_PREFERENCES: NudgePreferences = {
   enabled: false,
-  maxPerDay: 1,
+  maxPerDay: 3,
+  deliveryIntervalMinutes: 240,
   deliveryDays: [0, 1, 2, 3, 4, 5, 6],
   windows: [{ start: '09:00', end: '20:00' }],
   quietStart: '22:00',
   quietEnd: '07:00',
   privacyMode: false,
   adaptiveScheduling: true,
-  minimumCooldownHours: 24,
+  minimumCooldownHours: 72,
   defaultPriority: 3,
   avoidRepeatsUntilCycle: true,
   timezone: 'UTC',

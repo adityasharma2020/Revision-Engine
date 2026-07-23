@@ -33,6 +33,7 @@ Deno.serve(async (request) => {
     }
     if (!delivered) return Response.json({ error: 'Your saved device subscriptions have expired. Re-enable notifications and try again.' }, { status: 410, headers: corsHeaders });
     await admin.from('nudge_interactions').insert({ user_id: auth.user.id, nudge_id: nudge.id, action: 'delivered', metadata: { test: true } });
+    await admin.from('notification_inbox').insert({ user_id: auth.user.id, notification_type: 'memory-nudge-test', dedupe_key: `${nudge.id}-${new Date().toISOString()}`, title: `Test · ${title}`, body, url: `nudges?id=${nudge.id}`, metadata: { test: true, nudgeId: nudge.id } });
     return Response.json({ delivered, nudgeId: nudge.id }, { headers: corsHeaders });
   } catch (error) {
     const message = error instanceof Error ? error.message : String(error);

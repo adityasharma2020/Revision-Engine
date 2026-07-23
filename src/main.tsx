@@ -8,6 +8,7 @@ import { StorageProvider } from './context/StorageContext';
 import { ThemeProvider } from './context/ThemeContext';
 import { UserDataProvider } from './context/UserDataContext';
 import { AppSettingsProvider } from './context/AppSettingsContext';
+import './services/pwa/InstallService';
 
 import './styles/tokens.css';
 import './styles/reset.css';

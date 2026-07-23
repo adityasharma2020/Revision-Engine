@@ -31,6 +31,7 @@ export class LocalStorageStore implements KeyValueStore {
   async set<T>(key: string, value: T): Promise<void> {
     try {
       this.backend.setItem(namespaced(key), JSON.stringify(value));
+      window.dispatchEvent(new Event('revision-engine:storage-change'));
     } catch (cause) {
       throw new StorageError(`Failed to write "${key}"`, key, cause);
     }
@@ -38,6 +39,7 @@ export class LocalStorageStore implements KeyValueStore {
 
   async remove(key: string): Promise<void> {
     this.backend.removeItem(namespaced(key));
+    window.dispatchEvent(new Event('revision-engine:storage-change'));
   }
 
   async keys(): Promise<string[]> {
@@ -61,5 +63,6 @@ export class LocalStorageStore implements KeyValueStore {
       if (full?.startsWith(prefix)) toRemove.push(full);
     }
     toRemove.forEach((k) => this.backend.removeItem(k));
+    window.dispatchEvent(new Event('revision-engine:storage-change'));
   }
 }

@@ -1,0 +1,13 @@
+.nudge { position: fixed; z-index: calc(var(--z-overlay) + 1); right: var(--space-5); bottom: var(--space-5); display: grid; width: min(430px, calc(100vw - 32px)); grid-template-columns: 42px minmax(0, 1fr) 24px; align-items: start; gap: var(--space-3); padding: var(--space-4); color: var(--text-primary); background: var(--surface-elevated); border: 1px solid var(--warning); border-radius: var(--radius-xl); box-shadow: var(--shadow-lg); }
+.icon { display: grid; width: 42px; height: 42px; color: var(--warning); background: var(--warning-subtle); border-radius: var(--radius-md); place-items: center; }
+.nudge > div { min-width: 0; }
+.nudge strong { font-size: var(--text-sm); }
+.nudge p { margin-top: 3px; color: var(--text-secondary); font-size: var(--text-xs); line-height: var(--leading-normal); }
+.nudge > div > div { display: flex; align-items: center; gap: var(--space-3); margin-top: var(--space-3); }
+.nudge a { padding: 6px 10px; color: var(--accent-text); background: var(--accent); border-radius: var(--radius-md); font-size: var(--text-xs); font-weight: var(--weight-semibold); }
+.nudge div button { color: var(--text-secondary); font-size: var(--text-xs); }
+.close { color: var(--text-tertiary); }
+.urgent { border-color: var(--danger); }
+.urgent .icon { color: var(--danger); background: var(--danger-subtle); }
+@media (max-width: 900px) { .nudge { right: var(--space-3); bottom: calc(80px + env(safe-area-inset-bottom)); } }
+@media (max-width: 480px) { .nudge { grid-template-columns: 36px minmax(0, 1fr) 20px; gap: var(--space-2); padding: var(--space-3); } .icon { width: 36px; height: 36px; } }

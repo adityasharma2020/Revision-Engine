@@ -1,34 +1,58 @@
-import { useEffect, useState, type ReactNode } from "react";
-import { Link } from 'react-router-dom';
-import { Button, Icon, replayFirstVisitTour, Tabs, ThemeToggle } from "../../components/common";
-import { AccountPanel } from "../../components/auth/AccountPanel";
-import { Page, PageHeader } from "../../components/layout";
-import { useStorage } from "../../context/StorageContext";
-import { useAuth } from "../../context/AuthContext";
-import { createLocalStorageService } from "../../services/storage";
-import { APP_NAME, APP_VERSION } from "../../constants/app";
-import styles from "./Settings.module.css";
-import { useRevisionPreferences } from "../../hooks/useRevisionPreferences";
-import { useAppSettings } from "../../context/AppSettingsContext";
+import { useEffect, useState, useSyncExternalStore, type ReactNode } from 'react';
+import { Link, useSearchParams } from 'react-router-dom';
+import { Button, Icon, replayFirstVisitTour, Tabs, ThemeToggle } from '../../components/common';
+import { AccountPanel } from '../../components/auth/AccountPanel';
+import { Page, PageHeader } from '../../components/layout';
+import { useStorage } from '../../context/StorageContext';
+import { useAuth } from '../../context/AuthContext';
+import { createLocalStorageService } from '../../services/storage';
+import { APP_NAME, APP_VERSION } from '../../constants/app';
+import styles from './Settings.module.css';
+import { useRevisionPreferences } from '../../hooks/useRevisionPreferences';
+import { useAppSettings } from '../../context/AppSettingsContext';
 import { disableWebPush, enableWebPush, getPushStatus, sendTestNotification } from '../../services/notifications';
 import { loadNudgePreferences, saveNudgePreferences } from '../../services/nudges';
 import { DEFAULT_NUDGE_PREFERENCES, type NudgePreferences } from '../../types';
 import { Routes } from '../../constants/routes';
+import { getPwaInstallState, requestPwaInstall, subscribeToPwaInstall } from '../../services/pwa/InstallService';
 
 export function Settings() {
+  const [searchParams, setSearchParams] = useSearchParams();
   const { storage, cloudAvailable, online, syncing, syncNow } = useStorage();
   const { status, signOut } = useAuth();
   const [cleared, setCleared] = useState(false);
   const [resetOpen, setResetOpen] = useState(false);
   const [syncMessage, setSyncMessage] = useState<string | null>(null);
-  const [tab, setTab] = useState<'general' | 'features'>('general');
+  const [tab, setTab] = useState<'general' | 'alerts' | 'addons'>('general');
   const [pushBusy, setPushBusy] = useState(false);
   const [pushMessage, setPushMessage] = useState<string | null>(null);
   const [nudgeSettingsOpen, setNudgeSettingsOpen] = useState(false);
+  const [installMessage, setInstallMessage] = useState('');
+  const installState = useSyncExternalStore(subscribeToPwaInstall, getPwaInstallState, getPwaInstallState);
   const { preferences: revisionPreferences, update: updateRevisionPreferences } = useRevisionPreferences();
   const { settings: appSettings, update: updateAppSettings, reset: resetAppSettings } = useAppSettings();
   const pushStatus = getPushStatus(status === 'authenticated');
   const notificationsReady = appSettings.notifications.enabled && pushStatus === 'granted';
+
+  useEffect(() => {
+    const requestedTab = searchParams.get('tab');
+    if (requestedTab === 'alerts' || requestedTab === 'features') setTab('alerts');
+    if (requestedTab === 'addons') setTab('addons');
+    if (searchParams.get('nudge') === '1') { setTab('addons'); setNudgeSettingsOpen(true); }
+  }, [searchParams]);
+
+  const closeNudgeSettings = () => {
+    setNudgeSettingsOpen(false);
+    const next = new URLSearchParams(searchParams);
+    next.delete('nudge');
+    setSearchParams(next, { replace: true });
+  };
+
+  const installPwa = async () => {
+    if (installState === 'installed') return;
+    const result = await requestPwaInstall();
+    setInstallMessage(result === 'accepted' ? 'Revision Engine was installed.' : result === 'dismissed' ? 'Installation was cancelled.' : /iPhone|iPad|iPod/i.test(navigator.userAgent) ? 'On iPhone or iPad: Share → Add to Home Screen.' : 'Open your browser menu and choose Install app or Add to Home screen.');
+  };
 
   const setNotificationsEnabled = async (enabled: boolean) => {
     setPushBusy(true);
@@ -36,20 +60,41 @@ export function Settings() {
     try {
       if (!enabled) {
         await disableWebPush();
-        updateAppSettings({ ...appSettings, notifications: { ...appSettings.notifications, enabled: false } });
+        updateAppSettings({
+          ...appSettings,
+          notifications: { ...appSettings.notifications, enabled: false },
+        });
         setPushMessage('Notifications disabled on this device.');
         return;
       }
       const nextStatus = await enableWebPush();
       if (nextStatus !== 'granted') {
-        const messages = { unsupported: 'This browser does not support Web Push.', 'install-required': 'On iPhone or iPad, add this app to the Home Screen and open it from its icon first.', unconfigured: 'Web Push needs its public VAPID key.', 'signed-out': 'Sign in before enabling cross-device notifications.', denied: 'Notifications are blocked in browser settings.', prompt: 'Notification permission was not granted.', granted: '' };
+        const messages = {
+          unsupported: 'This browser does not support Web Push.',
+          'install-required': 'On iPhone or iPad, add this app to the Home Screen and open it from its icon first.',
+          unconfigured: 'Web Push needs its public VAPID key.',
+          'signed-out': 'Sign in before enabling cross-device notifications.',
+          denied: 'Notifications are blocked in browser settings.',
+          prompt: 'Notification permission was not granted.',
+          granted: '',
+        };
         setPushMessage(messages[nextStatus]);
         return;
       }
-      updateAppSettings({ ...appSettings, notifications: { ...appSettings.notifications, enabled: true, timezone: Intl.DateTimeFormat().resolvedOptions().timeZone || 'UTC' } });
+      updateAppSettings({
+        ...appSettings,
+        notifications: {
+          ...appSettings.notifications,
+          enabled: true,
+          timezone: Intl.DateTimeFormat().resolvedOptions().timeZone || 'UTC',
+        },
+      });
       setPushMessage('This device is subscribed. Send a test to confirm delivery.');
     } catch (error) {
-      updateAppSettings({ ...appSettings, notifications: { ...appSettings.notifications, enabled: false } });
+      updateAppSettings({
+        ...appSettings,
+        notifications: { ...appSettings.notifications, enabled: false },
+      });
       setPushMessage(error instanceof Error ? error.message : 'Could not configure notifications.');
     } finally {
       setPushBusy(false);
@@ -59,9 +104,14 @@ export function Settings() {
   const testPush = async () => {
     setPushBusy(true);
     setPushMessage(null);
-    try { await sendTestNotification(); setPushMessage('Test sent to your subscribed devices.'); }
-    catch (error) { setPushMessage(error instanceof Error ? error.message : 'Test delivery failed.'); }
-    finally { setPushBusy(false); }
+    try {
+      await sendTestNotification();
+      setPushMessage('Test sent to your subscribed devices.');
+    } catch (error) {
+      setPushMessage(error instanceof Error ? error.message : 'Test delivery failed.');
+    } finally {
+      setPushBusy(false);
+    }
   };
 
   const clearDeviceOnly = async () => {
@@ -81,272 +131,730 @@ export function Settings() {
     setSyncMessage(null);
     try {
       await syncNow();
-      setSyncMessage("Synced with Supabase just now.");
+      setSyncMessage('Synced with Supabase just now.');
     } catch {
-      setSyncMessage(
-        "Sync failed. Your local data is safe; try again when online."
-      );
+      setSyncMessage('Sync failed. Your local data is safe; try again when online.');
     }
   };
 
   return (
     <Page narrow>
-      <PageHeader
-        eyebrow='Settings'
-        title='Preferences'
-        description='Personalise the app and control how your study data is stored.'
-      />
+      <PageHeader eyebrow="Settings" title="Preferences" description="Personalise the app and control how your study data is stored." />
 
       <div className={styles.settingsTabs}>
-        <Tabs items={[{ id: 'general', label: 'General' }, { id: 'features', label: 'Features & alerts' }]} value={tab} onChange={setTab} aria-label='Settings sections' />
+        <Tabs
+          items={[
+            { id: 'general', label: 'General' },
+            { id: 'alerts', label: 'Alerts' },
+            { id: 'addons', label: 'Add-ons' },
+          ]}
+          value={tab}
+          onChange={setTab}
+          aria-label="Settings sections"
+        />
       </div>
 
-      {tab === 'general' && <>
-      <section className={styles.group}>
-        <div className={styles.stack}>
-          <div className={styles.rowText}>
-            <h3 className={styles.rowTitle}>Account &amp; sync</h3>
-            <p className={styles.rowDesc}>Sign in to continue on any device.</p>
-          </div>
-          <AccountPanel />
-          {status === "authenticated" && cloudAvailable && (
-            <div className={styles.syncPanel}>
-              <div>
-                <strong>Local + Supabase</strong>
-                <span>Quiz attempts and responses save locally first, then sync to your account.</span>
-                {syncMessage && <small role='status'>{syncMessage}</small>}
+      {tab === 'general' && (
+        <>
+          <section className={styles.group}>
+            <div className={styles.stack}>
+              <div className={styles.rowText}>
+                <h3 className={styles.rowTitle}>Account &amp; sync</h3>
+                <p className={styles.rowDesc}>Sign in to continue on any device.</p>
               </div>
-              <Button
-                variant='secondary'
-                size='sm'
-                disabled={!online || syncing}
-                onClick={() => void manualSync()}
-              >
-                <Icon name='sync' size={15} />
-                {syncing ? "Syncing…" : "Sync now"}
-              </Button>
-            </div>
-          )}
-        </div>
-      </section>
-
-      <section className={styles.group}>
-        <div className={styles.stack}>
-          <div className={styles.rowText}>
-            <h3 className={styles.rowTitle}>Daily revision</h3>
-            <p className={styles.rowDesc}>Set the maximum queue size and how much unseen material can be introduced.</p>
-          </div>
-          <div className={styles.revisionFields}>
-            <label>
-              <span>Daily question capacity</span>
-              <select value={revisionPreferences.dailyQuestionLimit} onChange={(event) => updateRevisionPreferences({ ...revisionPreferences, dailyQuestionLimit: Number(event.target.value) })}>
-                {[5, 10, 15, 20, 25, 30, 40, 50, 75, 100].map((value) => <option key={value} value={value}>{value} questions</option>)}
-              </select>
-              <small>This is a maximum. If fewer questions are due, the queue stays smaller.</small>
-            </label>
-            <label>
-              <span>Maximum unseen questions</span>
-              <select value={revisionPreferences.newQuestionPercent} onChange={(event) => updateRevisionPreferences({ ...revisionPreferences, newQuestionPercent: Number(event.target.value) })}>
-                {[0, 10, 20, 25, 30, 40, 50].map((value) => <option key={value} value={value}>{value}% of queue</option>)}
-              </select>
-              <small>Due revision always takes priority over unseen questions.</small>
-            </label>
-          </div>
-        </div>
-      </section>
-
-      <section className={styles.group}>
-        <div className={styles.row}>
-          <div className={styles.rowText}>
-            <h3 className={styles.rowTitle}>Appearance</h3>
-            <p className={styles.rowDesc}>
-              Choose light, dark, or follow your system.
-            </p>
-          </div>
-          <ThemeToggle />
-        </div>
-      </section>
-
-      <section className={styles.group}>
-        <div className={styles.row}>
-          <div className={styles.rowText}>
-            <h3 className={styles.rowTitle}>Product tour</h3>
-            <p className={styles.rowDesc}>A brief overview of the question bank, quizzes, revision and analytics.</p>
-          </div>
-          <Button variant='secondary' size='sm' onClick={replayFirstVisitTour}>
-            <Icon name='sparkle' size={15} /> Replay tour
-          </Button>
-        </div>
-      </section>
-
-      <section className={styles.group}>
-        <div className={styles.row}>
-          <div className={styles.rowText}>
-            <h3 className={styles.rowTitle}>Reset all data</h3>
-            <p className={styles.rowDesc}>
-              Clear progress, quiz history, responses, bookmarks, imports and
-              preferences.
-            </p>
-          </div>
-          <Button
-            variant='danger'
-            onClick={() => setResetOpen(true)}
-            disabled={cleared}
-          >
-            Reset data
-          </Button>
-        </div>
-      </section>
-
-      {resetOpen && (
-        <div
-          className={styles.modalBackdrop}
-          onMouseDown={() => setResetOpen(false)}
-        >
-          <section
-            className={styles.resetModal}
-            role='dialog'
-            aria-modal='true'
-            aria-labelledby='reset-title'
-            onMouseDown={(event) => event.stopPropagation()}
-          >
-            <span className={styles.resetIcon}>
-              <Icon name='trash' size={20} />
-            </span>
-            <h2 id='reset-title'>Where should data disappear from?</h2>
-            <p>
-              Cloud removal is non-destructive: Supabase rows are marked as
-              deleted and excluded from the app, while their database history is
-              retained.
-            </p>
-            <div className={styles.resetChoices}>
-              <button type='button' onClick={() => void clearDeviceOnly()}>
-                <strong>Clear this device</strong>
-                <span>
-                  {cloudAvailable
-                    ? "Signs you out and clears this browser. Supabase data remains available."
-                    : "Clears all data stored in this browser."}
-                </span>
-              </button>
-              {cloudAvailable && (
-                <button
-                  type='button'
-                  className={styles.cloudDelete}
-                  onClick={() => void clearDeviceAndArchiveCloud()}
-                >
-                  <strong>
-                    Clear device and remove cloud data from the app
-                  </strong>
-                  <span>
-                    Soft-deletes the active Supabase records. No database row or
-                    previous version is physically deleted.
-                  </span>
-                </button>
+              <AccountPanel />
+              {status === 'authenticated' && cloudAvailable && (
+                <div className={styles.syncPanel}>
+                  <div>
+                    <strong>Local + Supabase</strong>
+                    <span>Quiz attempts and responses save locally first, then sync to your account.</span>
+                    {syncMessage && <small role="status">{syncMessage}</small>}
+                  </div>
+                  <Button variant="secondary" size="sm" disabled={!online || syncing} onClick={() => void manualSync()}>
+                    <Icon name="sync" size={15} />
+                    {syncing ? 'Syncing…' : 'Sync now'}
+                  </Button>
+                </div>
               )}
             </div>
-            <Button variant='ghost' onClick={() => setResetOpen(false)}>
-              Cancel
-            </Button>
           </section>
-        </div>
-      )}
 
-      <section className={styles.group}>
-        <div className={styles.about}>
-          <div className={styles.row}>
-            <div className={styles.rowText}>
-              <h3 className={styles.rowTitle}>About</h3>
-              <p className={styles.rowDesc}>{APP_NAME} application version.</p>
+          <section className={styles.group}>
+            <div className={styles.stack}>
+              <div className={styles.rowText}>
+                <h3 className={styles.rowTitle}>Daily revision</h3>
+                <p className={styles.rowDesc}>Set the maximum queue size and how much unseen material can be introduced.</p>
+              </div>
+              <div className={styles.revisionFields}>
+                <label>
+                  <span>Daily question capacity</span>
+                  <select
+                    value={revisionPreferences.dailyQuestionLimit}
+                    onChange={(event) =>
+                      updateRevisionPreferences({
+                        ...revisionPreferences,
+                        dailyQuestionLimit: Number(event.target.value),
+                      })
+                    }
+                  >
+                    {[5, 10, 15, 20, 25, 30, 40, 50, 75, 100].map((value) => (
+                      <option key={value} value={value}>
+                        {value} questions
+                      </option>
+                    ))}
+                  </select>
+                  <small>This is a maximum. If fewer questions are due, the queue stays smaller.</small>
+                </label>
+                <label>
+                  <span>Maximum unseen questions</span>
+                  <select
+                    value={revisionPreferences.newQuestionPercent}
+                    onChange={(event) =>
+                      updateRevisionPreferences({
+                        ...revisionPreferences,
+                        newQuestionPercent: Number(event.target.value),
+                      })
+                    }
+                  >
+                    {[0, 10, 20, 25, 30, 40, 50].map((value) => (
+                      <option key={value} value={value}>
+                        {value}% of queue
+                      </option>
+                    ))}
+                  </select>
+                  <small>Due revision always takes priority over unseen questions.</small>
+                </label>
+              </div>
             </div>
-            <code className={styles.version}>v{APP_VERSION}</code>
-          </div>
-          <div className={styles.responsibleUse} role='note'>
-            <p>
-              This is an educational study tool. Only import material you
-              created, own, or have permission to use. Respect copyright,
-              licences, privacy, and source terms; do not upload or share
-              pirated, confidential, or unlawfully copied content. You are
-              responsible for the content you import and how you use it.
-            </p>
-          </div>
-          <p className={styles.credit}>
-            Made with <Icon name='heart' size={15} className={styles.heart} />{" "}
-            by Aditya Sharma.
-          </p>
-        </div>
-      </section>
-      </>}
+          </section>
 
-      {tab === 'features' && (
-        <div className={styles.preferenceSections}>
-          <PreferenceGroup title='Dashboard' description='Choose which optional information appears on your home page.'>
+          <section className={styles.group}>
+            <div className={styles.row}>
+              <div className={styles.rowText}>
+                <h3 className={styles.rowTitle}>Appearance</h3>
+                <p className={styles.rowDesc}>Choose light, dark, or follow your system.</p>
+              </div>
+              <ThemeToggle />
+            </div>
+          </section>
+
+          <section className={styles.group}>
+            <div className={styles.row}>
+              <div className={styles.rowText}>
+                <h3 className={styles.rowTitle}>Install Revision Engine</h3>
+                <p className={styles.rowDesc}>{installState === 'installed' ? 'The PWA is installed on this device.' : 'Install the app for home-screen access and the most reliable mobile notification experience.'}</p>
+                {installMessage && <small className={styles.installMessage} role='status'>{installMessage}</small>}
+              </div>
+              <Button variant={installState === 'available' ? 'primary' : 'secondary'} size='sm' disabled={installState === 'installed'} onClick={() => void installPwa()}>
+                <Icon name={installState === 'installed' ? 'check' : 'share'} size={15} /> {installState === 'installed' ? 'Installed' : installState === 'available' ? 'Install app' : 'How to install'}
+              </Button>
+            </div>
+          </section>
+
+          <section className={styles.group}>
+            <div className={styles.row}>
+              <div className={styles.rowText}>
+                <h3 className={styles.rowTitle}>Product tour</h3>
+                <p className={styles.rowDesc}>A brief overview of the question bank, quizzes, revision and analytics.</p>
+              </div>
+              <Button variant="secondary" size="sm" onClick={replayFirstVisitTour}>
+                <Icon name="sparkle" size={15} /> Replay tour
+              </Button>
+            </div>
+          </section>
+
+          <section className={styles.group}>
+            <div className={styles.row}>
+              <div className={styles.rowText}>
+                <h3 className={styles.rowTitle}>Reset all data</h3>
+                <p className={styles.rowDesc}>Clear progress, quiz history, responses, bookmarks, imports and preferences.</p>
+              </div>
+              <Button variant="danger" onClick={() => setResetOpen(true)} disabled={cleared}>
+                Reset data
+              </Button>
+            </div>
+          </section>
+
+          {resetOpen && (
+            <div className={styles.modalBackdrop} onMouseDown={() => setResetOpen(false)}>
+              <section
+                className={styles.resetModal}
+                role="dialog"
+                aria-modal="true"
+                aria-labelledby="reset-title"
+                onMouseDown={(event) => event.stopPropagation()}
+              >
+                <span className={styles.resetIcon}>
+                  <Icon name="trash" size={20} />
+                </span>
+                <h2 id="reset-title">Where should data disappear from?</h2>
+                <p>
+                  Cloud removal is non-destructive: Supabase rows are marked as deleted and excluded from the app, while their database
+                  history is retained.
+                </p>
+                <div className={styles.resetChoices}>
+                  <button type="button" onClick={() => void clearDeviceOnly()}>
+                    <strong>Clear this device</strong>
+                    <span>
+                      {cloudAvailable
+                        ? 'Signs you out and clears this browser. Supabase data remains available.'
+                        : 'Clears all data stored in this browser.'}
+                    </span>
+                  </button>
+                  {cloudAvailable && (
+                    <button type="button" className={styles.cloudDelete} onClick={() => void clearDeviceAndArchiveCloud()}>
+                      <strong>Clear device and remove cloud data from the app</strong>
+                      <span>Soft-deletes the active Supabase records. No database row or previous version is physically deleted.</span>
+                    </button>
+                  )}
+                </div>
+                <Button variant="ghost" onClick={() => setResetOpen(false)}>
+                  Cancel
+                </Button>
+              </section>
+            </div>
+          )}
+
+          <PreferenceGroup title="Dashboard" description="Choose which optional information appears on your home page.">
             <ToggleSetting
-              title='Weekly activity overview'
-              description='Show the compact progress calendar at the top of the dashboard.'
+              title="Weekly activity overview"
+              description="Show the compact progress calendar at the top of the dashboard."
               checked={appSettings.dashboard.showActivityOverview}
               onChange={(checked) => updateAppSettings({ ...appSettings, dashboard: { ...appSettings.dashboard, showActivityOverview: checked } })}
             />
           </PreferenceGroup>
 
-          <PreferenceGroup title='Notifications' description='Choose which study updates you want to receive. Delivery remains off until notifications are enabled.'>
+          <PreferenceGroup title="Accessibility" description="Comfort settings applied everywhere in the app.">
             <ToggleSetting
-              title='Allow notifications'
+              title="Reduce motion"
+              description="Minimise interface animations and transitions."
+              checked={appSettings.accessibility.reduceMotion}
+              onChange={(checked) => updateAppSettings({ ...appSettings, accessibility: { ...appSettings.accessibility, reduceMotion: checked } })}
+            />
+          </PreferenceGroup>
+
+          <button type="button" className={styles.resetPreferences} onClick={resetAppSettings}>Restore application defaults</button>
+
+          <section className={styles.group}>
+            <div className={styles.about}>
+              <div className={styles.row}>
+                <div className={styles.rowText}>
+                  <h3 className={styles.rowTitle}>About</h3>
+                  <p className={styles.rowDesc}>{APP_NAME} application version.</p>
+                </div>
+                <code className={styles.version}>v{APP_VERSION}</code>
+              </div>
+              <div className={styles.responsibleUse} role="note">
+                <p>
+                  This is an educational study tool. Only import material you created, own, or have permission to use. Respect copyright,
+                  licences, privacy, and source terms; do not upload or share pirated, confidential, or unlawfully copied content. You are
+                  responsible for the content you import and how you use it.
+                </p>
+              </div>
+              <p className={styles.credit}>
+                Made with <Icon name="heart" size={15} className={styles.heart} /> by Aditya Sharma.
+              </p>
+            </div>
+          </section>
+        </>
+      )}
+
+      {tab === 'alerts' && (
+        <div className={styles.preferenceSections}>
+          <PreferenceGroup
+            title="Notifications"
+            description="Choose which study updates you want to receive. Delivery remains off until notifications are enabled."
+          >
+            <ToggleSetting
+              title="Allow notifications"
               description={`Master control for study reminders and progress updates · ${pushStatus === 'granted' ? 'browser allowed' : pushStatus.replace('-', ' ')}`}
               checked={notificationsReady}
               disabled={pushBusy}
               onChange={(checked) => void setNotificationsEnabled(checked)}
             />
-            <ToggleSetting title='Daily revision reminder' description='Remind me when today’s revision is still pending.' checked={appSettings.notifications.dailyRevision} disabled={!notificationsReady} onChange={(checked) => updateAppSettings({ ...appSettings, notifications: { ...appSettings.notifications, dailyRevision: checked } })} />
-            <ToggleSetting title='Weekly progress summary' description='Receive a concise summary of questions, accuracy and active days.' checked={appSettings.notifications.weeklySummary} disabled={!notificationsReady} onChange={(checked) => updateAppSettings({ ...appSettings, notifications: { ...appSettings.notifications, weeklySummary: checked } })} />
-            <ToggleSetting title='Milestones' description='Celebrate streaks and meaningful learning milestones.' checked={appSettings.notifications.milestones} disabled={!notificationsReady} onChange={(checked) => updateAppSettings({ ...appSettings, notifications: { ...appSettings.notifications, milestones: checked } })} />
+            <ToggleSetting
+              title="Daily revision reminder"
+              description="Remind me when today’s revision is still pending."
+              checked={appSettings.notifications.dailyRevision}
+              disabled={!notificationsReady}
+              onChange={(checked) =>
+                updateAppSettings({
+                  ...appSettings,
+                  notifications: {
+                    ...appSettings.notifications,
+                    dailyRevision: checked,
+                  },
+                })
+              }
+            />
+            <ToggleSetting
+              title="Weekly progress summary"
+              description="Receive a concise summary of questions, accuracy and active days."
+              checked={appSettings.notifications.weeklySummary}
+              disabled={!notificationsReady}
+              onChange={(checked) =>
+                updateAppSettings({
+                  ...appSettings,
+                  notifications: {
+                    ...appSettings.notifications,
+                    weeklySummary: checked,
+                  },
+                })
+              }
+            />
+            <ToggleSetting
+              title="Milestones"
+              description="Celebrate streaks and meaningful learning milestones."
+              checked={appSettings.notifications.milestones}
+              disabled={!notificationsReady}
+              onChange={(checked) =>
+                updateAppSettings({
+                  ...appSettings,
+                  notifications: {
+                    ...appSettings.notifications,
+                    milestones: checked,
+                  },
+                })
+              }
+            />
             <div className={`${styles.notificationSchedule} ${!notificationsReady ? styles.disabled : ''}`}>
-              <label><span>Daily reminder</span><input type='time' value={appSettings.notifications.dailyReminderTime} disabled={!notificationsReady} onChange={(event) => updateAppSettings({ ...appSettings, notifications: { ...appSettings.notifications, dailyReminderTime: event.target.value } })} /></label>
-              <label><span>Weekly summary</span><select value={appSettings.notifications.weeklySummaryDay} disabled={!notificationsReady} onChange={(event) => updateAppSettings({ ...appSettings, notifications: { ...appSettings.notifications, weeklySummaryDay: Number(event.target.value) } })}>{['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'].map((day, index) => <option value={index} key={day}>{day}</option>)}</select></label>
-              <label><span>Summary time</span><input type='time' value={appSettings.notifications.weeklySummaryTime} disabled={!notificationsReady} onChange={(event) => updateAppSettings({ ...appSettings, notifications: { ...appSettings.notifications, weeklySummaryTime: event.target.value } })} /></label>
+              <label>
+                <span>Daily reminder</span>
+                <input
+                  type="time"
+                  value={appSettings.notifications.dailyReminderTime}
+                  disabled={!notificationsReady}
+                  onChange={(event) =>
+                    updateAppSettings({
+                      ...appSettings,
+                      notifications: {
+                        ...appSettings.notifications,
+                        dailyReminderTime: event.target.value,
+                      },
+                    })
+                  }
+                />
+              </label>
+              <label>
+                <span>Weekly summary</span>
+                <select
+                  value={appSettings.notifications.weeklySummaryDay}
+                  disabled={!notificationsReady}
+                  onChange={(event) =>
+                    updateAppSettings({
+                      ...appSettings,
+                      notifications: {
+                        ...appSettings.notifications,
+                        weeklySummaryDay: Number(event.target.value),
+                      },
+                    })
+                  }
+                >
+                  {['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'].map((day, index) => (
+                    <option value={index} key={day}>
+                      {day}
+                    </option>
+                  ))}
+                </select>
+              </label>
+              <label>
+                <span>Summary time</span>
+                <input
+                  type="time"
+                  value={appSettings.notifications.weeklySummaryTime}
+                  disabled={!notificationsReady}
+                  onChange={(event) =>
+                    updateAppSettings({
+                      ...appSettings,
+                      notifications: {
+                        ...appSettings.notifications,
+                        weeklySummaryTime: event.target.value,
+                      },
+                    })
+                  }
+                />
+              </label>
               <small>Times use {appSettings.notifications.timezone || 'UTC'}.</small>
             </div>
-            <div className={styles.pushActions}><Button size='sm' variant='secondary' disabled={pushBusy || !notificationsReady} onClick={() => void testPush()}>Send test notification</Button>{pushMessage && <small role='status'>{pushMessage}</small>}</div>
+            <div className={styles.pushActions}>
+              <Button size="sm" variant="secondary" disabled={pushBusy || !notificationsReady} onClick={() => void testPush()}>
+                Send test notification
+              </Button>
+              {pushMessage && <small role="status">{pushMessage}</small>}
+            </div>
           </PreferenceGroup>
 
-          <PreferenceGroup title='Accessibility' description='Comfort settings applied everywhere in the app.'>
-            <ToggleSetting title='Reduce motion' description='Minimise interface animations and transitions.' checked={appSettings.accessibility.reduceMotion} onChange={(checked) => updateAppSettings({ ...appSettings, accessibility: { ...appSettings.accessibility, reduceMotion: checked } })} />
-          </PreferenceGroup>
-
-          <section className={styles.addonCard}>
-            <span><Icon name='sparkle' size={20} /></span>
-            <div><em>ADD-ON</em><strong>Memory Nudges</strong><p>Bring important facts, quotes and mistakes back through weighted, adaptive notifications.</p></div>
-            <Button variant='primary' size='sm' disabled={status !== 'authenticated'} onClick={() => setNudgeSettingsOpen(true)}>Configure</Button>
-          </section>
-          {status !== 'authenticated' && <small className={styles.addonHelp}>Sign in to configure private, synced nudges.</small>}
-          <button type='button' className={styles.resetPreferences} onClick={resetAppSettings}>Restore feature defaults</button>
         </div>
       )}
-      {nudgeSettingsOpen && <NudgeSettingsDialog onClose={() => setNudgeSettingsOpen(false)} />}
+
+      {tab === 'addons' && (
+        <div className={styles.preferenceSections}>
+          <section className={styles.addonIntro}>
+            <span><Icon name="sparkle" size={22} /></span>
+            <div><h2>Powerful optional tools</h2><p>Add-ons extend Revision Engine with focused workflows. Enable only what helps you study; more independent tools can be added here later.</p></div>
+          </section>
+          <section className={styles.addonCard}>
+            <span><Icon name="sparkle" size={20} /></span>
+            <div><em>MEMORY & RETENTION</em><strong>Memory Nudges</strong><p>Bring important facts, quotes and mistakes back through weighted, adaptive notifications.</p></div>
+            <Button variant="primary" size="sm" disabled={status !== 'authenticated'} onClick={() => setNudgeSettingsOpen(true)}>Configure</Button>
+          </section>
+          {status !== 'authenticated' && <small className={styles.addonHelp}>Sign in to configure private, synced add-ons.</small>}
+        </div>
+      )}
+      {nudgeSettingsOpen && <NudgeSettingsDialog onClose={closeNudgeSettings} />}
     </Page>
   );
 }
+
+const NUDGE_FREQUENCY_PRESETS = [
+  { id: 'gentle', label: 'Gentle', detail: 'About once a day', maxPerDay: 1, interval: 1440, cooldown: 168 },
+  { id: 'balanced', label: 'Balanced', detail: 'Up to 3 · every 4 hours', maxPerDay: 3, interval: 240, cooldown: 72 },
+  { id: 'frequent', label: 'Frequent', detail: 'Up to 6 · every 3 hours', maxPerDay: 6, interval: 180, cooldown: 48 },
+  { id: 'intensive', label: 'Intensive', detail: 'Up to 12 · every hour', maxPerDay: 12, interval: 60, cooldown: 24 },
+] as const;
 
 function NudgeSettingsDialog({ onClose }: { onClose: () => void }) {
   const [value, setValue] = useState<NudgePreferences>(DEFAULT_NUDGE_PREFERENCES);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState('');
-  useEffect(() => { void loadNudgePreferences().then(setValue).catch((error) => setMessage(error instanceof Error ? error.message : 'Could not load settings.')).finally(() => setLoading(false)); }, []);
-  const save = async () => { setSaving(true); try { await saveNudgePreferences({ ...value, timezone: Intl.DateTimeFormat().resolvedOptions().timeZone || 'UTC' }); onClose(); } catch (error) { setMessage(error instanceof Error ? error.message : 'Could not save settings.'); } finally { setSaving(false); } };
-  const toggleDay = (day: number) => setValue({ ...value, deliveryDays: value.deliveryDays.includes(day) ? value.deliveryDays.filter((item) => item !== day) : [...value.deliveryDays, day].sort() });
-  return <div className={styles.modalBackdrop} onMouseDown={onClose}><section className={styles.nudgeModal} role='dialog' aria-modal='true' aria-labelledby='nudge-settings-title' onMouseDown={(event) => event.stopPropagation()}><header><div><span>Memory Nudges add-on</span><h2 id='nudge-settings-title'>Control what returns—and when</h2><p>Weighted selection favours crucial and forgotten items while cooldowns prevent repetition.</p></div><button onClick={onClose} aria-label='Close'><Icon name='close' /></button></header>{loading ? <p>Loading preferences…</p> : <div className={styles.nudgeControls}><ToggleSetting title='Enable Memory Nudges' description='Allow the dispatcher to select and deliver eligible nudges.' checked={value.enabled} onChange={(enabled) => setValue({ ...value, enabled })} /><div className={styles.controlGrid}><label>Maximum per day<select value={value.maxPerDay} onChange={(event) => setValue({ ...value, maxPerDay: Number(event.target.value) })}>{[1,2,3,4,5,6,8].map((item) => <option key={item}>{item}</option>)}</select></label><label>Default priority<select value={value.defaultPriority} onChange={(event) => setValue({ ...value, defaultPriority: Number(event.target.value) })}>{[1,2,3,4,5].map((item) => <option key={item}>{item}</option>)}</select></label><label>Global minimum cooldown<select value={value.minimumCooldownHours} onChange={(event) => setValue({ ...value, minimumCooldownHours: Number(event.target.value) })}>{[6,12,24,48,72,168].map((item) => <option value={item} key={item}>{item < 24 ? `${item} hours` : `${item / 24} days`}</option>)}</select></label></div><fieldset><legend>Delivery days</legend><div className={styles.dayPicker}>{['S','M','T','W','T','F','S'].map((label, day) => <button type='button' className={value.deliveryDays.includes(day) ? styles.selectedDay : ''} onClick={() => toggleDay(day)} key={`${label}-${day}`}>{label}</button>)}</div></fieldset><fieldset><legend>Delivery windows</legend><div className={styles.windows}>{value.windows.map((window, index) => <div key={index}><input type='time' value={window.start} onChange={(event) => setValue({ ...value, windows: value.windows.map((item, itemIndex) => itemIndex === index ? { ...item, start: event.target.value } : item) })} /><span>to</span><input type='time' value={window.end} onChange={(event) => setValue({ ...value, windows: value.windows.map((item, itemIndex) => itemIndex === index ? { ...item, end: event.target.value } : item) })} />{value.windows.length > 1 && <button type='button' onClick={() => setValue({ ...value, windows: value.windows.filter((_, itemIndex) => itemIndex !== index) })}>Remove</button>}</div>)}</div>{value.windows.length < 3 && <button type='button' className={styles.addWindow} onClick={() => setValue({ ...value, windows: [...value.windows, { start: '12:00', end: '14:00' }] })}>+ Add another window</button>}</fieldset><fieldset><legend>Quiet hours</legend><div className={styles.quiet}><input type='time' value={value.quietStart} onChange={(event) => setValue({ ...value, quietStart: event.target.value })} /><span>to</span><input type='time' value={value.quietEnd} onChange={(event) => setValue({ ...value, quietEnd: event.target.value })} /></div></fieldset><ToggleSetting title='Adaptive scheduling' description='Remembered items wait longer; forgotten items return sooner.' checked={value.adaptiveScheduling} onChange={(adaptiveScheduling) => setValue({ ...value, adaptiveScheduling })} /><ToggleSetting title='Complete the pool before repeats' description='Prefer unseen eligible nudges before starting another cycle.' checked={value.avoidRepeatsUntilCycle} onChange={(avoidRepeatsUntilCycle) => setValue({ ...value, avoidRepeatsUntilCycle })} /><ToggleSetting title='Private lock-screen text' description='Hide nudge content until the notification is opened.' checked={value.privacyMode} onChange={(privacyMode) => setValue({ ...value, privacyMode })} /><p className={styles.timezone}>Scheduling timezone: {value.timezone}</p></div>}{message && <small className={styles.dialogError}>{message}</small>}<footer><Link to={Routes.nudges} onClick={onClose}>Manage nudge library</Link><div><Button onClick={onClose}>Cancel</Button><Button variant='primary' disabled={loading || saving || value.deliveryDays.length === 0 || value.windows.length === 0} onClick={() => void save()}>{saving ? 'Saving…' : 'Save add-on'}</Button></div></footer></section></div>;
+  const [panel, setPanel] = useState<'frequency' | 'schedule' | 'behaviour'>('frequency');
+  useEffect(() => {
+    void loadNudgePreferences()
+      .then(setValue)
+      .catch((error) => setMessage(error instanceof Error ? error.message : 'Could not load settings.'))
+      .finally(() => setLoading(false));
+  }, []);
+  const save = async () => {
+    setSaving(true);
+    try {
+      await saveNudgePreferences({
+        ...value,
+        timezone: Intl.DateTimeFormat().resolvedOptions().timeZone || 'UTC',
+      });
+      onClose();
+    } catch (error) {
+      setMessage(error instanceof Error ? error.message : 'Could not save settings.');
+    } finally {
+      setSaving(false);
+    }
+  };
+  const toggleDay = (day: number) =>
+    setValue({
+      ...value,
+      deliveryDays: value.deliveryDays.includes(day)
+        ? value.deliveryDays.filter((item) => item !== day)
+        : [...value.deliveryDays, day].sort(),
+    });
+  const activePreset = NUDGE_FREQUENCY_PRESETS.find(
+    (preset) =>
+      preset.maxPerDay === value.maxPerDay &&
+      preset.interval === value.deliveryIntervalMinutes &&
+      preset.cooldown === value.minimumCooldownHours,
+  )?.id;
+  const applyPreset = (preset: (typeof NUDGE_FREQUENCY_PRESETS)[number]) =>
+    setValue({
+      ...value,
+      enabled: true,
+      maxPerDay: preset.maxPerDay,
+      deliveryIntervalMinutes: preset.interval,
+      minimumCooldownHours: preset.cooldown,
+    });
+  return (
+    <div className={styles.modalBackdrop} onMouseDown={onClose}>
+      <section
+        className={styles.nudgeModal}
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="nudge-settings-title"
+        onMouseDown={(event) => event.stopPropagation()}
+      >
+        <header>
+          <div>
+            <span>Memory Nudges add-on</span>
+            <h2 id="nudge-settings-title">Control what returns—and when</h2>
+            <p>Weighted selection favours crucial and forgotten items while cooldowns prevent repetition.</p>
+          </div>
+          <button onClick={onClose} aria-label="Close">
+            <Icon name="close" />
+          </button>
+        </header>
+        {loading ? (
+          <p>Loading preferences…</p>
+        ) : (
+          <div className={styles.nudgeControls}>
+            <ToggleSetting
+              title="Enable Memory Nudges"
+              description="Allow the dispatcher to select and deliver eligible nudges."
+              checked={value.enabled}
+              onChange={(enabled) => setValue({ ...value, enabled })}
+            />
+            <div className={styles.nudgeSummary} aria-label="Current Memory Nudge configuration">
+              <div><span>Frequency</span><strong>{NUDGE_FREQUENCY_PRESETS.find((item) => item.id === activePreset)?.label ?? 'Custom'}</strong></div>
+              <div><span>Daily limit</span><strong>{value.maxPerDay}</strong></div>
+              <div><span>Active days</span><strong>{value.deliveryDays.length}/7</strong></div>
+              <div><span>Privacy</span><strong>{value.privacyMode ? 'Private' : 'Preview'}</strong></div>
+            </div>
+            <div className={styles.nudgeTabs}>
+              <Tabs
+                items={[{ id: 'frequency', label: 'Frequency' }, { id: 'schedule', label: 'Schedule' }, { id: 'behaviour', label: 'Behaviour' }]}
+                value={panel}
+                onChange={setPanel}
+                aria-label="Memory Nudge settings sections"
+              />
+            </div>
+            {panel === 'frequency' && <div className={styles.nudgePanel}>
+            <fieldset>
+              <legend>Frequency preset</legend>
+              <p className={styles.frequencyHint}>
+                Spacing is enforced across all real Memory Nudge deliveries and only runs inside your selected days and delivery windows.
+              </p>
+              <div className={styles.frequencyPresets}>
+                {NUDGE_FREQUENCY_PRESETS.map((preset) => (
+                  <button
+                    key={preset.id}
+                    type="button"
+                    className={activePreset === preset.id ? styles.frequencyActive : ''}
+                    onClick={() => applyPreset(preset)}
+                  >
+                    <strong>{preset.label}</strong>
+                    <span>{preset.detail}</span>
+                  </button>
+                ))}
+              </div>
+            </fieldset>
+            <div className={styles.controlGrid}>
+              <label>
+                Maximum per day
+                <select
+                  value={value.maxPerDay}
+                  onChange={(event) =>
+                    setValue({
+                      ...value,
+                      maxPerDay: Number(event.target.value),
+                    })
+                  }
+                >
+                  {[1, 2, 3, 4, 5, 6, 8, 12, 16, 24].map((item) => (
+                    <option key={item}>{item}</option>
+                  ))}
+                </select>
+              </label>
+              <label>
+                Minimum time between nudges
+                <select
+                  value={value.deliveryIntervalMinutes}
+                  onChange={(event) => setValue({ ...value, deliveryIntervalMinutes: Number(event.target.value) })}
+                >
+                  {[60, 120, 180, 240, 360, 720, 1440, 2880, 10080].map((minutes) => (
+                    <option value={minutes} key={minutes}>
+                      {minutes < 1440
+                        ? `${minutes / 60} ${minutes === 60 ? 'hour' : 'hours'}`
+                        : `${minutes / 1440} ${minutes === 1440 ? 'day' : 'days'}`}
+                    </option>
+                  ))}
+                </select>
+              </label>
+              <label>
+                Default priority
+                <select
+                  value={value.defaultPriority}
+                  onChange={(event) =>
+                    setValue({
+                      ...value,
+                      defaultPriority: Number(event.target.value),
+                    })
+                  }
+                >
+                  {[1, 2, 3, 4, 5].map((item) => (
+                    <option key={item}>{item}</option>
+                  ))}
+                </select>
+              </label>
+              <label>
+                Global minimum cooldown
+                <select
+                  value={value.minimumCooldownHours}
+                  onChange={(event) =>
+                    setValue({
+                      ...value,
+                      minimumCooldownHours: Number(event.target.value),
+                    })
+                  }
+                >
+                  {[6, 12, 24, 48, 72, 168].map((item) => (
+                    <option value={item} key={item}>
+                      {item < 24 ? `${item} hours` : `${item / 24} days`}
+                    </option>
+                  ))}
+                </select>
+              </label>
+            </div>
+            </div>}
+            {panel === 'schedule' && <div className={styles.nudgePanel}>
+            <fieldset>
+              <legend>Delivery days</legend>
+              <div className={styles.dayPicker}>
+                {['S', 'M', 'T', 'W', 'T', 'F', 'S'].map((label, day) => (
+                  <button
+                    type="button"
+                    className={value.deliveryDays.includes(day) ? styles.selectedDay : ''}
+                    onClick={() => toggleDay(day)}
+                    key={`${label}-${day}`}
+                  >
+                    {label}
+                  </button>
+                ))}
+              </div>
+            </fieldset>
+            <fieldset>
+              <legend>Delivery windows</legend>
+              <div className={styles.windows}>
+                {value.windows.map((window, index) => (
+                  <div key={index}>
+                    <input
+                      type="time"
+                      value={window.start}
+                      onChange={(event) =>
+                        setValue({
+                          ...value,
+                          windows: value.windows.map((item, itemIndex) =>
+                            itemIndex === index ? { ...item, start: event.target.value } : item,
+                          ),
+                        })
+                      }
+                    />
+                    <span>to</span>
+                    <input
+                      type="time"
+                      value={window.end}
+                      onChange={(event) =>
+                        setValue({
+                          ...value,
+                          windows: value.windows.map((item, itemIndex) =>
+                            itemIndex === index ? { ...item, end: event.target.value } : item,
+                          ),
+                        })
+                      }
+                    />
+                    {value.windows.length > 1 && (
+                      <button
+                        type="button"
+                        onClick={() =>
+                          setValue({
+                            ...value,
+                            windows: value.windows.filter((_, itemIndex) => itemIndex !== index),
+                          })
+                        }
+                      >
+                        Remove
+                      </button>
+                    )}
+                  </div>
+                ))}
+              </div>
+              {value.windows.length < 3 && (
+                <button
+                  type="button"
+                  className={styles.addWindow}
+                  onClick={() =>
+                    setValue({
+                      ...value,
+                      windows: [...value.windows, { start: '12:00', end: '14:00' }],
+                    })
+                  }
+                >
+                  + Add another window
+                </button>
+              )}
+            </fieldset>
+            <fieldset>
+              <legend>Quiet hours</legend>
+              <div className={styles.quiet}>
+                <input type="time" value={value.quietStart} onChange={(event) => setValue({ ...value, quietStart: event.target.value })} />
+                <span>to</span>
+                <input type="time" value={value.quietEnd} onChange={(event) => setValue({ ...value, quietEnd: event.target.value })} />
+              </div>
+            </fieldset>
+            <p className={styles.timezone}>Scheduling timezone: {value.timezone}</p>
+            </div>}
+            {panel === 'behaviour' && <div className={styles.nudgePanel}>
+            <ToggleSetting
+              title="Adaptive scheduling"
+              description="Remembered items wait longer; forgotten items return sooner."
+              checked={value.adaptiveScheduling}
+              onChange={(adaptiveScheduling) => setValue({ ...value, adaptiveScheduling })}
+            />
+            <ToggleSetting
+              title="Complete the pool before repeats"
+              description="Prefer unseen eligible nudges before starting another cycle."
+              checked={value.avoidRepeatsUntilCycle}
+              onChange={(avoidRepeatsUntilCycle) => setValue({ ...value, avoidRepeatsUntilCycle })}
+            />
+            <ToggleSetting
+              title="Private lock-screen text"
+              description="Hide nudge content until the notification is opened."
+              checked={value.privacyMode}
+              onChange={(privacyMode) => setValue({ ...value, privacyMode })}
+            />
+            <div className={styles.behaviourNote}><Icon name="sparkle" size={17} /><p><strong>How selection works</strong><span>Priority, forgotten feedback and time since last delivery influence which eligible nudge returns next.</span></p></div>
+            </div>}
+          </div>
+        )}
+        {message && <small className={styles.dialogError}>{message}</small>}
+        <footer>
+          <Link to={Routes.nudges} onClick={onClose}>
+            Manage nudge library
+          </Link>
+          <div>
+            <Button onClick={onClose}>Cancel</Button>
+            <Button
+              variant="primary"
+              disabled={loading || saving || value.deliveryDays.length === 0 || value.windows.length === 0}
+              onClick={() => void save()}
+            >
+              {saving ? 'Saving…' : 'Save add-on'}
+            </Button>
+          </div>
+        </footer>
+      </section>
+    </div>
+  );
 }
 
 function PreferenceGroup({ title, description, children }: { title: string; description: string; children: ReactNode }) {
-  return <section className={styles.preferenceGroup}><header><h2>{title}</h2><p>{description}</p></header><div>{children}</div></section>;
+  return (
+    <section className={styles.preferenceGroup}>
+      <header>
+        <h2>{title}</h2>
+        <p>{description}</p>
+      </header>
+      <div>{children}</div>
+    </section>
+  );
 }
 
-function ToggleSetting({ title, description, checked, disabled = false, onChange }: { title: string; description: string; checked: boolean; disabled?: boolean; onChange: (checked: boolean) => void }) {
+function ToggleSetting({
+  title,
+  description,
+  checked,
+  disabled = false,
+  onChange,
+}: {
+  title: string;
+  description: string;
+  checked: boolean;
+  disabled?: boolean;
+  onChange: (checked: boolean) => void;
+}) {
   return (
     <label className={`${styles.toggleRow} ${disabled ? styles.disabled : ''}`}>
-      <span><strong>{title}</strong><small>{description}</small></span>
-      <input type='checkbox' checked={checked} disabled={disabled} onChange={(event) => onChange(event.target.checked)} />
-      <i aria-hidden='true' />
+      <span>
+        <strong>{title}</strong>
+        <small>{description}</small>
+      </span>
+      <input type="checkbox" checked={checked} disabled={disabled} onChange={(event) => onChange(event.target.checked)} />
+      <i aria-hidden="true" />
     </label>
   );
 }

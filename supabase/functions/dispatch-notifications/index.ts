@@ -79,17 +79,21 @@ Deno.serve(async (request) => {
     }
     if (!messages.length) continue;
     const { data: subscriptions } = await admin.from('push_subscriptions').select('id,user_id,endpoint,p256dh,auth_key').eq('user_id', row.user_id).is('disabled_at', null);
-    for (const message of messages) for (const subscription of (subscriptions ?? []) as SubscriptionRow[]) {
-      const { data: existing } = await admin.from('notification_deliveries').select('id').eq('user_id', row.user_id).eq('notification_type', message.type).eq('dedupe_key', message.key).eq('subscription_id', subscription.id).maybeSingle();
-      if (existing) continue;
-      try {
-        await deliver(subscription, message.payload);
-        await admin.from('notification_deliveries').insert({ user_id: row.user_id, subscription_id: subscription.id, notification_type: message.type, dedupe_key: message.key });
-        delivered += 1;
-      } catch (pushError) {
-        const status = typeof pushError === 'object' && pushError && 'statusCode' in pushError ? Number(pushError.statusCode) : 0;
-        if (status === 404 || status === 410) await admin.from('push_subscriptions').update({ disabled_at: new Date().toISOString() }).eq('id', subscription.id);
+    for (const message of messages) {
+      let successful = false;
+      for (const subscription of (subscriptions ?? []) as SubscriptionRow[]) {
+        const { data: existing } = await admin.from('notification_deliveries').select('id').eq('user_id', row.user_id).eq('notification_type', message.type).eq('dedupe_key', message.key).eq('subscription_id', subscription.id).maybeSingle();
+        if (existing) { successful = true; continue; }
+        try {
+          await deliver(subscription, message.payload);
+          await admin.from('notification_deliveries').insert({ user_id: row.user_id, subscription_id: subscription.id, notification_type: message.type, dedupe_key: message.key });
+          successful = true; delivered += 1;
+        } catch (pushError) {
+          const status = typeof pushError === 'object' && pushError && 'statusCode' in pushError ? Number(pushError.statusCode) : 0;
+          if (status === 404 || status === 410) await admin.from('push_subscriptions').update({ disabled_at: new Date().toISOString() }).eq('id', subscription.id);
+        }
       }
+      if (successful) await admin.from('notification_inbox').upsert({ user_id: row.user_id, notification_type: message.type, dedupe_key: message.key, title: message.payload.title, body: message.payload.body, url: message.payload.url }, { onConflict: 'user_id,notification_type,dedupe_key' });
     }
   }
   const { data: nudgePreferenceRows } = await admin.from('nudge_preferences').select('*').eq('enabled', true);
@@ -100,6 +104,10 @@ Deno.serve(async (request) => {
     if (inRange(clock.time, String(preferences.quiet_start).slice(0, 5), String(preferences.quiet_end).slice(0, 5))) continue;
     const windows = Array.isArray(preferences.windows) ? preferences.windows : [];
     if (!windows.some((window) => inRange(clock.time, window.start, window.end))) continue;
+    const { data: recentDeliveries } = await admin.from('nudge_interactions').select('created_at,metadata').eq('user_id', preferences.user_id).eq('action', 'delivered').order('created_at', { ascending: false }).limit(20);
+    const lastRealDelivery = recentDeliveries?.find((item) => item.metadata?.test !== true);
+    const intervalMs = Math.max(60, Number(preferences.delivery_interval_minutes ?? 240)) * 60_000;
+    if (lastRealDelivery && Date.now() - new Date(lastRealDelivery.created_at).getTime() < intervalMs) continue;
     const { count: deliveredToday } = await admin.from('nudge_interactions').select('id', { count: 'exact', head: true }).eq('user_id', preferences.user_id).eq('action', 'delivered').contains('metadata', { localDate: clock.date });
     if ((deliveredToday ?? 0) >= preferences.max_per_day) continue;
     const { data: candidates } = await admin.from('memory_nudges').select('*').eq('user_id', preferences.user_id).eq('active', true).eq('archived', false).or(`next_eligible_at.is.null,next_eligible_at.lte.${new Date().toISOString()}`);
@@ -126,6 +134,7 @@ Deno.serve(async (request) => {
       const adaptiveFactor = preferences.adaptive_scheduling ? Math.max(.25, (1 + remembered * .5) / (1 + forgotten * .35)) : 1;
       await admin.from('memory_nudges').update({ last_sent_at: new Date().toISOString(), next_eligible_at: new Date(Date.now() + baseCooldown * adaptiveFactor * 3_600_000).toISOString(), send_count: Number(selected.send_count ?? 0) + 1 }).eq('id', selected.id);
       await admin.from('nudge_interactions').insert({ user_id: preferences.user_id, nudge_id: selected.id, action: 'delivered', metadata: { localDate: clock.date, timezone: preferences.timezone } });
+      await admin.from('notification_inbox').insert({ user_id: preferences.user_id, notification_type: 'memory-nudge', dedupe_key: `${selected.id}-${new Date().toISOString()}`, title, body, url: `nudges?id=${selected.id}`, metadata: { nudgeId: selected.id, kind: selected.kind } });
     }
   }
   return Response.json({ delivered });
