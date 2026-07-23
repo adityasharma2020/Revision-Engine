@@ -1,5 +1,6 @@
 .tile {
   display: flex;
+  min-width: 0;
   flex-direction: column;
   gap: var(--space-1);
   padding: var(--space-5);
@@ -21,6 +22,7 @@
 }
 
 .value {
+  overflow-wrap: anywhere;
   font-size: var(--text-2xl);
   font-weight: var(--weight-bold);
   letter-spacing: var(--tracking-tight);
@@ -31,6 +33,7 @@
 .label {
   font-size: var(--text-base);
   color: var(--text-secondary);
+  overflow-wrap: anywhere;
 }
 
 .sublabel {

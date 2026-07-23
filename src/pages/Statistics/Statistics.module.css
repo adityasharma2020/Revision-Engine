@@ -101,6 +101,7 @@
 .standaloneCard + .standaloneCard { margin-top: var(--space-4); }
 
 .card {
+  min-width: 0;
   padding: var(--space-6);
   background-color: var(--surface);
   border: 1px solid var(--border);
@@ -132,12 +133,20 @@
 
 /* ---- Chapter table ---- */
 .tableWrap {
+  width: calc(100% + (2 * var(--space-2)));
+  max-width: calc(100% + (2 * var(--space-2)));
   overflow-x: auto;
+  overflow-y: hidden;
   margin: 0 calc(-1 * var(--space-2));
+  padding-bottom: var(--space-1);
+  overscroll-behavior-inline: contain;
+  scrollbar-width: thin;
+  -webkit-overflow-scrolling: touch;
 }
 
 .table {
   width: 100%;
+  min-width: 640px;
   border-collapse: collapse;
   font-size: var(--text-base);
 }
@@ -200,13 +209,15 @@
 .analyticsTabs { margin-bottom: var(--space-4); }
 .nudgeAnalytics { min-width: 0; }
 .nudgeGrid { display: grid; grid-template-columns: minmax(0, 1.45fr) minmax(280px, .55fr); gap: var(--space-4); }
+.nudgeGrid > * { min-width: 0; }
+.retentionTable { min-width: 720px; }
 .nudgeKind { color: var(--text-primary); font-weight: var(--weight-semibold); text-transform: capitalize; }
 .attentionList { display: flex; flex-direction: column; gap: var(--space-2); }
 .attentionList li { list-style: none; }
-.attentionList a { display: flex; align-items: center; justify-content: space-between; gap: var(--space-3); padding: var(--space-3); background: var(--bg-sunken); border: 1px solid var(--border); border-radius: var(--radius-md); }
+.attentionList a { display: flex; align-items: flex-start; justify-content: space-between; gap: var(--space-3); min-width: 0; padding: var(--space-3); background: var(--bg-sunken); border: 1px solid var(--border); border-radius: var(--radius-md); }
 .attentionList a:hover { border-color: var(--accent); }
 .attentionList a > span { display: flex; min-width: 0; flex-direction: column; gap: 2px; }
-.attentionList strong { overflow: hidden; color: var(--text-primary); font-size: var(--text-sm); text-overflow: ellipsis; white-space: nowrap; }
+.attentionList strong { color: var(--text-primary); font-size: var(--text-sm); line-height: var(--leading-snug); overflow-wrap: anywhere; }
 .attentionList small { color: var(--text-tertiary); font-size: var(--text-xs); text-transform: capitalize; }
 .attentionList b { flex-shrink: 0; color: var(--danger); font-size: var(--text-xs); }
 .healthyState { display: flex; align-items: center; gap: var(--space-2); padding: var(--space-4); color: var(--success); background: var(--success-subtle); border-radius: var(--radius-md); font-size: var(--text-sm); }
@@ -250,6 +261,7 @@
 .questionMetrics > div { min-width: 0; padding: var(--space-3); background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-md); }
 .questionMetrics dt { overflow: hidden; font-size: 0.68rem; color: var(--text-tertiary); text-overflow: ellipsis; white-space: nowrap; }
 .questionMetrics dd { margin-top: 3px; font-size: var(--text-base); font-weight: var(--weight-semibold); color: var(--text-primary); font-variant-numeric: tabular-nums; }
+.questionMetrics dd { overflow-wrap: anywhere; }
 .questionMetrics .metricDanger { color: var(--danger); }
 .pagination { display: flex; align-items: center; justify-content: center; gap: var(--space-4); margin-top: var(--space-5); }
 .pagination span { font-size: var(--text-sm); color: var(--text-secondary); }
@@ -289,9 +301,12 @@
     gap: var(--space-1);
   }
   .nudgeGrid { grid-template-columns: 1fr; }
-  .nudgeAnalytics { overflow: hidden; }
+  .nudgeAnalytics { min-width: 0; }
+  .retentionTable { min-width: 680px; }
+  .attentionList a { flex-direction: column; gap: var(--space-2); }
+  .attentionList b { align-self: flex-start; }
   .activityTable thead { display: none; }
-  .activityTable, .activityTable tbody, .activityTable tr, .activityTable td { display: block; width: 100%; }
+  .activityTable, .activityTable tbody, .activityTable tr, .activityTable td { display: block; width: 100%; min-width: 0; }
   .activityTable tbody { display: flex; flex-direction: column; gap: var(--space-2); }
   .activityTable tr { padding: var(--space-3); background: var(--bg-sunken); border: 1px solid var(--border); border-radius: var(--radius-md); }
   .activityTable td { display: grid; grid-template-columns: 68px minmax(0, 1fr); gap: var(--space-2); padding: 5px 0; text-align: left; border: 0; overflow-wrap: anywhere; }
