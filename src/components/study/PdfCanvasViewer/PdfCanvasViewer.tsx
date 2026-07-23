@@ -22,6 +22,9 @@ const TOOLBAR_PINNED_KEY = 'revision-engine:pdf-toolbar-pinned';
 const ANNOTATION_FORMAT_KEY = 'revision-engine:pdf-annotation-format';
 const EDIT_SAVED_ANNOTATIONS_KEY = 'revision-engine:pdf-edit-saved-annotations';
 const COLLAPSED_TOOLBAR_POSITION_KEY = 'revision-engine:pdf-collapsed-toolbar-position';
+const MAX_ANNOTATION_CANVAS_PIXELS = 4_000_000;
+const MAX_PDF_CANVAS_PIXELS = 8_000_000;
+const ZOOM_PRESETS = [90, 100, 110, 120, 130, 140, 150] as const;
 
 type ToolSizes = Record<InkTool, number>;
 type ToolColors = Record<DrawableTool, string>;
@@ -95,6 +98,17 @@ function pdfPoint(x: number, y: number, rotation: number): PdfAnnotationPoint {
   return { x, y: 1 - y, pressure: .5 };
 }
 
+function sizeAnnotationCanvas(canvas: HTMLCanvasElement) {
+  const bounds = canvas.getBoundingClientRect();
+  const preferredScale = Math.min(window.devicePixelRatio || 1, 2);
+  const pixelLimitScale = Math.sqrt(MAX_ANNOTATION_CANVAS_PIXELS / Math.max(1, bounds.width * bounds.height));
+  const scale = Math.min(preferredScale, pixelLimitScale);
+  const width = Math.max(1, Math.round(bounds.width * scale));
+  const height = Math.max(1, Math.round(bounds.height * scale));
+  if (canvas.width !== width || canvas.height !== height) { canvas.width = width; canvas.height = height; }
+  return bounds;
+}
+
 function AnnotationLayer({ pageNumber, rotation, annotations, editing, tool, color, size, advanced, onPrepare, onBegin, onExtend, onEnd, onErase }: {
   pageNumber: number; rotation: number; annotations: readonly PdfInkAnnotation[]; editing: boolean; tool: InkTool; color: string; size: number; advanced: AdvancedToolPreferences;
   onPrepare: () => void; onBegin: (annotation: PdfInkAnnotation) => void; onExtend: (id: string, points: readonly PdfAnnotationPoint[]) => void; onEnd: () => void; onErase: (page: number, point: PdfAnnotationPoint, mode: EraserMode) => void;
@@ -127,8 +141,7 @@ function AnnotationLayer({ pageNumber, rotation, annotations, editing, tool, col
   };
   const drawSegment = useCallback((from: PdfAnnotationPoint, to: PdfAnnotationPoint, annotationTool = tool, annotationColor = color, annotationSize = size, opacity = annotationTool === 'highlighter' ? advanced.highlighterOpacity : .95, pressureEnabled = advanced.penPressure, target = canvasRef.current) => {
     const canvas = target; const context = canvas?.getContext('2d'); if (!canvas || !context) return;
-    const bounds = canvas.getBoundingClientRect(); const ratio = Math.min(devicePixelRatio || 1, 2); const pixelWidth = Math.max(1, Math.round(bounds.width * ratio)); const pixelHeight = Math.max(1, Math.round(bounds.height * ratio));
-    if (canvas.width !== pixelWidth || canvas.height !== pixelHeight) { canvas.width = pixelWidth; canvas.height = pixelHeight; }
+    const bounds = sizeAnnotationCanvas(canvas);
     const fromScreen = screenPoint(from, rotation); const toScreen = screenPoint(to, rotation);
     const start = { x: fromScreen.x * bounds.width, y: fromScreen.y * bounds.height }; const finish = { x: toScreen.x * bounds.width, y: toScreen.y * bounds.height };
     context.save(); context.scale(canvas.width / Math.max(1, bounds.width), canvas.height / Math.max(1, bounds.height));
@@ -138,8 +151,7 @@ function AnnotationLayer({ pageNumber, rotation, annotations, editing, tool, col
   }, [advanced.highlighterOpacity, advanced.penPressure, color, rotation, size, tool]);
   const drawPenCurve = useCallback((canvas: HTMLCanvasElement, points: readonly PdfAnnotationPoint[], annotationColor: string, annotationSize: number, opacity: number, pressureEnabled: boolean, incremental = false, startsStroke = false) => {
     if (!points.length) return;
-    const bounds = canvas.getBoundingClientRect(); const ratio = Math.min(devicePixelRatio || 1, 2); const pixelWidth = Math.max(1, Math.round(bounds.width * ratio)); const pixelHeight = Math.max(1, Math.round(bounds.height * ratio));
-    if (canvas.width !== pixelWidth || canvas.height !== pixelHeight) { canvas.width = pixelWidth; canvas.height = pixelHeight; }
+    const bounds = sizeAnnotationCanvas(canvas);
     const context = canvas.getContext('2d'); if (!context) return;
     const screen = points.map((point) => { const transformed = screenPoint(point, rotation); return { x: transformed.x * bounds.width, y: transformed.y * bounds.height, pressure: point.pressure }; });
     const stroke = (start: { x: number; y: number }, control: { x: number; y: number; pressure: number }, end: { x: number; y: number }) => {
@@ -165,7 +177,7 @@ function AnnotationLayer({ pageNumber, rotation, annotations, editing, tool, col
     }
     context.restore();
   }, [rotation]);
-  const sizeCanvas = useCallback((canvas: HTMLCanvasElement) => { const bounds = canvas.getBoundingClientRect(); const ratio = Math.min(devicePixelRatio || 1, 2); const width = Math.max(1, Math.round(bounds.width * ratio)); const height = Math.max(1, Math.round(bounds.height * ratio)); if (canvas.width !== width || canvas.height !== height) { canvas.width = width; canvas.height = height; } return bounds; }, []);
+  const sizeCanvas = useCallback((canvas: HTMLCanvasElement) => sizeAnnotationCanvas(canvas), []);
   const clearLiveCanvas = () => { const canvas = liveCanvasRef.current; const context = canvas?.getContext('2d'); if (canvas && context) context.clearRect(0, 0, canvas.width, canvas.height); };
   const drawHighlighterPath = useCallback((canvas: HTMLCanvasElement, points: readonly PdfAnnotationPoint[], annotationColor: string, annotationSize: number, opacity: number) => {
     if (points.length < 2) return; const bounds = sizeCanvas(canvas); const context = canvas.getContext('2d'); if (!context) return;
@@ -304,7 +316,9 @@ function PdfPage({ document, pageNumber, width, zoom, rotation, register, annota
     const natural = page.getViewport({ scale: 1, rotation });
     const scale = displayWidth / natural.width;
     const viewport = page.getViewport({ scale, rotation });
-    const outputScale = Math.min(window.devicePixelRatio || 1, 1.75);
+    const preferredScale = Math.min(window.devicePixelRatio || 1, 1.75);
+    const pixelLimitScale = Math.sqrt(MAX_PDF_CANVAS_PIXELS / Math.max(1, viewport.width * viewport.height));
+    const outputScale = Math.min(preferredScale, pixelLimitScale);
     const context = canvas.getContext('2d');
     if (!context) return;
     canvas.width = Math.floor(viewport.width * outputScale); canvas.height = Math.floor(viewport.height * outputScale);
@@ -350,6 +364,7 @@ function PdfPage({ document, pageNumber, width, zoom, rotation, register, annota
 export function PdfCanvasViewer({ url, sourceData, name, className, fileHandle, controlsInHeader = false, cloudAnnotations, onCloudAnnotationsChange }: PdfCanvasViewerProps) {
   const viewportRef = useRef<HTMLDivElement>(null);
   const documentMenuRef = useRef<HTMLDivElement>(null);
+  const zoomMenuRef = useRef<HTMLDivElement>(null);
   const inkToolbarRef = useRef<HTMLDivElement>(null);
   const toolSettingsRef = useRef<HTMLElement>(null);
   const pageRefs = useRef(new Map<number, HTMLElement>());
@@ -371,6 +386,7 @@ export function PdfCanvasViewer({ url, sourceData, name, className, fileHandle, 
   const [loading, setLoading] = useState(true); const [error, setError] = useState('');
   const [searchOpen, setSearchOpen] = useState(false); const [query, setQuery] = useState(''); const [pageText, setPageText] = useState<string[]>([]); const [indexing, setIndexing] = useState(false);
   const [documentMenuOpen, setDocumentMenuOpen] = useState(false);
+  const [zoomMenuOpen, setZoomMenuOpen] = useState(false);
   const [saveDialogOpen, setSaveDialogOpen] = useState(false); const [rememberSaveMode, setRememberSaveMode] = useState(false);
   const [preferencesOpen, setPreferencesOpen] = useState(false);
   const [discardDialogOpen, setDiscardDialogOpen] = useState(false);
@@ -574,6 +590,12 @@ export function PdfCanvasViewer({ url, sourceData, name, className, fileHandle, 
     globalThis.document.addEventListener('pointerdown', close);
     return () => globalThis.document.removeEventListener('pointerdown', close);
   }, [documentMenuOpen]);
+  useEffect(() => {
+    if (!zoomMenuOpen) return;
+    const close = (event: PointerEvent) => { if (!zoomMenuRef.current?.contains(event.target as Node)) setZoomMenuOpen(false); };
+    globalThis.document.addEventListener('pointerdown', close);
+    return () => globalThis.document.removeEventListener('pointerdown', close);
+  }, [zoomMenuOpen]);
   useEffect(() => {
     if (!toolSettingsOpen) return;
     const close = (event: PointerEvent) => {
@@ -785,7 +807,12 @@ export function PdfCanvasViewer({ url, sourceData, name, className, fileHandle, 
     await deletePdfAnnotations(fingerprint).catch(() => undefined);
     setSaveNotice('Annotations discarded'); window.setTimeout(() => setSaveNotice(''), 2400);
   };
-  const keyboard = (event: ReactKeyboardEvent<HTMLDivElement>) => { const target = event.target as HTMLElement; if (target.matches('input, textarea, select, [contenteditable="true"]') && !(event.ctrlKey || event.metaKey)) return; if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === 'f') { event.preventDefault(); setSearchOpen(true); } else if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === 'z') { event.preventDefault(); if (event.shiftKey) redo(); else undo(); } else if (event.key === 'ArrowRight' || event.key === 'PageDown') { event.preventDefault(); goTo(pageNumber + 1); } else if (event.key === 'ArrowLeft' || event.key === 'PageUp') { event.preventDefault(); goTo(pageNumber - 1); } else if (event.key === 'Escape') { setEditing(false); setSearchOpen(false); setDocumentMenuOpen(false); setToolSettingsOpen(false); } };
+  const toggleEditing = () => {
+    const next = !editing;
+    if (next) { setTool('pen'); setToolSettingsOpen(false); }
+    setEditing(next); setToolbarCollapsed(false); setSearchOpen(false);
+  };
+  const keyboard = (event: ReactKeyboardEvent<HTMLDivElement>) => { const target = event.target as HTMLElement; if (target.matches('input, textarea, select, [contenteditable="true"]') && !(event.ctrlKey || event.metaKey)) return; if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === 'f') { event.preventDefault(); setSearchOpen(true); } else if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === 'z') { event.preventDefault(); if (event.shiftKey) redo(); else undo(); } else if (event.key === 'ArrowRight' || event.key === 'PageDown') { event.preventDefault(); goTo(pageNumber + 1); } else if (event.key === 'ArrowLeft' || event.key === 'PageUp') { event.preventDefault(); goTo(pageNumber - 1); } else if (event.key === 'Escape') { setEditing(false); setSearchOpen(false); setDocumentMenuOpen(false); setZoomMenuOpen(false); setToolSettingsOpen(false); } };
   const visiblePages = document ? (viewMode === 'page' ? [pageNumber] : Array.from({ length: pages }, (_, index) => index + 1)) : [];
   const persistenceIsSaving = onCloudAnnotationsChange ? cloudSyncState === 'saving' : autosaveState === 'saving';
   const persistenceLabel = saveNotice || (saving
@@ -806,13 +833,16 @@ export function PdfCanvasViewer({ url, sourceData, name, className, fileHandle, 
         <label aria-label="Current PDF page"><input type="number" min={1} max={pages} value={pageNumber} onChange={(event) => goTo(Number(event.target.value) || 1)} /><span>/ {pages}</span></label>
         <button type="button" disabled={pageNumber >= pages} onClick={() => goTo(pageNumber + 1)} aria-label="Next page" className={styles.next}><Icon name="arrowLeft" size={16} /></button>
         <span className={styles.divider} />
-        <button type="button" className={styles.zoomAdjust} disabled={zoom <= .6} onClick={() => setZoom((value) => Math.max(.6, value - .2))} aria-label="Zoom out">−</button>
-        <button type="button" className={styles.zoom} onClick={() => setZoom(1)} aria-label="Reset zoom">{Math.round(zoom * 100)}%</button>
-        <button type="button" className={styles.zoomAdjust} disabled={zoom >= 2.4} onClick={() => setZoom((value) => Math.min(2.4, value + .2))} aria-label="Zoom in"><Icon name="plus" size={16} /></button>
+        <button type="button" className={styles.zoomAdjust} disabled={zoom <= .6} onClick={() => setZoom((value) => Math.max(.6, (Math.round(value * 100) - 1) / 100))} aria-label="Zoom out by 1%">−</button>
+        <div ref={zoomMenuRef} className={styles.zoomMenuHost}>
+          <button type="button" className={cx(styles.zoom, zoomMenuOpen && styles.searchActive)} onClick={() => setZoomMenuOpen((open) => !open)} aria-label="Choose PDF zoom" aria-haspopup="menu" aria-expanded={zoomMenuOpen}>{Math.round(zoom * 100)}%</button>
+          {zoomMenuOpen && <div className={styles.zoomMenu} role="menu" aria-label="Zoom presets">{ZOOM_PRESETS.map((percent) => <button type="button" role="menuitem" key={percent} className={Math.round(zoom * 100) === percent ? styles.zoomPresetActive : ''} onClick={() => { setZoom(percent / 100); setZoomMenuOpen(false); }}>{percent}%</button>)}</div>}
+        </div>
+        <button type="button" className={styles.zoomAdjust} disabled={zoom >= 2.4} onClick={() => setZoom((value) => Math.min(2.4, (Math.round(value * 100) + 1) / 100))} aria-label="Zoom in by 1%"><Icon name="plus" size={16} /></button>
         <span className={styles.divider} />
-        <button type="button" className={editing ? styles.inkActive : ''} onClick={() => { setEditing((value) => !value); setToolbarCollapsed(false); setSearchOpen(false); }} aria-pressed={editing} aria-label={editing ? 'Editing mode active — switch to reading mode' : 'Reading mode active — switch to editing mode'} title={editing ? 'Editing mode · switch to reading' : 'Reading mode · switch to editing'}><Icon name={editing ? 'pencil' : 'handPointer'} size={17} /></button>
+        <button type="button" className={editing ? styles.inkActive : ''} onClick={toggleEditing} aria-pressed={editing} aria-label={editing ? 'Editing mode active — switch to reading mode' : 'Reading mode active — switch to editing mode'} title={editing ? 'Editing mode · switch to reading' : 'Reading mode · switch to editing'}><Icon name={editing ? 'pencil' : 'handPointer'} size={17} /></button>
         <button type="button" className={searchOpen ? styles.searchActive : ''} onClick={() => { setSearchOpen((open) => !open); setEditing(false); }} aria-label="Search inside PDF"><Icon name="search" size={16} /></button>
-        <div ref={documentMenuRef} className={styles.documentMenuHost}><button type="button" className={documentMenuOpen ? styles.searchActive : ''} onClick={() => setDocumentMenuOpen((open) => { const next = !open; if (next) setToolbarCollapsed(true); return next; })} aria-label="More PDF options"><Icon name="more" size={16} /></button>{documentMenuOpen && <div className={styles.documentMenu}>
+        <div ref={documentMenuRef} className={styles.documentMenuHost}><button type="button" className={documentMenuOpen ? styles.searchActive : ''} onClick={() => setDocumentMenuOpen((open) => { const next = !open; if (next) { setToolbarCollapsed(true); setZoomMenuOpen(false); } return next; })} aria-label="More PDF options"><Icon name="more" size={16} /></button>{documentMenuOpen && <div className={styles.documentMenu}>
           <button type="button" onClick={() => { setViewMode((value) => value === 'continuous' ? 'page' : 'continuous'); setDocumentMenuOpen(false); }}><Icon name="monitor" size={15} /><span><strong>{viewMode === 'continuous' ? 'Single-page view' : 'Continuous scroll'}</strong><small>{viewMode === 'continuous' ? 'Render one page at a time' : 'Scroll through virtualized pages'}</small></span></button>
           <button type="button" onClick={() => { setRotation((value) => (value + 90) % 360); setDocumentMenuOpen(false); }}><Icon name="sync" size={15} /><span><strong>Rotate clockwise</strong><small>Current: {rotation}°</small></span></button>
           <button type="button" disabled={!annotations.length || exporting} onClick={() => { void exportPdf(); setDocumentMenuOpen(false); }}><Icon name="share" size={15} /><span><strong>{exporting ? 'Preparing copy…' : 'Export flattened copy'}</strong><small>Permanent compatibility copy · {annotations.length} mark{annotations.length === 1 ? '' : 's'}</small></span></button>
