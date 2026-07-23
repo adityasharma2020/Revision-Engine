@@ -16,15 +16,32 @@ import type { KeyValueStore } from './types';
 
 /** App-level preferences not tied to any single feature. */
 export interface AppSettings {
-  /** Reveal mains model answers automatically when opening a question. */
-  autoRevealAnswers: boolean;
-  /** Play subtle transition animations. */
-  reducedMotion: boolean;
+  readonly schemaVersion: 1;
+  readonly dashboard: {
+    /** Show the compact weekly activity overview on the home page. */
+    readonly showActivityOverview: boolean;
+  };
+  readonly notifications: {
+    readonly enabled: boolean;
+    readonly dailyRevision: boolean;
+    readonly weeklySummary: boolean;
+    readonly milestones: boolean;
+  };
+  readonly accessibility: {
+    readonly reduceMotion: boolean;
+  };
 }
 
 export const DEFAULT_SETTINGS: AppSettings = {
-  autoRevealAnswers: false,
-  reducedMotion: false,
+  schemaVersion: 1,
+  dashboard: { showActivityOverview: true },
+  notifications: {
+    enabled: false,
+    dailyRevision: true,
+    weeklySummary: true,
+    milestones: true,
+  },
+  accessibility: { reduceMotion: false },
 };
 
 /**
@@ -108,7 +125,14 @@ export class StorageService {
     const stored = await this.store.get<Partial<AppSettings>>(
       StorageKeys.settings,
     );
-    return { ...DEFAULT_SETTINGS, ...stored };
+    return {
+      ...DEFAULT_SETTINGS,
+      ...stored,
+      dashboard: { ...DEFAULT_SETTINGS.dashboard, ...stored?.dashboard },
+      notifications: { ...DEFAULT_SETTINGS.notifications, ...stored?.notifications },
+      accessibility: { ...DEFAULT_SETTINGS.accessibility, ...stored?.accessibility },
+      schemaVersion: DEFAULT_SETTINGS.schemaVersion,
+    };
   }
 
   async saveSettings(settings: AppSettings): Promise<void> {

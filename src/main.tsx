@@ -7,6 +7,7 @@ import { ServicesProvider } from './context/ServicesContext';
 import { StorageProvider } from './context/StorageContext';
 import { ThemeProvider } from './context/ThemeContext';
 import { UserDataProvider } from './context/UserDataContext';
+import { AppSettingsProvider } from './context/AppSettingsContext';
 
 import './styles/tokens.css';
 import './styles/reset.css';
@@ -39,9 +40,11 @@ createRoot(container).render(
         <AuthProvider>
           <StorageProvider>
             <ThemeProvider>
-              <UserDataProvider>
-                <App />
-              </UserDataProvider>
+              <AppSettingsProvider>
+                <UserDataProvider>
+                  <App />
+                </UserDataProvider>
+              </AppSettingsProvider>
             </ThemeProvider>
           </StorageProvider>
         </AuthProvider>

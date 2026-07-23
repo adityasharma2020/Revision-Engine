@@ -17,6 +17,7 @@ import { saveQuizDefinition } from '../../services/quiz';
 import type { QuizSettings } from '../../types';
 import { QuizLaunchDialog } from '../../components/quiz/QuizLaunchDialog';
 import { ProgressOverview } from '../../components/dashboard/ProgressOverview';
+import { useAppSettings } from '../../context/AppSettingsContext';
 
 export function Dashboard() {
   const state = useLibrary();
@@ -31,6 +32,7 @@ export function Dashboard() {
 
 function HomeContent({ chapters }: { chapters: readonly ChapterSummary[] }) {
   const { progress, quizResults } = useUserData();
+  const { settings: appSettings } = useAppSettings();
   const navigate = useNavigate();
   const { preferences } = useRevisionPreferences();
   const { assignment, save: saveAssignment } = useDailyRevisionAssignment();
@@ -93,7 +95,7 @@ function HomeContent({ chapters }: { chapters: readonly ChapterSummary[] }) {
   };
   return (
     <>
-      <ProgressOverview results={quizResults} />
+      {appSettings.dashboard.showActivityOverview && <ProgressOverview results={quizResults} />}
 
       <button type="button" onClick={openPreflight} className={`${styles.revisionHero} ${revisionPerformance ? styles[`revision_${revisionPerformance.tone}`] : ''}`}>
         <span className={styles.revisionMark}><Icon name="target" size={25} /></span>

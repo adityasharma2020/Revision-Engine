@@ -1,5 +1,5 @@
-import { useState } from "react";
-import { Button, Icon, replayFirstVisitTour, ThemeToggle } from "../../components/common";
+import { useState, type ReactNode } from "react";
+import { Button, Icon, replayFirstVisitTour, Tabs, ThemeToggle } from "../../components/common";
 import { AccountPanel } from "../../components/auth/AccountPanel";
 import { Page, PageHeader } from "../../components/layout";
 import { useStorage } from "../../context/StorageContext";
@@ -8,6 +8,7 @@ import { createLocalStorageService } from "../../services/storage";
 import { APP_NAME, APP_VERSION } from "../../constants/app";
 import styles from "./Settings.module.css";
 import { useRevisionPreferences } from "../../hooks/useRevisionPreferences";
+import { useAppSettings } from "../../context/AppSettingsContext";
 
 export function Settings() {
   const { storage, cloudAvailable, online, syncing, syncNow } = useStorage();
@@ -15,7 +16,9 @@ export function Settings() {
   const [cleared, setCleared] = useState(false);
   const [resetOpen, setResetOpen] = useState(false);
   const [syncMessage, setSyncMessage] = useState<string | null>(null);
+  const [tab, setTab] = useState<'general' | 'features'>('general');
   const { preferences: revisionPreferences, update: updateRevisionPreferences } = useRevisionPreferences();
+  const { settings: appSettings, update: updateAppSettings, reset: resetAppSettings } = useAppSettings();
 
   const clearDeviceOnly = async () => {
     if (cloudAvailable) await signOut();
@@ -50,6 +53,11 @@ export function Settings() {
         description='Personalise the app and control how your study data is stored.'
       />
 
+      <div className={styles.settingsTabs}>
+        <Tabs items={[{ id: 'general', label: 'General' }, { id: 'features', label: 'Features & alerts' }]} value={tab} onChange={setTab} aria-label='Settings sections' />
+      </div>
+
+      {tab === 'general' && <>
       <section className={styles.group}>
         <div className={styles.stack}>
           <div className={styles.rowText}>
@@ -223,6 +231,56 @@ export function Settings() {
           </p>
         </div>
       </section>
+      </>}
+
+      {tab === 'features' && (
+        <div className={styles.preferenceSections}>
+          <PreferenceGroup title='Dashboard' description='Choose which optional information appears on your home page.'>
+            <ToggleSetting
+              title='Weekly activity overview'
+              description='Show the compact progress calendar at the top of the dashboard.'
+              checked={appSettings.dashboard.showActivityOverview}
+              onChange={(checked) => updateAppSettings({ ...appSettings, dashboard: { ...appSettings.dashboard, showActivityOverview: checked } })}
+            />
+          </PreferenceGroup>
+
+          <PreferenceGroup title='Notifications' description='Choose which study updates you want to receive. Delivery remains off until notifications are enabled.'>
+            <ToggleSetting
+              title='Allow notifications'
+              description='Master control for study reminders and progress updates.'
+              checked={appSettings.notifications.enabled}
+              onChange={(checked) => updateAppSettings({ ...appSettings, notifications: { ...appSettings.notifications, enabled: checked } })}
+            />
+            <ToggleSetting title='Daily revision reminder' description='Remind me when today’s revision is still pending.' checked={appSettings.notifications.dailyRevision} disabled={!appSettings.notifications.enabled} onChange={(checked) => updateAppSettings({ ...appSettings, notifications: { ...appSettings.notifications, dailyRevision: checked } })} />
+            <ToggleSetting title='Weekly progress summary' description='Receive a concise summary of questions, accuracy and active days.' checked={appSettings.notifications.weeklySummary} disabled={!appSettings.notifications.enabled} onChange={(checked) => updateAppSettings({ ...appSettings, notifications: { ...appSettings.notifications, weeklySummary: checked } })} />
+            <ToggleSetting title='Milestones' description='Celebrate streaks and meaningful learning milestones.' checked={appSettings.notifications.milestones} disabled={!appSettings.notifications.enabled} onChange={(checked) => updateAppSettings({ ...appSettings, notifications: { ...appSettings.notifications, milestones: checked } })} />
+          </PreferenceGroup>
+
+          <PreferenceGroup title='Accessibility' description='Comfort settings applied everywhere in the app.'>
+            <ToggleSetting title='Reduce motion' description='Minimise interface animations and transitions.' checked={appSettings.accessibility.reduceMotion} onChange={(checked) => updateAppSettings({ ...appSettings, accessibility: { ...appSettings.accessibility, reduceMotion: checked } })} />
+          </PreferenceGroup>
+
+          <section className={styles.addonNote}>
+            <span><Icon name='plus' size={18} /></span>
+            <div><strong>Built for future add-ons</strong><p>Optional tools such as focus timers can be added here without changing your core study workflow.</p></div>
+          </section>
+          <button type='button' className={styles.resetPreferences} onClick={resetAppSettings}>Restore feature defaults</button>
+        </div>
+      )}
     </Page>
+  );
+}
+
+function PreferenceGroup({ title, description, children }: { title: string; description: string; children: ReactNode }) {
+  return <section className={styles.preferenceGroup}><header><h2>{title}</h2><p>{description}</p></header><div>{children}</div></section>;
+}
+
+function ToggleSetting({ title, description, checked, disabled = false, onChange }: { title: string; description: string; checked: boolean; disabled?: boolean; onChange: (checked: boolean) => void }) {
+  return (
+    <label className={`${styles.toggleRow} ${disabled ? styles.disabled : ''}`}>
+      <span><strong>{title}</strong><small>{description}</small></span>
+      <input type='checkbox' checked={checked} disabled={disabled} onChange={(event) => onChange(event.target.checked)} />
+      <i aria-hidden='true' />
+    </label>
   );
 }

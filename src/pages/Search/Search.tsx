@@ -44,8 +44,12 @@ export function Search({ overlay = false, onNavigate }: SearchProps = {}) {
 
   useEffect(() => setDraft(query), [query]);
 
+  const usesOnScreenKeyboard = () => window.matchMedia('(max-width: 800px), (pointer: coarse)').matches;
+
   const submitSearch = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
+    const dismissKeyboard = usesOnScreenKeyboard();
+    if (dismissKeyboard) inputRef.current?.blur();
     const clean = draft.trim();
     if (clean.length > 0 && clean.length < 3) {
       setSearchError('Enter at least 3 characters to search.');
@@ -53,9 +57,11 @@ export function Search({ overlay = false, onNavigate }: SearchProps = {}) {
     }
     setSearchError('');
     update('q', clean);
-    window.requestAnimationFrame(() => {
-      inputRef.current?.focus({ preventScroll: true });
-    });
+    if (!dismissKeyboard) {
+      window.requestAnimationFrame(() => {
+        inputRef.current?.focus({ preventScroll: true });
+      });
+    }
   };
 
   const clearSearch = () => {
