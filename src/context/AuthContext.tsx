@@ -42,7 +42,8 @@ function mapUser(user: User): AuthUser {
 }
 
 function redirectUrl(returnTo = "/") {
-  const safePath = returnTo.startsWith("/") && !returnTo.startsWith("//") ? returnTo : "/";
+  const safePath =
+    returnTo.startsWith("/") && !returnTo.startsWith("//") ? returnTo : "/";
   return new URL(safePath, window.location.origin).toString();
 }
 export function AuthProvider({ children }: { children: ReactNode }) {
