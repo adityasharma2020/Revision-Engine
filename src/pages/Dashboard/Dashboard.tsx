@@ -10,13 +10,13 @@ import type { ChapterSummary } from '../../types';
 import styles from './Dashboard.module.css';
 import { useRevisionPreferences } from '../../hooks/useRevisionPreferences';
 import { useDailyRevisionAssignment } from '../../hooks/useDailyRevisionAssignment';
-import { humanizeDuration } from '../../utils/time';
 import { getQuizPerformance } from '../../utils/quizPerformance';
 import { useSavedQuizSettings } from '../../hooks/useSavedQuizSettings';
 import { quizDraftKey } from '../../hooks/useQuizSession';
 import { saveQuizDefinition } from '../../services/quiz';
 import type { QuizSettings } from '../../types';
 import { QuizLaunchDialog } from '../../components/quiz/QuizLaunchDialog';
+import { ProgressOverview } from '../../components/dashboard/ProgressOverview';
 
 export function Dashboard() {
   const state = useLibrary();
@@ -51,28 +51,9 @@ function HomeContent({ chapters }: { chapters: readonly ChapterSummary[] }) {
       .sort((a, b) => (activity.get(b.id) ?? 0) - (activity.get(a.id) ?? 0))
       .slice(0, 3);
   }, [chapters, progress, quizResults]);
-  const today = useMemo(() => {
-    const start = new Date();
-    start.setHours(0, 0, 0, 0);
-    const results = quizResults.filter((result) => result.takenAt >= start.getTime());
-    return {
-      quizzes: results.length,
-      questions: results.reduce((total, result) => total + result.totalQuestions, 0),
-      answered: results.reduce((total, result) => total + result.answered, 0),
-      correct: results.reduce((total, result) => total + result.correct, 0),
-      timeMs: results.reduce((total, result) => total + result.durationMs, 0),
-    };
-  }, [quizResults]);
-  const todayPerformance = today.questions > 0 ? getQuizPerformance(today.correct, today.questions) : null;
   const revisionPerformance = assignment?.status === 'completed' && assignment.score
     ? getQuizPerformance(assignment.score.correct, assignment.score.total)
     : null;
-  const dashboardHeadline = todayPerformance
-    ? `${todayPerformance.emoji} ${todayPerformance.label}`
-    : 'Ready for today’s study';
-  const dashboardDetail = today.questions > 0
-    ? `${today.correct} correct answers across ${today.questions} questions · ${todayPerformance?.accuracy ?? 0}% overall accuracy · ${humanizeDuration(today.timeMs)} studied.`
-    : `${preferences.includedChapterIds.length} studied chapters · ${preferences.dailyQuestionLimit}-question Daily Revision target${examDays !== null && examDays >= 0 ? ` · ${examDays} days to ${preferences.examName || 'your exam'}` : ''}.`;
   const continueChapter = recent[0] ?? chapters[0];
   const activeDraftExists = assignment?.status === 'active'
     ? sessionStorage.getItem(quizDraftKey(assignment.definition.id)) !== null
@@ -112,22 +93,7 @@ function HomeContent({ chapters }: { chapters: readonly ChapterSummary[] }) {
   };
   return (
     <>
-      <section className={`${styles.hero} ${todayPerformance ? styles[`performance_${todayPerformance.tone}`] : ''}`}>
-        <div>
-          <span className={styles.eyebrow}>{new Intl.DateTimeFormat(undefined, { weekday: 'long', day: 'numeric', month: 'long' }).format(new Date())}</span>
-          <h1>{dashboardHeadline}</h1>
-          <p>{dashboardDetail}</p>
-        </div>
-        <div className={styles.todaySummary}>
-          <span>Today</span>
-          <strong>{today.quizzes > 0 ? `${today.questions} questions` : 'A fresh start'}</strong>
-          <small>
-            {today.quizzes > 0
-              ? `${today.quizzes} ${today.quizzes === 1 ? 'quiz' : 'quizzes'} completed`
-              : 'Complete a quiz to begin today’s progress.'}
-          </small>
-        </div>
-      </section>
+      <ProgressOverview results={quizResults} />
 
       <button type="button" onClick={openPreflight} className={`${styles.revisionHero} ${revisionPerformance ? styles[`revision_${revisionPerformance.tone}`] : ''}`}>
         <span className={styles.revisionMark}><Icon name="target" size={25} /></span>
