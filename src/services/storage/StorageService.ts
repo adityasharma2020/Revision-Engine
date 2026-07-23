@@ -61,7 +61,7 @@ export const DEFAULT_SETTINGS: AppSettings = {
     timezone: 'UTC',
   },
   accessibility: { reduceMotion: false },
-  focusTimer: { enabled: true, defaultMinutes: 30, allowPause: true, midpointNudge: true, opacity: 35, size: 20 },
+  focusTimer: { enabled: false, defaultMinutes: 30, allowPause: true, midpointNudge: true, opacity: 35, size: 20 },
 };
 
 /**

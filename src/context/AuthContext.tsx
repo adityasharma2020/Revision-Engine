@@ -102,7 +102,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       },
       async signOut() {
         if (!supabase) return;
-        await supabase.auth.signOut();
+        // This action is used for clearing the current browser. A local sign-out
+        // must not wait for the network (or revoke sessions on other devices).
+        const { error } = await supabase.auth.signOut({ scope: "local" });
+        if (error) throw error;
       },
     }),
     [status, user, supabase]

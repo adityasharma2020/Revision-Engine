@@ -183,12 +183,18 @@
   display: grid;
   padding: 20px;
   place-items: center;
+  width: 100vw;
+  height: 100dvh;
+  margin: 0;
   background: rgb(0 0 0 / 68%);
   backdrop-filter: blur(10px);
 }
 
 .picker {
   width: min(100%, 610px);
+  max-width: calc(100vw - 40px);
+  justify-self: center;
+  align-self: center;
   padding: 26px;
   border: 1px solid var(--border-strong);
   border-radius: var(--radius-xl);
@@ -239,6 +245,7 @@
 }
 .privacyNote svg { flex: none; margin-top: 2px; color: var(--accent); }
 .fileInput { display: none; }
+.picker > button { display: flex; margin-inline: auto; }
 
 .existingDocuments { display: grid; gap: 7px; margin-bottom: var(--space-3); }
 .existingDocuments > strong { color: var(--text-secondary); font-size: var(--text-xs); }

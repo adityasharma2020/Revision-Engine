@@ -19,6 +19,7 @@ export interface WorkspacePdf {
   readonly url: string;
   readonly local: boolean;
   readonly linkedChapterIds: readonly string[];
+  readonly fileHandle?: FileSystemFileHandle;
 }
 
 interface PickerRequest {
@@ -68,7 +69,7 @@ export function PdfWorkspaceProvider({ children }: { children: ReactNode }) {
 
   const createDocumentId = () => globalThis.crypto?.randomUUID?.() ?? `pdf-${Date.now()}-${Math.random().toString(36).slice(2)}`;
 
-  const openFile = (file: File, chapterId?: string) => {
+  const openFile = (file: File, chapterId?: string, fileHandle?: FileSystemFileHandle) => {
     const isPdf = file.type === 'application/pdf' || file.name.toLowerCase().endsWith('.pdf');
     if (!isPdf) throw new Error('Choose a PDF file.');
     const id = createDocumentId();
@@ -79,6 +80,7 @@ export function PdfWorkspaceProvider({ children }: { children: ReactNode }) {
       name: file.name,
       url,
       local: true,
+      fileHandle,
       linkedChapterIds: chapterId ? [chapterId] : [],
     }]);
     setActiveDocumentId(id);
@@ -210,7 +212,7 @@ function PdfPickerDialog({
 }: {
   request: PickerRequest;
   onClose: () => void;
-  onFile: (file: File, chapterId?: string) => void;
+  onFile: (file: File, chapterId?: string, fileHandle?: FileSystemFileHandle) => void;
   onUrl: (url: string, chapterId?: string) => void;
   documents: readonly WorkspacePdf[];
   onExisting: (documentId: string, chapterId?: string) => void;
@@ -218,6 +220,19 @@ function PdfPickerDialog({
   const inputRef = useRef<HTMLInputElement>(null);
   const [url, setUrl] = useState('');
   const [error, setError] = useState('');
+
+  const chooseLocalPdf = async () => {
+    const picker = (window as Window & { showOpenFilePicker?: (options?: unknown) => Promise<FileSystemFileHandle[]> }).showOpenFilePicker;
+    if (!picker) { inputRef.current?.click(); return; }
+    try {
+      const [handle] = await picker.call(window, { multiple: false, types: [{ description: 'PDF document', accept: { 'application/pdf': ['.pdf'] } }] });
+      if (!handle) return;
+      onFile(await handle.getFile(), request.chapterId, handle);
+    } catch (reason) {
+      if (reason instanceof DOMException && reason.name === 'AbortError') return;
+      setError(reason instanceof Error ? reason.message : 'Could not open this PDF.');
+    }
+  };
 
   const submitUrl = (event: FormEvent) => {
     event.preventDefault();
@@ -277,7 +292,7 @@ function PdfPickerDialog({
             }
           }}
         />
-        <Button autoFocus variant='primary' onClick={() => inputRef.current?.click()}>
+        <Button autoFocus variant='primary' onClick={() => void chooseLocalPdf()}>
           <Icon name='book' size={16} /> Choose PDF from this device
         </Button>
         <div className={styles.or}><span>or open a direct PDF link</span></div>

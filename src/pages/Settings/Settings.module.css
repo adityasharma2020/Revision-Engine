@@ -269,9 +269,9 @@
 .resetChoices { display: flex; flex-direction: column; gap: var(--space-3); margin-bottom: var(--space-4); }
 .resetChoices > button { display: flex; flex-direction: column; gap: 3px; width: 100%; padding: var(--space-4); text-align: left; color: var(--text-primary); background-color: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-md); }
 .resetChoices > button:hover { border-color: var(--border-strong); background-color: var(--surface-hover); }
+.resetChoices > button:disabled { cursor: wait; opacity: .62; }
 .resetChoices span { font-size: var(--text-xs); line-height: var(--leading-normal); color: var(--text-secondary); }
-.resetChoices > .cloudDelete { border-color: var(--danger); }
-.cloudDelete strong { color: var(--danger); }
+.resetError { margin: 0 0 var(--space-3); color: var(--danger); font-size: var(--text-sm); }
 
 @media (max-width: 560px) {
   .row {

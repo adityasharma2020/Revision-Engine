@@ -17,6 +17,7 @@ import { Routes } from '../../constants/routes';
 import { getPwaInstallState, requestPwaInstall, subscribeToPwaInstall } from '../../services/pwa/InstallService';
 import { useDeviceNotificationSettings } from '../../context/DeviceNotificationSettingsContext';
 import type { DeviceNotificationSettings } from '../../services/notifications';
+import { clearAllPdfAnnotations } from '../../services/pdf/PdfAnnotationStore';
 
 export function Settings() {
   const [searchParams, setSearchParams] = useSearchParams();
@@ -31,6 +32,8 @@ export function Settings() {
   const [nudgeSettingsOpen, setNudgeSettingsOpen] = useState(false);
   const [installMessage, setInstallMessage] = useState('');
   const [refreshingApp, setRefreshingApp] = useState(false);
+  const [resetBusy, setResetBusy] = useState(false);
+  const [resetError, setResetError] = useState<string | null>(null);
   const installState = useSyncExternalStore(subscribeToPwaInstall, getPwaInstallState, getPwaInstallState);
   const { preferences: revisionPreferences, update: updateRevisionPreferences } = useRevisionPreferences();
   const { settings: appSettings, update: updateAppSettings, reset: resetAppSettings } = useAppSettings();
@@ -180,21 +183,75 @@ export function Settings() {
     });
   };
 
-  const clearDeviceOnly = async () => {
-    await disableWebPush({ ...deviceNotifications, enabled: false }).catch(() => undefined);
-    if (cloudAvailable) await signOut();
+  const clearBrowserData = async () => {
     await createLocalStorageService().resetAll();
-    updateDeviceNotifications({ ...deviceNotifications, enabled: false });
-    setCleared(true);
-    window.location.reload();
+    // IndexedDB can be held briefly by a PDF tab. Never let optional crash
+    // recovery cleanup prevent the rest of this-device reset from completing.
+    await Promise.race([
+      clearAllPdfAnnotations(),
+      new Promise<void>((resolve) => window.setTimeout(resolve, 1500)),
+    ]).catch(() => undefined);
+
+    // Feature-specific preferences are intentionally outside the synced
+    // storage namespace. They still belong to this app and must be removed by
+    // “Clear this device”. Supabase keys are removed by local sign-out.
+    const appKeys = Array.from({ length: localStorage.length }, (_, index) => localStorage.key(index))
+      .filter((key): key is string => Boolean(key?.startsWith('revision-engine:')));
+    appKeys.forEach((key) => localStorage.removeItem(key));
+    sessionStorage.clear();
+  };
+
+  const clearDeviceOnly = async () => {
+    if (resetBusy) return;
+    setResetBusy(true);
+    setResetError(null);
+    try {
+      const pushCleanup = disableWebPush({ ...deviceNotifications, enabled: false }).catch(() => undefined);
+      await clearBrowserData();
+      // These are secondary cleanups. Network/browser APIs must not hold the
+      // destructive local action in an endless loading state.
+      await Promise.race([
+        pushCleanup,
+        new Promise<void>((resolve) => window.setTimeout(resolve, 1000)),
+      ]).catch(() => undefined);
+      if (cloudAvailable) {
+        await Promise.race([
+          signOut(),
+          new Promise<void>((resolve) => window.setTimeout(resolve, 1000)),
+        ]).catch(() => undefined);
+      }
+      setCleared(true);
+      setResetOpen(false);
+      window.location.replace('/');
+    } catch (error) {
+      setResetError(error instanceof Error ? error.message : 'This device could not be cleared. Please try again.');
+      setResetBusy(false);
+    }
   };
 
   const clearDeviceAndArchiveCloud = async () => {
-    await disableWebPush({ ...deviceNotifications, enabled: false }).catch(() => undefined);
-    await storage.resetAll();
-    updateDeviceNotifications({ ...deviceNotifications, enabled: false });
-    setCleared(true);
-    window.location.reload();
+    if (resetBusy) return;
+    setResetBusy(true);
+    setResetError(null);
+    try {
+      const pushCleanup = disableWebPush({ ...deviceNotifications, enabled: false }).catch(() => undefined);
+      await Promise.race([
+        storage.resetAll(),
+        new Promise<never>((_, reject) => window.setTimeout(() => reject(new Error('Cloud removal timed out. Check your connection and try again.')), 10000)),
+      ]);
+      await clearBrowserData();
+      await Promise.race([
+        pushCleanup,
+        new Promise<void>((resolve) => window.setTimeout(resolve, 1000)),
+      ]);
+      updateDeviceNotifications({ ...deviceNotifications, enabled: false });
+      setCleared(true);
+      setResetOpen(false);
+      window.location.replace('/');
+    } catch (error) {
+      setResetError(error instanceof Error ? error.message : 'Your data could not be cleared. Please try again.');
+      setResetBusy(false);
+    }
   };
 
   const manualSync = async () => {
@@ -358,7 +415,7 @@ export function Settings() {
           </section>
 
           {resetOpen && (
-            <div className={styles.modalBackdrop} onMouseDown={() => setResetOpen(false)}>
+            <div className={styles.modalBackdrop} onMouseDown={() => { if (!resetBusy) setResetOpen(false); }}>
               <section
                 className={styles.resetModal}
                 role="dialog"
@@ -374,8 +431,8 @@ export function Settings() {
                   Cloud removal is non-destructive: the selected data disappears from the app while a protected recovery record is retained.
                 </p>
                 <div className={styles.resetChoices}>
-                  <button type="button" onClick={() => void clearDeviceOnly()}>
-                    <strong>Clear this device</strong>
+                  <button type="button" onClick={() => void clearDeviceOnly()} disabled={resetBusy}>
+                    <strong>{resetBusy ? 'Clearing this device…' : 'Clear this device'}</strong>
                     <span>
                       {cloudAvailable
                         ? 'Signs you out and clears this browser. Your cloud backup remains available.'
@@ -383,13 +440,14 @@ export function Settings() {
                     </span>
                   </button>
                   {cloudAvailable && (
-                    <button type="button" className={styles.cloudDelete} onClick={() => void clearDeviceAndArchiveCloud()}>
+                    <button type="button" onClick={() => void clearDeviceAndArchiveCloud()} disabled={resetBusy}>
                       <strong>Clear device and remove cloud data from the app</strong>
                       <span>Removes active cloud data from the app without permanently erasing its protected recovery history.</span>
                     </button>
                   )}
                 </div>
-                <Button variant="ghost" onClick={() => setResetOpen(false)}>
+                {resetError && <p role="alert" className={styles.resetError}>{resetError}</p>}
+                <Button variant="ghost" onClick={() => setResetOpen(false)} disabled={resetBusy}>
                   Cancel
                 </Button>
               </section>

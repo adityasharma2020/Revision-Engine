@@ -122,7 +122,7 @@ export function PdfWorkspace({ chapterId, children }: PdfWorkspaceProps) {
                 </button>
               </div>
             </header>
-            <PdfCanvasViewer className={styles.documentFrame} url={activeDocument.url} name={activeDocument.name} />
+            <PdfCanvasViewer controlsInHeader className={styles.documentFrame} url={activeDocument.url} name={activeDocument.name} fileHandle={activeDocument.fileHandle} />
           </aside>
         </>
       )}

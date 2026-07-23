@@ -36,7 +36,7 @@ function loadPosition() {
 
 export function FocusTimerWidget() {
   const timer = useFocusTimer();
-  const { settings, update } = useAppSettings();
+  const { settings, ready: settingsReady, update } = useAppSettings();
   const [view, setView] = useState<BubbleView>('icon');
   const [menuOpen, setMenuOpen] = useState(false);
   const [modalTab, setModalTab] = useState<'session' | 'appearance'>('session');
@@ -196,6 +196,10 @@ export function FocusTimerWidget() {
     setModalTab('session');
   };
 
+  // Never flash the default widget while the persisted opt-in preference is
+  // still loading. An active session remains reachable even if the preference
+  // was subsequently disabled.
+  if (!settingsReady && !timer.active && !menuOpen) return null;
   if (!settings.focusTimer.enabled && !timer.active && !menuOpen) return null;
   return createPortal(<>
     <button
