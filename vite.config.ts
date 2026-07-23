@@ -16,7 +16,7 @@ export default defineConfig({
     react(),
     VitePWA({
       registerType: 'autoUpdate',
-      includeAssets: ['favicon.svg', 'icon.svg'],
+      includeAssets: ['favicon.svg', 'icon.svg', 'push-handler.js'],
       manifest: {
         name: 'UPSC Revision Engine',
         short_name: 'Revision',
@@ -32,6 +32,7 @@ export default defineConfig({
         ],
       },
       workbox: {
+        importScripts: ['push-handler.js'],
         cleanupOutdatedCaches: true,
         skipWaiting: true,
         clientsClaim: true,

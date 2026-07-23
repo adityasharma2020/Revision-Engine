@@ -26,6 +26,10 @@ export interface AppSettings {
     readonly dailyRevision: boolean;
     readonly weeklySummary: boolean;
     readonly milestones: boolean;
+    readonly dailyReminderTime: string;
+    readonly weeklySummaryDay: number;
+    readonly weeklySummaryTime: string;
+    readonly timezone: string;
   };
   readonly accessibility: {
     readonly reduceMotion: boolean;
@@ -40,6 +44,10 @@ export const DEFAULT_SETTINGS: AppSettings = {
     dailyRevision: true,
     weeklySummary: true,
     milestones: true,
+    dailyReminderTime: '18:00',
+    weeklySummaryDay: 0,
+    weeklySummaryTime: '18:00',
+    timezone: 'UTC',
   },
   accessibility: { reduceMotion: false },
 };

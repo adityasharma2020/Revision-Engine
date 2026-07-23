@@ -17,6 +17,7 @@ function bool(value: unknown, fallback: boolean): boolean {
 
 const supabaseUrl = str(import.meta.env.VITE_SUPABASE_URL);
 const supabaseAnonKey = str(import.meta.env.VITE_SUPABASE_ANON_KEY);
+const vapidPublicKey = str(import.meta.env.VITE_VAPID_PUBLIC_KEY);
 
 export const env = {
   appName: str(import.meta.env.VITE_APP_NAME, 'UPSC Revision Engine'),
@@ -27,6 +28,8 @@ export const env = {
   supabaseAnonKey,
   /** True only when both Supabase credentials are present. */
   supabaseConfigured: supabaseUrl !== '' && supabaseAnonKey !== '',
+  vapidPublicKey,
+  pushConfigured: vapidPublicKey !== '',
 
   guestModeEnabled: bool(import.meta.env.VITE_ENABLE_GUEST_MODE, true),
   authProviders: str(import.meta.env.VITE_AUTH_PROVIDERS, 'google,email')

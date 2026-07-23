@@ -24,6 +24,13 @@
 .toggleRow input:checked + i::after { transform: translateX(18px); }
 .toggleRow input:focus-visible + i { outline: 2px solid var(--accent); outline-offset: 2px; }
 .toggleRow.disabled { cursor: not-allowed; opacity: .48; }
+.notificationSchedule { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: var(--space-3); padding: var(--space-4) 0; border-top: 1px solid var(--border); }
+.notificationSchedule label { display: flex; min-width: 0; flex-direction: column; gap: var(--space-2); }
+.notificationSchedule label span { color: var(--text-secondary); font-size: var(--text-xs); }
+.notificationSchedule input, .notificationSchedule select { width: 100%; height: 38px; padding: 0 var(--space-3); color: var(--text-primary); background: var(--bg-sunken); border: 1px solid var(--border); border-radius: var(--radius-md); }
+.notificationSchedule > small { grid-column: 1 / -1; color: var(--text-tertiary); font-size: 10px; }
+.pushActions { display: flex; align-items: center; gap: var(--space-3); padding: 0 0 var(--space-4); }
+.pushActions small { color: var(--text-secondary); font-size: var(--text-xs); }
 .addonNote { display: flex; align-items: center; gap: var(--space-3); padding: var(--space-4); color: var(--text-secondary); background: var(--accent-subtle); border: 1px dashed color-mix(in srgb, var(--accent) 55%, var(--border)); border-radius: var(--radius-lg); }
 .addonNote > span { display: grid; flex: 0 0 36px; width: 36px; height: 36px; place-items: center; color: var(--accent); background: var(--surface); border-radius: var(--radius-md); }
 .addonNote > div { display: flex; min-width: 0; flex-direction: column; }
@@ -177,4 +184,6 @@
   .settingsTabs > div { width: 100%; }
   .preferenceGroup > header, .preferenceGroup > div { padding-right: var(--space-4); padding-left: var(--space-4); }
   .toggleRow { min-height: 76px; gap: var(--space-3); }
+  .notificationSchedule { grid-template-columns: 1fr; }
+  .pushActions { align-items: flex-start; flex-direction: column; }
 }

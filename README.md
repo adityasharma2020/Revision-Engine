@@ -218,5 +218,11 @@ offline — the shell and every opened chapter JSON are cached.
   build, and publish `dist/` (e.g. via an Actions workflow). Add the Pages URL to
   Supabase Auth redirect URLs.
 
+### Web Push notifications
+
+Reliable reminders while the app is closed use Supabase Cron, Edge Functions,
+and standards-based Web Push. The schema and functions are included; follow the
+one-time deployment guide in [`supabase/NOTIFICATIONS.md`](supabase/NOTIFICATIONS.md).
+
 The full phase plan, schema notes and multi-user design are in
 [`docs/ROADMAP.md`](docs/ROADMAP.md).

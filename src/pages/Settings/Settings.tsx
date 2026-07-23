@@ -9,6 +9,7 @@ import { APP_NAME, APP_VERSION } from "../../constants/app";
 import styles from "./Settings.module.css";
 import { useRevisionPreferences } from "../../hooks/useRevisionPreferences";
 import { useAppSettings } from "../../context/AppSettingsContext";
+import { disableWebPush, enableWebPush, getPushStatus, sendTestNotification } from '../../services/notifications';
 
 export function Settings() {
   const { storage, cloudAvailable, online, syncing, syncNow } = useStorage();
@@ -17,8 +18,44 @@ export function Settings() {
   const [resetOpen, setResetOpen] = useState(false);
   const [syncMessage, setSyncMessage] = useState<string | null>(null);
   const [tab, setTab] = useState<'general' | 'features'>('general');
+  const [pushBusy, setPushBusy] = useState(false);
+  const [pushMessage, setPushMessage] = useState<string | null>(null);
   const { preferences: revisionPreferences, update: updateRevisionPreferences } = useRevisionPreferences();
   const { settings: appSettings, update: updateAppSettings, reset: resetAppSettings } = useAppSettings();
+  const pushStatus = getPushStatus(status === 'authenticated');
+
+  const setNotificationsEnabled = async (enabled: boolean) => {
+    setPushBusy(true);
+    setPushMessage(null);
+    try {
+      if (!enabled) {
+        await disableWebPush();
+        updateAppSettings({ ...appSettings, notifications: { ...appSettings.notifications, enabled: false } });
+        setPushMessage('Notifications disabled on this device.');
+        return;
+      }
+      const nextStatus = await enableWebPush();
+      if (nextStatus !== 'granted') {
+        const messages = { unsupported: 'This browser does not support Web Push.', unconfigured: 'Web Push needs its public VAPID key.', 'signed-out': 'Sign in before enabling cross-device notifications.', denied: 'Notifications are blocked in browser settings.', prompt: 'Notification permission was not granted.', granted: '' };
+        setPushMessage(messages[nextStatus]);
+        return;
+      }
+      updateAppSettings({ ...appSettings, notifications: { ...appSettings.notifications, enabled: true, timezone: Intl.DateTimeFormat().resolvedOptions().timeZone || 'UTC' } });
+      setPushMessage('This device is subscribed. Send a test to confirm delivery.');
+    } catch (error) {
+      setPushMessage(error instanceof Error ? error.message : 'Could not configure notifications.');
+    } finally {
+      setPushBusy(false);
+    }
+  };
+
+  const testPush = async () => {
+    setPushBusy(true);
+    setPushMessage(null);
+    try { await sendTestNotification(); setPushMessage('Test sent to your subscribed devices.'); }
+    catch (error) { setPushMessage(error instanceof Error ? error.message : 'Test delivery failed.'); }
+    finally { setPushBusy(false); }
+  };
 
   const clearDeviceOnly = async () => {
     if (cloudAvailable) await signOut();
@@ -247,13 +284,21 @@ export function Settings() {
           <PreferenceGroup title='Notifications' description='Choose which study updates you want to receive. Delivery remains off until notifications are enabled.'>
             <ToggleSetting
               title='Allow notifications'
-              description='Master control for study reminders and progress updates.'
+              description={`Master control for study reminders and progress updates · ${pushStatus === 'granted' ? 'browser allowed' : pushStatus.replace('-', ' ')}`}
               checked={appSettings.notifications.enabled}
-              onChange={(checked) => updateAppSettings({ ...appSettings, notifications: { ...appSettings.notifications, enabled: checked } })}
+              disabled={pushBusy}
+              onChange={(checked) => void setNotificationsEnabled(checked)}
             />
             <ToggleSetting title='Daily revision reminder' description='Remind me when today’s revision is still pending.' checked={appSettings.notifications.dailyRevision} disabled={!appSettings.notifications.enabled} onChange={(checked) => updateAppSettings({ ...appSettings, notifications: { ...appSettings.notifications, dailyRevision: checked } })} />
             <ToggleSetting title='Weekly progress summary' description='Receive a concise summary of questions, accuracy and active days.' checked={appSettings.notifications.weeklySummary} disabled={!appSettings.notifications.enabled} onChange={(checked) => updateAppSettings({ ...appSettings, notifications: { ...appSettings.notifications, weeklySummary: checked } })} />
             <ToggleSetting title='Milestones' description='Celebrate streaks and meaningful learning milestones.' checked={appSettings.notifications.milestones} disabled={!appSettings.notifications.enabled} onChange={(checked) => updateAppSettings({ ...appSettings, notifications: { ...appSettings.notifications, milestones: checked } })} />
+            <div className={`${styles.notificationSchedule} ${!appSettings.notifications.enabled ? styles.disabled : ''}`}>
+              <label><span>Daily reminder</span><input type='time' value={appSettings.notifications.dailyReminderTime} disabled={!appSettings.notifications.enabled} onChange={(event) => updateAppSettings({ ...appSettings, notifications: { ...appSettings.notifications, dailyReminderTime: event.target.value } })} /></label>
+              <label><span>Weekly summary</span><select value={appSettings.notifications.weeklySummaryDay} disabled={!appSettings.notifications.enabled} onChange={(event) => updateAppSettings({ ...appSettings, notifications: { ...appSettings.notifications, weeklySummaryDay: Number(event.target.value) } })}>{['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'].map((day, index) => <option value={index} key={day}>{day}</option>)}</select></label>
+              <label><span>Summary time</span><input type='time' value={appSettings.notifications.weeklySummaryTime} disabled={!appSettings.notifications.enabled} onChange={(event) => updateAppSettings({ ...appSettings, notifications: { ...appSettings.notifications, weeklySummaryTime: event.target.value } })} /></label>
+              <small>Times use {appSettings.notifications.timezone || 'UTC'}.</small>
+            </div>
+            <div className={styles.pushActions}><Button size='sm' variant='secondary' disabled={pushBusy || !appSettings.notifications.enabled || pushStatus !== 'granted'} onClick={() => void testPush()}>Send test notification</Button>{pushMessage && <small role='status'>{pushMessage}</small>}</div>
           </PreferenceGroup>
 
           <PreferenceGroup title='Accessibility' description='Comfort settings applied everywhere in the app.'>
