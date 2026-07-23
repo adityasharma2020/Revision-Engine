@@ -285,7 +285,7 @@ function LearningView({
           onChange={onTab}
           items={[
             { id: 'prelims', label: 'Prelims', count: prelims.length },
-            { id: 'mains', label: 'Mains', count: mains.length },
+            { id: 'mains', label: 'Mains · Learn only', count: mains.length },
           ]}
         />
       </div>

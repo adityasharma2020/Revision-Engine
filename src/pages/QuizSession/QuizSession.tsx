@@ -3,7 +3,7 @@ import { EmptyState, Button } from '../../components/common';
 import { Page } from '../../components/layout';
 import { QuizSession } from '../../components/quiz/QuizRunner/QuizSession';
 import { Routes } from '../../constants/routes';
-import { loadQuizDefinition, removeQuizDefinition, saveQuizDefinition } from '../../services/quiz';
+import { loadQuizDefinition, objectiveQuizDefinition, removeQuizDefinition, saveQuizDefinition } from '../../services/quiz';
 import { useDailyRevisionAssignment } from '../../hooks/useDailyRevisionAssignment';
 import { PdfWorkspace } from '../../components/study/PdfWorkspace';
 import styles from './QuizSession.module.css';
@@ -14,7 +14,7 @@ export function QuizSessionPage() {
   const { assignment, ready: assignmentReady, save } = useDailyRevisionAssignment();
   const storedDefinition = loadQuizDefinition(quizId);
   const assignmentDefinition = assignment?.status === 'active' && assignment.definition.id === quizId
-    ? assignment.definition
+    ? objectiveQuizDefinition(assignment.definition)
     : null;
   const definition = storedDefinition ?? assignmentDefinition;
   if (!storedDefinition && assignmentDefinition) saveQuizDefinition(assignmentDefinition);
