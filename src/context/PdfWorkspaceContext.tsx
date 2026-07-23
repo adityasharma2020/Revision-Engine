@@ -59,6 +59,7 @@ interface PdfWorkspaceValue {
 }
 
 const PdfWorkspaceContext = createContext<PdfWorkspaceValue | null>(null);
+export const LAST_OPENED_PDF_KEY = 'revision-engine:last-opened-pdf';
 const failureMessage = (reason: unknown, fallback: string) => {
   if (reason instanceof Error) return reason.message;
   if (reason && typeof reason === 'object' && 'message' in reason && typeof reason.message === 'string') return reason.message;
@@ -86,8 +87,16 @@ export function PdfWorkspaceProvider({ children }: { children: ReactNode }) {
   const localObjectUrls = useRef(new Map<string, string>());
   const localBlobs = useRef(new Map<string, Blob>());
   const [cloudDocuments, setCloudDocuments] = useState<CloudPdfRecord[]>([]);
+  const cloudDocumentRef = useRef(new Map<string, CloudPdfRecord>());
   const [cloudStatus, setCloudStatus] = useState<'unavailable' | 'loading' | 'ready' | 'error'>('unavailable');
   const [cloudError, setCloudError] = useState('');
+
+  useEffect(() => { cloudDocumentRef.current = new Map(cloudDocuments.map((item) => [item.id, item])); }, [cloudDocuments]);
+
+  const rememberActiveDocument = useCallback((documentId: string) => {
+    localStorage.setItem(LAST_OPENED_PDF_KEY, documentId);
+    setActiveDocumentId(documentId);
+  }, []);
 
   const document = documents.find((item) => item.id === activeDocumentId) ?? null;
 
@@ -198,7 +207,7 @@ export function PdfWorkspaceProvider({ children }: { children: ReactNode }) {
       return [...unlinked, next];
     });
     if (chapterId) void syncExclusiveCloudLink(id, chapterId, true).catch(() => undefined);
-    setActiveDocumentId(id);
+    rememberActiveDocument(id);
     setVisible(true);
     setMobileView('document');
     setPicker(null);
@@ -215,7 +224,7 @@ export function PdfWorkspaceProvider({ children }: { children: ReactNode }) {
         updateLocalChapterAssignment(existing.id, chapterId, true);
         void syncExclusiveCloudLink(existing.id, chapterId, true).catch(() => undefined);
       }
-      setActiveDocumentId(existing.id);
+      rememberActiveDocument(existing.id);
       setVisible(true);
       setMobileView('document');
       setPicker(null);
@@ -235,7 +244,7 @@ export function PdfWorkspaceProvider({ children }: { children: ReactNode }) {
       return [...unlinked, next];
     });
     if (chapterId) void syncExclusiveCloudLink(id, chapterId, true).catch(() => undefined);
-    setActiveDocumentId(id);
+    rememberActiveDocument(id);
     setVisible(true);
     setMobileView('document');
     setPicker(null);
@@ -264,25 +273,28 @@ export function PdfWorkspaceProvider({ children }: { children: ReactNode }) {
       updateLocalChapterAssignment(documentId, chapterId, true);
       void syncExclusiveCloudLink(documentId, chapterId, true).catch(() => undefined);
     }
-    setActiveDocumentId(documentId);
+    rememberActiveDocument(documentId);
     setVisible(true);
     setMobileView('document');
     setPicker(null);
-  }, [syncExclusiveCloudLink, updateLocalChapterAssignment]);
+  }, [rememberActiveDocument, syncExclusiveCloudLink, updateLocalChapterAssignment]);
 
   const toggleChapterLink = useCallback((documentId: string, chapterId: string) => {
-    const link = !documents.find((item) => item.id === documentId)?.linkedChapterIds.includes(chapterId);
+    const currentlyLinked = documents.some((item) => item.id === documentId && item.linkedChapterIds.includes(chapterId))
+      || cloudDocuments.some((item) => item.id === documentId && item.linkedChapterIds.includes(chapterId));
+    const link = !currentlyLinked;
     updateLocalChapterAssignment(documentId, chapterId, link);
     void syncExclusiveCloudLink(documentId, chapterId, link).catch((reason) => {
       setCloudStatus('error');
       setCloudError(failureMessage(reason, 'The chapter link could not be synchronized.'));
     });
-  }, [documents, syncExclusiveCloudLink, updateLocalChapterAssignment]);
+  }, [cloudDocuments, documents, syncExclusiveCloudLink, updateLocalChapterAssignment]);
 
   const removeDocument = useCallback((documentId: string) => {
     releaseLocalFile(documentId);
     localBlobs.current.delete(documentId);
     setDocuments((current) => current.filter((item) => item.id !== documentId));
+    if (localStorage.getItem(LAST_OPENED_PDF_KEY) === documentId) localStorage.removeItem(LAST_OPENED_PDF_KEY);
     setActiveDocumentId((current) => current === documentId ? null : current);
     if (activeDocumentId === documentId) {
       setVisible(false);
@@ -311,7 +323,7 @@ export function PdfWorkspaceProvider({ children }: { children: ReactNode }) {
     if (record.sourceUrl) {
       const next: WorkspacePdf = { id: record.id, name: record.name, url: record.sourceUrl, local: false, linkedChapterIds: record.linkedChapterIds, cloud: record, sizeBytes: 0 };
       setDocuments((current) => existing ? current.map((item) => item.id === record!.id ? next : item) : [...current, next]);
-      setActiveDocumentId(record.id); setVisible(true); setMobileView('document'); setPicker(null);
+      rememberActiveDocument(record.id); setVisible(true); setMobileView('document'); setPicker(null);
       return;
     }
     const blob = await downloadCloudPdf(record);
@@ -326,14 +338,19 @@ export function PdfWorkspaceProvider({ children }: { children: ReactNode }) {
     setDocuments((current) => existing
       ? current.map((item) => item.id === record.id ? next : item)
       : [...current, next]);
-    setActiveDocumentId(record.id); setVisible(true); setMobileView('document');
+    rememberActiveDocument(record.id); setVisible(true); setMobileView('document');
     setPicker(null);
-  }, [cloudDocuments, documents, syncExclusiveCloudLink, updateLocalChapterAssignment]);
+  }, [cloudDocuments, documents, rememberActiveDocument, syncExclusiveCloudLink, updateLocalChapterAssignment]);
 
   const syncCloudAnnotations = useCallback(async (documentId: string, annotations: readonly PdfInkAnnotation[]) => {
     const item = documents.find((candidate) => candidate.id === documentId); if (!item?.cloud) return;
     try {
-      const record = await updateCloudAnnotations(item.cloud, annotations, item.linkedChapterIds);
+      // React state may not have exposed the revision returned by the previous
+      // write yet. Keep the latest record synchronously so consecutive writes
+      // from this same viewer cannot be mistaken for another-device conflicts.
+      const latest = cloudDocumentRef.current.get(documentId) ?? item.cloud;
+      const record = await updateCloudAnnotations(latest, annotations, item.linkedChapterIds);
+      cloudDocumentRef.current.set(record.id, record);
       setCloudDocuments((current) => current.map((candidate) => candidate.id === record.id ? record : candidate));
       setDocuments((current) => current.map((candidate) => candidate.id === record.id ? { ...candidate, cloud: record } : candidate));
     } catch (reason) {

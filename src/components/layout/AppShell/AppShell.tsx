@@ -13,6 +13,7 @@ import { useAuth } from '../../../context/AuthContext';
 import { disableWebPush, getPushStatus, syncWebPushSubscription } from '../../../services/notifications';
 import { useDeviceNotificationSettings } from '../../../context/DeviceNotificationSettingsContext';
 import { FocusTimerWidget } from '../../focus/FocusTimerWidget';
+import { usePdfWorkspace } from '../../../context/PdfWorkspaceContext';
 
 const SIDEBAR_KEY = 'revision-engine:sidebar-collapsed';
 const QUIZ_HISTORY_GUARD = '__revisionEngineQuizGuard';
@@ -41,6 +42,7 @@ function armQuizHistoryGuard(): void {
 /** Top-level chrome: persistent sidebar + scrollable routed content. */
 export function AppShell() {
   const navigate = useNavigate();
+  const pdfWorkspace = usePdfWorkspace();
   const { status: authStatus } = useAuth();
   const { settings: deviceNotifications, ready: deviceNotificationsReady, update: updateDeviceNotifications } = useDeviceNotificationSettings();
   const [userCollapsed, setUserCollapsed] = useState(
@@ -144,7 +146,8 @@ export function AppShell() {
     localStorage.setItem(SIDEBAR_KEY, String(collapsed));
   };
 
-  const collapsed = userCollapsed || fullscreen;
+  const pdfSplitActive = Boolean(pdfWorkspace.document && pdfWorkspace.visible);
+  const collapsed = userCollapsed || fullscreen || pdfSplitActive;
 
   useEffect(() => {
     if (!searchOpen) return;
@@ -225,7 +228,7 @@ export function AppShell() {
     >
       <Sidebar
         collapsed={collapsed}
-        collapseLocked={fullscreen}
+        collapseLocked={fullscreen || pdfSplitActive}
         searchOpen={searchOpen}
         onToggle={() => setCollapsed(!userCollapsed)}
       />

@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Link, useLocation, useParams, useSearchParams } from 'react-router-dom';
 import { AsyncBoundary, Badge, Button, EmptyState, Icon, Tabs } from '../../components/common';
 import { Page } from '../../components/layout';
@@ -64,6 +64,9 @@ function ChapterView({ chapter }: { chapter: ChapterModel }) {
   const [quizActive, setQuizActive] = useState(false);
   const [quizImmersive, setQuizImmersive] = useState(false);
   const [leaveQuizOpen, setLeaveQuizOpen] = useState(false);
+  const [unlinkPdfOpen, setUnlinkPdfOpen] = useState(false);
+  const [pdfMenuOpen, setPdfMenuOpen] = useState(false);
+  const pdfMenuRef = useRef<HTMLDivElement>(null);
   const filteredPrelims = filterByOrigin(chapter.prelims, origin);
   const filteredMains = filterByOrigin(chapter.mains, origin);
   const quizAvailableOrigins = new Set(
@@ -78,7 +81,25 @@ function ChapterView({ chapter }: { chapter: ChapterModel }) {
   );
   const hideStudyChrome = mode === 'quiz' && quizImmersive;
   const includedInRevision = preferences.includedChapterIds.includes(chapter.id);
-  const chapterPdf = pdfWorkspace.documents.find((item) => item.linkedChapterIds.includes(chapter.id)) ?? null;
+  const sessionChapterPdf = pdfWorkspace.documents.find((item) => item.linkedChapterIds.includes(chapter.id)) ?? null;
+  const cloudChapterPdf = pdfWorkspace.cloudDocuments.find((item) => item.linkedChapterIds.includes(chapter.id)) ?? null;
+  const chapterPdf = sessionChapterPdf ?? cloudChapterPdf;
+
+  const toggleChapterPdf = () => {
+    if (!chapterPdf) {
+      pdfWorkspace.chooseDocument(chapter.id);
+      return;
+    }
+    if (pdfWorkspace.document?.id === chapterPdf.id && pdfWorkspace.visible) {
+      pdfWorkspace.setVisible(false);
+      return;
+    }
+    if (sessionChapterPdf) {
+      pdfWorkspace.openDocument(sessionChapterPdf.id);
+      return;
+    }
+    void pdfWorkspace.openCloudDocument(chapterPdf.id).catch(() => undefined);
+  };
 
   useEffect(() => {
     if (!hasQuestionTarget) return;
@@ -92,6 +113,15 @@ function ChapterView({ chapter }: { chapter: ChapterModel }) {
   useEffect(() => {
     if (requestedMode === 'quiz') setMode('quiz');
   }, [chapter.id, requestedMode]);
+
+  useEffect(() => {
+    if (!pdfMenuOpen) return;
+    const closeMenu = (event: PointerEvent) => {
+      if (!pdfMenuRef.current?.contains(event.target as Node)) setPdfMenuOpen(false);
+    };
+    document.addEventListener('pointerdown', closeMenu);
+    return () => document.removeEventListener('pointerdown', closeMenu);
+  }, [pdfMenuOpen]);
 
   const changeMode = (next: Mode) => {
     if (next === 'learning' && mode === 'quiz' && quizActive) {
@@ -122,35 +152,30 @@ function ChapterView({ chapter }: { chapter: ChapterModel }) {
               title={includedInRevision ? 'Remove from Daily Revision' : 'Add to Daily Revision'}
             >
               <Icon name={includedInRevision ? 'check' : 'plus'} size={13} />
-              {includedInRevision ? 'Daily revision' : 'Add to revision'}
+              <span>{includedInRevision ? 'Daily revision' : 'Add to revision'}</span>
             </button>
-            <button
-              type="button"
-              className={`${styles.pdfAction} ${chapterPdf ? styles.pdfLinked : ''}`}
-              onClick={() => chapterPdf
-                ? pdfWorkspace.document?.id === chapterPdf.id && pdfWorkspace.visible
-                  ? pdfWorkspace.setVisible(false)
-                  : pdfWorkspace.openDocument(chapterPdf.id)
-                : pdfWorkspace.chooseDocument(chapter.id)}
-              title={chapterPdf
-                ? pdfWorkspace.visible ? 'Hide reference PDF' : 'Show reference PDF'
-                : 'Open a local or linked reference PDF'}
-              aria-label={chapterPdf
-                ? pdfWorkspace.visible ? 'Hide reference PDF' : 'Show reference PDF'
-                : 'Open a local or linked reference PDF'}
-            >
-              <Icon name="book" size={14} />
-              <span>{chapterPdf
-                ? pdfWorkspace.document?.id === chapterPdf.id && pdfWorkspace.visible ? 'Hide PDF' : 'Show PDF'
-                : 'Open PDF'}</span>
-            </button>
-            {chapterPdf && <button
-              type="button"
-              className={styles.pdfUnlink}
-              onClick={() => { pdfWorkspace.toggleChapterLink(chapterPdf.id, chapter.id); if (pdfWorkspace.document?.id === chapterPdf.id) pdfWorkspace.closeDocument(); }}
-              title="Unlink this PDF from the chapter"
-              aria-label="Unlink this PDF from the chapter"
-            ><Icon name="unlink" size={14} /><span>Unlink PDF</span></button>}
+            <div ref={pdfMenuRef} className={`${styles.pdfControl} ${chapterPdf ? styles.pdfLinked : ''}`}>
+              <button
+                type="button"
+                className={styles.pdfAction}
+                aria-pressed={Boolean(chapterPdf && pdfWorkspace.document?.id === chapterPdf.id && pdfWorkspace.visible)}
+                onClick={toggleChapterPdf}
+                title={chapterPdf
+                  ? pdfWorkspace.document?.id === chapterPdf.id && pdfWorkspace.visible ? 'Hide reference PDF' : 'Show reference PDF'
+                  : 'Link a reference PDF'}
+              >
+                <Icon name="book" size={14} />
+                <span>{chapterPdf
+                  ? pdfWorkspace.document?.id === chapterPdf.id && pdfWorkspace.visible ? 'Hide PDF' : 'Show PDF'
+                  : 'Link PDF'}</span>
+              </button>
+              {chapterPdf && <button type="button" className={styles.pdfMenuButton} aria-label="PDF link options" aria-haspopup="menu" aria-expanded={pdfMenuOpen} onClick={() => setPdfMenuOpen((open) => !open)}><Icon name="chevronDown" size={12} /></button>}
+              {chapterPdf && pdfMenuOpen && <div className={styles.pdfMenu} role="menu">
+                <span><strong>{chapterPdf.name}</strong><small>Linked to this chapter</small></span>
+                <button type="button" role="menuitem" onClick={() => { setPdfMenuOpen(false); pdfWorkspace.chooseDocument(chapter.id); }}><Icon name="book" size={14} />Replace PDF</button>
+                <button type="button" role="menuitem" className={styles.pdfMenuDanger} onClick={() => { setPdfMenuOpen(false); setUnlinkPdfOpen(true); }}><Icon name="unlink" size={14} />Unlink PDF</button>
+              </div>}
+            </div>
             <Link
               to={Routes.search}
               className={styles.chapterSearch}
@@ -232,6 +257,31 @@ function ChapterView({ chapter }: { chapter: ChapterModel }) {
               : 'This quiz is paused and safely saved. Resume it here, then submit the attempt when you are finished.'}</p>
             <div className={styles.modalActions}>
               <Button variant="primary" onClick={() => setLeaveQuizOpen(false)}>Continue quiz</Button>
+            </div>
+          </section>
+        </div>
+      )}
+
+      {unlinkPdfOpen && chapterPdf && (
+        <div className={styles.modalBackdrop} role="presentation" onMouseDown={() => setUnlinkPdfOpen(false)}>
+          <section
+            className={styles.modal}
+            role="alertdialog"
+            aria-modal="true"
+            aria-labelledby="unlink-pdf-title"
+            aria-describedby="unlink-pdf-description"
+            onMouseDown={(event) => event.stopPropagation()}
+          >
+            <span className={`${styles.modalIcon} ${styles.unlinkModalIcon}`}><Icon name="unlink" size={20} /></span>
+            <h2 id="unlink-pdf-title">Unlink this PDF?</h2>
+            <p id="unlink-pdf-description"><strong>{chapterPdf.name}</strong> will no longer appear with <strong>{chapter.title}</strong>. The PDF itself and its annotations will not be deleted.</p>
+            <div className={styles.modalActions}>
+              <Button variant="secondary" onClick={() => setUnlinkPdfOpen(false)}>Keep linked</Button>
+              <Button variant="danger" autoFocus onClick={() => {
+                pdfWorkspace.toggleChapterLink(chapterPdf.id, chapter.id);
+                if (pdfWorkspace.document?.id === chapterPdf.id) pdfWorkspace.closeDocument();
+                setUnlinkPdfOpen(false);
+              }}>Unlink PDF</Button>
             </div>
           </section>
         </div>

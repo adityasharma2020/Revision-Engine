@@ -8,11 +8,6 @@
 .controls button:hover:not(:disabled), .controls .searchActive { background: rgb(255 255 255 / 10%); color: #fff; }
 .controls .inkActive { color: #aaaefe; background: rgb(124 131 255 / 12%); box-shadow: inset 0 0 0 1px rgb(124 131 255 / 22%); }
 .controls .inkActive:hover:not(:disabled) { color: #c9cbff; background: rgb(124 131 255 / 17%); }
-.controls .saveAction:not(:disabled) { color: #777781; }
-.controls .saveDirty:not(:disabled) { color: #8be0b7; background: rgb(76 185 130 / 9%); }
-.controls .flattenSaveAction:not(:disabled) { color: #f1bd76; background: rgb(241 189 118 / 9%); }
-.controls .discardAction:not(:disabled) { color: #d58b8b; }
-.controls .discardAction:hover:not(:disabled) { color: #ffabab; background: rgb(239 100 97 / 12%); }
 .controls button:disabled { opacity: .3; }
 .controls label { display: flex; align-items: center; gap: 5px; font-size: 12px; }
 .controls input { width: 42px; height: 30px; padding: 0 4px; color: #f4f4f5; font: inherit; text-align: center; background: #27272a; border: 1px solid #3f3f46; border-radius: 6px; appearance: textfield; }
@@ -29,7 +24,13 @@
 .documentMenu > button > span, .documentMenu > a > span { display: flex; min-width: 0; flex-direction: column; }
 .documentMenu strong { font-size: 11px; }
 .documentMenu small { overflow: hidden; color: #a1a1aa; font-size: 9px; text-overflow: ellipsis; white-space: nowrap; }
+.documentMenu > .menuSaveDirty:not(:disabled) { color: #9ce6c0; background: rgb(76 185 130 / 8%); }
+.documentMenu > .menuFlattenSave:not(:disabled) { color: #f1bd76; background: rgb(241 189 118 / 8%); }
+.documentMenu > .menuDanger:not(:disabled) { color: #ef9696; }
+.documentMenu > .menuDanger:hover:not(:disabled) { color: #ffb0b0; background: rgb(239 100 97 / 10%); }
 .documentMenu .shortcutHint { display: block; margin-top: 3px; padding: 7px 8px 3px; border-top: 1px solid #3f3f46; font-size: 8px; text-align: center; }
+.localSaveWarning { position: absolute; z-index: 11; right: 12px; bottom: 12px; display: grid; grid-template-columns: 25px minmax(0, 1fr); align-items: center; gap: 7px; max-width: min(250px, calc(100% - 24px)); padding: 7px 10px; color: #f2cf9a; text-align: left; background: rgb(43 35 25 / 94%); border: 1px solid rgb(240 195 106 / 34%); border-radius: 10px; box-shadow: 0 8px 24px rgb(0 0 0 / 38%); backdrop-filter: blur(12px); }
+.localSaveWarning > svg { color: #f0c36a; }.localSaveWarning > span { display: flex; min-width: 0; flex-direction: column; gap: 1px; }.localSaveWarning strong { font-size: 9px; }.localSaveWarning small { overflow: hidden; color: #b9a98f; font-size: 8px; text-overflow: ellipsis; white-space: nowrap; }.localSaveWarning:hover { color: #ffe4b8; background: rgb(54 43 29 / 97%); border-color: rgb(240 195 106 / 55%); }
 .reader:focus { outline: none; }
 .searchPanel { position: relative; z-index: 3; background: #18181a; border-bottom: 1px solid rgb(255 255 255 / 10%); }
 .searchPanel > label { display: grid; grid-template-columns: auto minmax(0, 1fr) auto auto; align-items: center; gap: 7px; min-height: 42px; padding: 5px 9px; color: #a1a1aa; }
@@ -43,7 +44,7 @@
 .searchResults strong { color: var(--accent); font-size: 10px; }
 .searchResults span, .searchResults > small { font-size: 10px; line-height: 1.4; }
 .searchResults > small { display: block; padding: 10px; color: #a1a1aa; text-align: center; }
-.viewport { position: relative; min-width: 0; min-height: 0; flex: 1; overflow: auto; overscroll-behavior: contain; padding: 12px; scroll-behavior: smooth; text-align: center; touch-action: none; }
+.viewport { position: relative; min-width: 0; min-height: 0; flex: 1; overflow: auto; overscroll-behavior: contain; padding: 12px; scroll-behavior: smooth; text-align: center; touch-action: pan-x pan-y; -webkit-overflow-scrolling: touch; }
 .page { position: relative; display: block; min-width: min(100%, 240px); min-height: 160px; margin: 0 auto 14px; overflow: hidden; background: #fff; scroll-margin-top: 10px; box-shadow: 0 6px 28px rgb(0 0 0 / 35%); }
 .page > small { position: absolute; z-index: 1; top: 7px; left: 7px; padding: 2px 5px; color: #d4d4d8; background: rgb(0 0 0 / 60%); border-radius: 4px; font-size: 9px; pointer-events: none; }
 .page > canvas:not(.annotationCanvas) { position: absolute; inset: 0; display: block; width: 100% !important; height: 100% !important; background: white; }
@@ -69,7 +70,7 @@
 .pdfLinksDisabled > a, .pdfLinksDisabled > button { pointer-events: none; }
 .pageMode { display: flex; align-items: flex-start; justify-content: center; }
 .pageMode .page { flex: 0 0 auto; margin-bottom: 0; }
-.editViewport { overscroll-behavior: none; }
+.editViewport { overscroll-behavior: none; touch-action: none; }
 .inkToolbar { display: flex; position: absolute; z-index: 12; top: 48px; left: 50%; min-height: 38px; max-width: calc(100% - 16px); align-items: center; justify-content: center; gap: 2px; padding: 4px 6px; color: #e4e4e7; background: rgb(25 25 28 / 94%); border: 1px solid rgb(255 255 255 / 13%); border-radius: 11px; box-shadow: 0 8px 24px rgb(0 0 0 / 45%); backdrop-filter: blur(14px); transform: translateX(-50%); }
 .collapsedInkToolbar { position: absolute; z-index: 12; display: grid; width: 34px; height: 34px; padding: 0; color: #fff; background: rgb(63 63 70 / 88%); border: 1px solid rgb(255 255 255 / 16%); border-radius: 10px; box-shadow: 0 7px 20px rgb(0 0 0 / 42%); backdrop-filter: blur(12px); cursor: grab; place-items: center; touch-action: none; transform: translate(-50%, -50%); user-select: none; -webkit-user-select: none; }
 .collapsedInkToolbar:active { cursor: grabbing; }

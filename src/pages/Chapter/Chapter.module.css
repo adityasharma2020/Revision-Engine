@@ -14,6 +14,7 @@
 }
 
 .header {
+  container-type: inline-size;
   margin-bottom: var(--space-4);
 }
 
@@ -176,13 +177,19 @@
   background-color: var(--bg);
 }
 
-@media (max-width: 560px) {
-  .revisionAdd, .revisionIncluded { width: 32px; padding: 0; justify-content: center; gap: 0; font-size: 0; }
-  .pdfAction span { display: none; }
+@container (max-width: 760px) {
   .searchShortcut { display: none; }
+}
+
+@container (max-width: 620px) {
+  .revisionAdd, .revisionIncluded { width: 32px; padding: 0; justify-content: center; gap: 0; font-size: 0; }
+  .revisionAdd span, .revisionIncluded span, .pdfAction span { display: none; }
   .headTop { flex-wrap: wrap; }
   .headTools { flex: 1; }
   .chapterSearch span { display: none; }
+}
+
+@media (max-width: 560px) {
   .modeOption, .modeActive { min-width: 0; }
   .modeOption em, .modeActive em { display: none; }
 
@@ -233,8 +240,10 @@
   background-color: var(--accent-subtle);
   border-radius: var(--radius-md);
 }
+.unlinkModalIcon { color: var(--danger); background-color: var(--danger-subtle); }
 .modal h2 { font-size: var(--text-xl); }
 .modal p { margin-top: var(--space-2); color: var(--text-secondary); line-height: var(--leading-normal); }
+.modal p strong { color: var(--text-primary); font-weight: 650; }
 .modalActions { display: flex; justify-content: flex-end; gap: var(--space-2); margin-top: var(--space-6); }
 
 @keyframes modalIn {
@@ -248,27 +257,28 @@
 }
 .workspacePage { max-width: none; }
 
+.pdfControl { position: relative; display: inline-flex; height: 32px; flex: none; color: var(--text-secondary); background: transparent; border: 1px solid var(--border); border-radius: var(--radius-sm); }
 .pdfAction {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 32px;
   height: 32px;
   flex: none;
-  gap: 0;
+  gap: 5px;
   margin-left: 0;
-  padding: 0;
-  border: 1px solid var(--border);
-  border-radius: var(--radius-sm);
-  background: transparent;
-  color: var(--text-secondary);
+  padding: 0 9px;
+  color: inherit;
   font-size: var(--text-xs);
   font-weight: 600;
   white-space: nowrap;
 }
-.pdfAction span { display: none; }
-.pdfAction:hover { border-color: var(--border-strong); background: var(--surface-hover); color: var(--text-primary); }
-.pdfLinked { color: var(--accent); background: var(--accent-subtle); border-color: var(--accent); }
-.pdfUnlink { display: inline-flex; align-items: center; justify-content: center; width: 32px; height: 32px; flex: none; padding: 0; color: var(--text-secondary); background: transparent; border: 1px solid var(--border); border-radius: var(--radius-sm); }
-.pdfUnlink span { display: none; }
-.pdfUnlink:hover { color: var(--accent); background: var(--accent-subtle); border-color: color-mix(in srgb, var(--accent) 50%, var(--border)); }
+.pdfControl:hover { border-color: var(--border-strong); background: var(--surface-hover); color: var(--text-primary); }
+.pdfControl.pdfLinked { color: var(--accent); background: var(--accent-subtle); border-color: var(--accent); }
+.pdfMenuButton { display: grid; width: 27px; height: 100%; padding: 0; color: inherit; border-left: 1px solid color-mix(in srgb, currentColor 22%, transparent); place-items: center; }
+.pdfMenu { position: absolute; z-index: var(--z-popover, 40); top: calc(100% + 7px); right: 0; display: grid; width: 220px; padding: 6px; color: var(--text-primary); background: var(--surface-elevated); border: 1px solid var(--border-strong); border-radius: var(--radius-md); box-shadow: var(--shadow-lg); }
+.pdfMenu > span { display: grid; min-width: 0; gap: 2px; padding: 8px 9px 9px; border-bottom: 1px solid var(--border); }
+.pdfMenu > span strong { overflow: hidden; font-size: 11px; text-overflow: ellipsis; white-space: nowrap; }
+.pdfMenu > span small { color: var(--text-tertiary); font-size: 9px; }
+.pdfMenu > button { display: flex; align-items: center; gap: 8px; min-height: 34px; padding: 0 9px; color: var(--text-secondary); text-align: left; border-radius: var(--radius-sm); font-size: 11px; }
+.pdfMenu > button:hover { color: var(--text-primary); background: var(--surface-hover); }
+.pdfMenu > .pdfMenuDanger { color: var(--danger); }

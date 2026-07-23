@@ -15,6 +15,7 @@ export const ICON_PATHS = {
   more: 'M5 12h.01M12 12h.01M19 12h.01',
   sync: 'M20 7h-5V2M4 17h5v5M19 12a7 7 0 0 0-12-5L4 10M5 12a7 7 0 0 0 12 5l3-3',
   cloud: 'M7 18h10a4 4 0 0 0 .8-7.9A6 6 0 0 0 6.3 8.5 4.5 4.5 0 0 0 7 18Z',
+  cloudCheck: 'M7 18h10a4 4 0 0 0 .8-7.9A6 6 0 0 0 6.3 8.5 4.5 4.5 0 0 0 7 18ZM9 13l2 2 4-5',
   cloudUpload: 'M7 18h10a4 4 0 0 0 .8-7.9A6 6 0 0 0 6.3 8.5 4.5 4.5 0 0 0 7 18ZM12 15V8m-3 3 3-3 3 3',
   share: 'M12 16V3M7 8l5-5 5 5M5 13v7h14v-7',
   save: 'M5 3h12l2 2v16H5V3Zm3 0v6h8V3M8 21v-8h8v8',

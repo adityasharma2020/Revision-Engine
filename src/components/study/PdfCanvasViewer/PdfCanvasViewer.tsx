@@ -95,6 +95,34 @@ function pdfPoint(x: number, y: number, rotation: number): PdfAnnotationPoint {
   return { x, y: 1 - y, pressure: .5 };
 }
 
+type TwoFingerMode = 'pending' | 'pan' | 'pinch';
+type TouchPoint = { x: number; y: number };
+type TwoFingerGesture = {
+  startedAt: number;
+  starts: Map<number, TouchPoint>;
+  originX: number;
+  originY: number;
+  lastCenterX: number;
+  lastCenterY: number;
+  initialSpan: number;
+  lastSpan: number;
+  mode: TwoFingerMode;
+  moved: boolean;
+};
+
+function touchDistance(left: TouchPoint, right: TouchPoint) {
+  return Math.hypot(left.x - right.x, left.y - right.y);
+}
+
+function classifyTwoFingerGesture(initialSpan: number, span: number, centerTravel: number): Exclude<TwoFingerMode, 'pending'> {
+  const spanTravel = Math.abs(span - initialSpan);
+  // Tablet digitizers update each finger separately, which briefly changes the
+  // measured span during an ordinary two-finger scroll. Require a deliberate,
+  // dominant separation change before treating the gesture as a pinch.
+  const pinchThreshold = Math.max(18, initialSpan * .07);
+  return spanTravel >= pinchThreshold && spanTravel > centerTravel * 1.15 ? 'pinch' : 'pan';
+}
+
 function AnnotationLayer({ pageNumber, rotation, annotations, editing, tool, color, size, advanced, onPrepare, onBegin, onExtend, onEnd, onCancel, onPan, onPinch, onTwoFingerTap, onStylusButton, onErase }: {
   pageNumber: number; rotation: number; annotations: readonly PdfInkAnnotation[]; editing: boolean; tool: InkTool; color: string; size: number; advanced: AdvancedToolPreferences;
   onPrepare: () => void; onBegin: (annotation: PdfInkAnnotation) => void; onExtend: (id: string, points: readonly PdfAnnotationPoint[]) => void; onEnd: () => void; onCancel: () => void; onPan: (dx: number, dy: number) => void; onPinch: (factor: number, clientX?: number, clientY?: number) => void; onTwoFingerTap: () => void; onStylusButton: () => void; onErase: (page: number, point: PdfAnnotationPoint, mode: EraserMode) => void;
@@ -106,8 +134,9 @@ function AnnotationLayer({ pageNumber, rotation, annotations, editing, tool, col
   const eraserCursorRef = useRef<SVGEllipseElement>(null);
   const lastPointRef = useRef<PdfAnnotationPoint | null>(null);
   const pointerModeRef = useRef<'draw' | 'erase' | 'pan' | null>(null);
-  const touchPointsRef = useRef(new Map<number, { x: number; y: number }>());
-  const twoFingerGestureRef = useRef<{ startedAt: number; originX: number; originY: number; initialSpan: number; lastSpan: number; moved: boolean } | null>(null);
+  const touchPointsRef = useRef(new Map<number, TouchPoint>());
+  const twoFingerGestureRef = useRef<TwoFingerGesture | null>(null);
+  const stylusButtonPressedRef = useRef(false);
   const pointsFromEvent = (event: ReactPointerEvent<SVGSVGElement>) => {
     const bounds = event.currentTarget.getBoundingClientRect();
     const coalesced = event.nativeEvent.getCoalescedEvents?.() ?? [];
@@ -126,7 +155,13 @@ function AnnotationLayer({ pageNumber, rotation, annotations, editing, tool, col
       lastPointRef.current = smoothed; return smoothed;
     });
   };
-  const barrelEraser = (event: ReactPointerEvent<SVGSVGElement>) => event.pointerType === 'pen' && (event.button === 2 || event.button === 5 || (event.buttons & 2) !== 0 || (event.buttons & 32) !== 0);
+  const stylusButtonPressed = (event: ReactPointerEvent<SVGSVGElement>) => event.pointerType === 'pen' && (event.button > 0 || (event.buttons & 62) !== 0);
+  const consumeStylusButtonPress = (event: ReactPointerEvent<SVGSVGElement>) => {
+    const pressed = stylusButtonPressed(event);
+    const newlyPressed = pressed && !stylusButtonPressedRef.current;
+    stylusButtonPressedRef.current = pressed;
+    return newlyPressed;
+  };
   const drawSegment = useCallback((from: PdfAnnotationPoint, to: PdfAnnotationPoint, annotationTool = tool, annotationColor = color, annotationSize = size, opacity = annotationTool === 'highlighter' ? advanced.highlighterOpacity : .95, pressureEnabled = advanced.penPressure, target = canvasRef.current) => {
     const canvas = target; const context = canvas?.getContext('2d'); if (!canvas || !context) return;
     const bounds = canvas.getBoundingClientRect(); const ratio = Math.min(devicePixelRatio || 1, 2); const pixelWidth = Math.max(1, Math.round(bounds.width * ratio)); const pixelHeight = Math.max(1, Math.round(bounds.height * ratio));
@@ -206,17 +241,22 @@ function AnnotationLayer({ pageNumber, rotation, annotations, editing, tool, col
       event.preventDefault(); event.currentTarget.setPointerCapture(event.pointerId);
       touchPointsRef.current.set(event.pointerId, { x: event.clientX, y: event.clientY });
       if (touchPointsRef.current.size >= 2) {
-        const touches = [...touchPointsRef.current.values()]; const span = Math.hypot(touches[0]!.x - touches[1]!.x, touches[0]!.y - touches[1]!.y);
-        twoFingerGestureRef.current = { startedAt: performance.now(), originX: (touches[0]!.x + touches[1]!.x) / 2, originY: (touches[0]!.y + touches[1]!.y) / 2, initialSpan: span, lastSpan: span, moved: false };
+        const touches = [...touchPointsRef.current.values()]; const span = touchDistance(touches[0]!, touches[1]!);
+        const originX = (touches[0]!.x + touches[1]!.x) / 2; const originY = (touches[0]!.y + touches[1]!.y) / 2;
+        twoFingerGestureRef.current = { startedAt: performance.now(), starts: new Map(touchPointsRef.current), originX, originY, lastCenterX: originX, lastCenterY: originY, initialSpan: span, lastSpan: span, mode: 'pending', moved: false };
         if (activeId.current) onCancel();
         clearLiveCanvas();
         activeId.current = null; activePointsRef.current = []; pointerModeRef.current = 'pan'; lastPointRef.current = null;
         return;
       }
     }
-    const temporaryEraser = barrelEraser(event);
-    if (temporaryEraser) { event.preventDefault(); event.currentTarget.setPointerCapture(event.pointerId); onStylusButton(); return; }
-    if (event.button > 0 && !temporaryEraser) return;
+    if (consumeStylusButtonPress(event)) {
+      event.preventDefault();
+      if (activeId.current) onCancel();
+      clearLiveCanvas(); activeId.current = null; activePointsRef.current = []; pointerModeRef.current = null; lastPointRef.current = null;
+      onStylusButton(); return;
+    }
+    if (event.button > 0) return;
     event.preventDefault(); event.currentTarget.setPointerCapture(event.pointerId);
     const point = pointsFromEvent(event)[0];
     if (!point) return;
@@ -228,28 +268,34 @@ function AnnotationLayer({ pageNumber, rotation, annotations, editing, tool, col
   };
   const move = (event: ReactPointerEvent<SVGSVGElement>) => {
     if (!editing) return;
+    if (event.pointerType === 'pen') {
+      if (consumeStylusButtonPress(event)) {
+        event.preventDefault();
+        if (activeId.current) onCancel();
+        clearLiveCanvas(); activeId.current = null; activePointsRef.current = []; pointerModeRef.current = null; lastPointRef.current = null;
+        onStylusButton(); return;
+      }
+    }
     if (event.pointerType === 'touch' && touchPointsRef.current.has(event.pointerId)) {
-      const before = [...touchPointsRef.current.values()];
       touchPointsRef.current.set(event.pointerId, { x: event.clientX, y: event.clientY });
       if (pointerModeRef.current === 'pan' || touchPointsRef.current.size >= 2) {
         event.preventDefault();
-        const after = [...touchPointsRef.current.values()];
-        const center = (items: { x: number; y: number }[]) => ({ x: items.reduce((sum, item) => sum + item.x, 0) / items.length, y: items.reduce((sum, item) => sum + item.y, 0) / items.length });
-        const previous = center(before); const current = center(after); const dx = current.x - previous.x; const dy = current.y - previous.y;
-        let spanDelta = 0;
-        if (twoFingerGestureRef.current && after.length >= 2) {
-          const span = Math.hypot(after[0]!.x - after[1]!.x, after[0]!.y - after[1]!.y);
-          spanDelta = Math.abs(span - twoFingerGestureRef.current.lastSpan);
-          if (twoFingerGestureRef.current.lastSpan > 0) onPinch(span / twoFingerGestureRef.current.lastSpan, current.x, current.y);
-          const midpointX = (after[0]!.x + after[1]!.x) / 2; const midpointY = (after[0]!.y + after[1]!.y) / 2;
-          if (Math.hypot(midpointX - twoFingerGestureRef.current.originX, midpointY - twoFingerGestureRef.current.originY) > 18 || Math.abs(span - twoFingerGestureRef.current.initialSpan) > 18) twoFingerGestureRef.current.moved = true;
-          twoFingerGestureRef.current.lastSpan = span;
-        }
-        if (spanDelta < 1) onPan(dx, dy); return;
+        const after = [...touchPointsRef.current.values()]; const gesture = twoFingerGestureRef.current;
+        if (!gesture || after.length < 2) return;
+        const span = touchDistance(after[0]!, after[1]!); const currentX = (after[0]!.x + after[1]!.x) / 2; const currentY = (after[0]!.y + after[1]!.y) / 2;
+        const centerTravel = Math.hypot(currentX - gesture.originX, currentY - gesture.originY); const spanTravel = Math.abs(span - gesture.initialSpan);
+        const bothMoved = [...touchPointsRef.current].every(([id, point]) => { const start = gesture.starts.get(id); return start ? touchDistance(point, start) >= 3 : true; });
+        let justClassified = false;
+        if (gesture.mode === 'pending' && bothMoved) { gesture.mode = classifyTwoFingerGesture(gesture.initialSpan, span, centerTravel); justClassified = true; }
+        if (gesture.mode === 'pinch') onPinch(span / (justClassified ? gesture.initialSpan : gesture.lastSpan), currentX, currentY);
+        else if (gesture.mode === 'pan') onPan(currentX - (justClassified ? gesture.originX : gesture.lastCenterX), currentY - (justClassified ? gesture.originY : gesture.lastCenterY));
+        if (centerTravel > 18 || spanTravel > 18) gesture.moved = true;
+        gesture.lastSpan = span; gesture.lastCenterX = currentX; gesture.lastCenterY = currentY;
+        return;
       }
     }
     const points = pointsFromEvent(event);
-    const erasing = pointerModeRef.current === 'erase' || tool === 'eraser' || barrelEraser(event);
+    const erasing = pointerModeRef.current === 'erase' || tool === 'eraser';
     updateEraserCursor(points.at(-1), erasing, event.currentTarget);
     if (erasing) { if (event.buttons || event.pressure) onErase(pageNumber, points.at(-1)!, advanced.eraserMode); return; }
     if (activeId.current) {
@@ -260,6 +306,7 @@ function AnnotationLayer({ pageNumber, rotation, annotations, editing, tool, col
     }
   };
   const end = (event?: ReactPointerEvent<SVGSVGElement>) => {
+    if (event?.pointerType === 'pen' && (event.buttons & 62) === 0) stylusButtonPressedRef.current = false;
     if (event?.pointerType === 'touch') touchPointsRef.current.delete(event.pointerId);
     if (pointerModeRef.current === 'pan') {
       if (touchPointsRef.current.size === 0) {
@@ -397,8 +444,8 @@ export function PdfCanvasViewer({ url, sourceData, name, className, fileHandle, 
   const inkToolbarRef = useRef<HTMLDivElement>(null);
   const toolSettingsRef = useRef<HTMLElement>(null);
   const pageRefs = useRef(new Map<number, HTMLElement>());
-  const readerTouchesRef = useRef(new Map<number, { x: number; y: number }>());
-  const readerPinchRef = useRef<{ span: number } | null>(null);
+  const readerPenPanRef = useRef<{ pointerId: number; startX: number; startY: number; lastX: number; lastY: number; moved: boolean } | null>(null);
+  const suppressReaderClickRef = useRef(false);
   const undoTouchesRef = useRef(new Map<number, { x: number; y: number }>());
   const undoGestureRef = useRef<{ startedAt: number; starts: Map<number, { x: number; y: number }>; moved: boolean } | null>(null);
   const lastGestureUndoRef = useRef(0);
@@ -436,15 +483,43 @@ export function PdfCanvasViewer({ url, sourceData, name, className, fileHandle, 
   const [autosaveDelay, setAutosaveDelay] = useState(() => { const value = Number(localStorage.getItem(AUTOSAVE_DELAY_KEY)); return [500, 1000, 2000, 5000].includes(value) ? value : 1000; });
   const inkPreferences = useMemo(initialInkPreferences, []);
   const [editing, setEditing] = useState(false); const [tool, setTool] = useState<InkTool>(inkPreferences.tool); const [toolColors, setToolColors] = useState<ToolColors>(inkPreferences.colors); const [toolSizes, setToolSizes] = useState<ToolSizes>(inkPreferences.sizes); const [advanced, setAdvanced] = useState<AdvancedToolPreferences>(inkPreferences.advanced); const [toolPresets, setToolPresets] = useState<ToolPreset[]>(inkPreferences.presets); const inkSize = toolSizes[tool]; const color = tool === 'eraser' ? toolColors.pen : toolColors[tool];
-  const [annotations, setAnnotations] = useState<PdfInkAnnotation[]>([]); const [annotationsReady, setAnnotationsReady] = useState(false); const [exporting, setExporting] = useState(false); const [saving, setSaving] = useState(false); const [saveNotice, setSaveNotice] = useState(''); const [autosaveState, setAutosaveState] = useState<'saved' | 'saving'>('saved');
+  const [annotations, setAnnotations] = useState<PdfInkAnnotation[]>([]); const [annotationsReady, setAnnotationsReady] = useState(false); const [exporting, setExporting] = useState(false); const [saving, setSaving] = useState(false); const [saveNotice, setSaveNotice] = useState(''); const [autosaveState, setAutosaveState] = useState<'saved' | 'saving'>('saved'); const [cloudSyncState, setCloudSyncState] = useState<'saved' | 'saving'>('saved');
   const cloudSeededRef = useRef('');
   const lastCloudDigestRef = useRef('');
+  const cloudChangeRef = useRef(onCloudAnnotationsChange);
+  const cloudSyncRunningRef = useRef(false);
+  const queuedCloudSyncRef = useRef<{ annotations: readonly PdfInkAnnotation[]; digest: string } | null>(null);
   const fingerprint = document?.fingerprints[0] ?? '';
   const [sourceUrl, setSourceUrl] = useState(url);
   const positionKey = useMemo(() => { let hash = 2166136261; for (const character of name) hash = Math.imul(hash ^ character.charCodeAt(0), 16777619); return `revision-engine:pdf-position:${(hash >>> 0).toString(36)}`; }, [name]);
   const savedDigestKey = fingerprint
     ? `revision-engine:pdf-saved-annotation-digest:${fingerprint}`
     : `${positionKey}:saved-annotation-digest`;
+
+  useEffect(() => { cloudChangeRef.current = onCloudAnnotationsChange; }, [onCloudAnnotationsChange]);
+  const drainCloudSync = useCallback(async () => {
+    if (cloudSyncRunningRef.current) return;
+    cloudSyncRunningRef.current = true;
+    try {
+      while (queuedCloudSyncRef.current) {
+        const pending = queuedCloudSyncRef.current; queuedCloudSyncRef.current = null;
+        const sync = cloudChangeRef.current; if (!sync) break;
+        setCloudSyncState('saving');
+        try {
+          await sync(pending.annotations);
+          lastCloudDigestRef.current = pending.digest;
+          setSaveNotice('');
+        } catch (reason) {
+          queuedCloudSyncRef.current = null;
+          setSaveNotice(reason instanceof Error ? reason.message : 'Cloud sync failed');
+          break;
+        }
+      }
+    } finally {
+      cloudSyncRunningRef.current = false;
+      setCloudSyncState('saved');
+    }
+  }, []);
 
   useEffect(() => { const host = viewportRef.current; if (!host) return; const observer = new ResizeObserver(([entry]) => setWidth(entry?.contentRect.width ?? 0)); observer.observe(host); return () => observer.disconnect(); }, []);
   const refreshLocalSource = async (handle: FileSystemFileHandle) => {
@@ -561,17 +636,22 @@ export function PdfCanvasViewer({ url, sourceData, name, className, fileHandle, 
     if (!annotationsReady || !onCloudAnnotationsChange || cloudSeededRef.current !== fingerprint) return;
     const digest = annotationDigest(annotations);
     if (digest === lastCloudDigestRef.current) return;
+    setCloudSyncState('saving');
     const timer = window.setTimeout(() => {
-      setAutosaveState('saving');
-      void onCloudAnnotationsChange(annotations).then(() => { lastCloudDigestRef.current = digest; setAutosaveState('saved'); }).catch((reason) => {
-        setAutosaveState('saved'); setSaveNotice(reason instanceof Error ? reason.message : 'Cloud sync failed');
-      });
+      queuedCloudSyncRef.current = { annotations, digest };
+      void drainCloudSync();
     // Cloud sync is deliberately idle-debounced. Pointer movement may produce
     // hundreds of local annotation snapshots, but only the settled stroke is
     // sent to Supabase. IndexedDB remains the immediate crash-safe store.
     }, 2000);
     return () => window.clearTimeout(timer);
-  }, [annotations, annotationsReady, fingerprint, onCloudAnnotationsChange]);
+  }, [annotations, annotationsReady, drainCloudSync, fingerprint, onCloudAnnotationsChange]);
+  useEffect(() => {
+    if (!pdfSaveDirty || onCloudAnnotationsChange) return;
+    const warnBeforeLeaving = (event: BeforeUnloadEvent) => { event.preventDefault(); event.returnValue = true; };
+    window.addEventListener('beforeunload', warnBeforeLeaving, { capture: true });
+    return () => window.removeEventListener('beforeunload', warnBeforeLeaving, { capture: true });
+  }, [onCloudAnnotationsChange, pdfSaveDirty]);
   useEffect(() => {
     if (!annotationsReady) return;
     const savedDigest = localStorage.getItem(savedDigestKey);
@@ -674,18 +754,26 @@ export function PdfCanvasViewer({ url, sourceData, name, className, fileHandle, 
     viewport.addEventListener('wheel', pinchZoom, { passive: false });
     return () => viewport.removeEventListener('wheel', pinchZoom);
   }, [zoomPdf]);
-  const readerGestureDown = (event: ReactPointerEvent<HTMLDivElement>) => {
-    if (editing || event.pointerType !== 'touch') return; event.preventDefault(); event.currentTarget.setPointerCapture(event.pointerId);
-    readerTouchesRef.current.set(event.pointerId, { x: event.clientX, y: event.clientY }); const touches = [...readerTouchesRef.current.values()];
-    if (touches.length >= 2) readerPinchRef.current = { span: Math.hypot(touches[0]!.x - touches[1]!.x, touches[0]!.y - touches[1]!.y) };
+  const readerPenDown = (event: ReactPointerEvent<HTMLDivElement>) => {
+    if (editing || event.pointerType !== 'pen' || event.button !== 0) return;
+    readerPenPanRef.current = { pointerId: event.pointerId, startX: event.clientX, startY: event.clientY, lastX: event.clientX, lastY: event.clientY, moved: false };
+    event.currentTarget.setPointerCapture(event.pointerId);
   };
-  const readerGestureMove = (event: ReactPointerEvent<HTMLDivElement>) => {
-    if (editing || event.pointerType !== 'touch') return; const previousPoint = readerTouchesRef.current.get(event.pointerId); if (!previousPoint) return;
-    event.preventDefault(); readerTouchesRef.current.set(event.pointerId, { x: event.clientX, y: event.clientY }); const touches = [...readerTouchesRef.current.values()];
-    if (touches.length >= 2) { const span = Math.hypot(touches[0]!.x - touches[1]!.x, touches[0]!.y - touches[1]!.y); const previousSpan = readerPinchRef.current?.span; if (previousSpan && previousSpan > 0) zoomPdf(span / previousSpan, (touches[0]!.x + touches[1]!.x) / 2, (touches[0]!.y + touches[1]!.y) / 2); readerPinchRef.current = { span }; return; }
-    readerPinchRef.current = null; viewportRef.current?.scrollBy({ left: previousPoint.x - event.clientX, top: previousPoint.y - event.clientY, behavior: 'auto' });
+  const readerPenMove = (event: ReactPointerEvent<HTMLDivElement>) => {
+    const pan = readerPenPanRef.current;
+    if (editing || event.pointerType !== 'pen' || !pan || pan.pointerId !== event.pointerId) return;
+    const dx = pan.lastX - event.clientX; const dy = pan.lastY - event.clientY;
+    if (!pan.moved && Math.hypot(event.clientX - pan.startX, event.clientY - pan.startY) >= 3) pan.moved = true;
+    pan.lastX = event.clientX; pan.lastY = event.clientY;
+    if (!pan.moved) return;
+    event.preventDefault(); viewportRef.current?.scrollBy({ left: dx, top: dy, behavior: 'auto' });
   };
-  const readerGestureEnd = (event: ReactPointerEvent<HTMLDivElement>) => { if (event.pointerType !== 'touch') return; readerTouchesRef.current.delete(event.pointerId); if (readerTouchesRef.current.size < 2) readerPinchRef.current = null; };
+  const readerPenEnd = (event: ReactPointerEvent<HTMLDivElement>) => {
+    const pan = readerPenPanRef.current;
+    if (event.pointerType !== 'pen' || !pan || pan.pointerId !== event.pointerId) return;
+    readerPenPanRef.current = null;
+    if (pan.moved) { suppressReaderClickRef.current = true; window.setTimeout(() => { suppressReaderClickRef.current = false; }, 300); }
+  };
   const erase = (page: number, point: PdfAnnotationPoint, mode: EraserMode) => {
     if (!toolbarPinned) { setToolbarCollapsed(true); setToolSettingsOpen(false); }
     const radius = Math.max(.012, inkSize / 80);
@@ -832,6 +920,12 @@ export function PdfCanvasViewer({ url, sourceData, name, className, fileHandle, 
   };
   const keyboard = (event: ReactKeyboardEvent<HTMLDivElement>) => { const target = event.target as HTMLElement; if (target.matches('input, textarea, select, [contenteditable="true"]') && !(event.ctrlKey || event.metaKey)) return; if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === 'f') { event.preventDefault(); setSearchOpen(true); } else if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === 'z') { event.preventDefault(); if (event.shiftKey) redo(); else undo(); } else if (event.key === 'ArrowRight' || event.key === 'PageDown') { event.preventDefault(); goTo(pageNumber + 1); } else if (event.key === 'ArrowLeft' || event.key === 'PageUp') { event.preventDefault(); goTo(pageNumber - 1); } else if (event.key === 'Escape') { setEditing(false); setSearchOpen(false); setDocumentMenuOpen(false); setToolSettingsOpen(false); } };
   const visiblePages = document ? (viewMode === 'page' ? [pageNumber] : Array.from({ length: pages }, (_, index) => index + 1)) : [];
+  const persistenceIsSaving = onCloudAnnotationsChange ? cloudSyncState === 'saving' : autosaveState === 'saving';
+  const persistenceLabel = saveNotice || (saving
+    ? 'Writing PDF…'
+    : onCloudAnnotationsChange
+      ? persistenceIsSaving ? 'Syncing…' : 'Synced'
+      : persistenceIsSaving ? 'Saving locally…' : 'Saved locally');
   const annotationsByPage = useMemo(() => {
     const grouped = new Map<number, PdfInkAnnotation[]>();
     for (const annotation of annotations) grouped.set(annotation.page, [...(grouped.get(annotation.page) ?? []), annotation]);
@@ -849,23 +943,24 @@ export function PdfCanvasViewer({ url, sourceData, name, className, fileHandle, 
         <button type="button" className={styles.zoom} onClick={() => setZoom(1)} aria-label="Reset zoom">{Math.round(zoom * 100)}%</button>
         <button type="button" className={styles.zoomAdjust} disabled={zoom >= 2.4} onClick={() => setZoom((value) => Math.min(2.4, value + .2))} aria-label="Zoom in"><Icon name="plus" size={16} /></button>
         <span className={styles.divider} />
-        <button type="button" className={cx(styles.saveAction, pdfSaveDirty && styles.saveDirty, pdfSaveDirty && annotationFormat === 'flattened' && styles.flattenSaveAction)} disabled={saving || !pdfSaveDirty} onClick={requestSave} aria-label={pdfSaveDirty ? 'Save annotation changes to PDF' : 'Annotations already saved to PDF'} title={pdfSaveDirty ? annotationFormat === 'flattened' ? 'Flatten and save — marks cannot be edited afterward' : fileHandle ? 'Save editable changes to this PDF' : 'Save editable annotated PDF' : 'No unsaved PDF changes'}><Icon name="save" size={16} /></button>
         <button type="button" className={editing ? styles.inkActive : ''} onClick={() => { setEditing((value) => !value); setToolbarCollapsed(false); setSearchOpen(false); }} aria-pressed={editing} aria-label={editing ? 'Editing mode active — switch to reading mode' : 'Reading mode active — switch to editing mode'} title={editing ? 'Editing mode · switch to reading' : 'Reading mode · switch to editing'}><Icon name={editing ? 'pencil' : 'handPointer'} size={17} /></button>
         <button type="button" className={searchOpen ? styles.searchActive : ''} onClick={() => { setSearchOpen((open) => !open); setEditing(false); }} aria-label="Search inside PDF"><Icon name="search" size={16} /></button>
-        <button type="button" className={styles.discardAction} disabled={!annotations.length && !pdfSaveDirty} onClick={() => { setDiscardDialogOpen(true); setDocumentMenuOpen(false); }} aria-label="Discard editable annotation changes" title={annotations.length ? `Discard all ${annotations.length} editable annotation${annotations.length === 1 ? '' : 's'}` : pdfSaveDirty ? 'Discard unsaved annotation changes' : 'No editable annotation changes to discard'}><Icon name="trash" size={16} /></button>
         <div ref={documentMenuRef} className={styles.documentMenuHost}><button type="button" className={documentMenuOpen ? styles.searchActive : ''} onClick={() => setDocumentMenuOpen((open) => { const next = !open; if (next) setToolbarCollapsed(true); return next; })} aria-label="More PDF options"><Icon name="more" size={16} /></button>{documentMenuOpen && <div className={styles.documentMenu}>
           <button type="button" onClick={() => { setViewMode((value) => value === 'continuous' ? 'page' : 'continuous'); setDocumentMenuOpen(false); }}><Icon name="monitor" size={15} /><span><strong>{viewMode === 'continuous' ? 'Single-page view' : 'Continuous scroll'}</strong><small>{viewMode === 'continuous' ? 'Render one page at a time' : 'Scroll through virtualized pages'}</small></span></button>
           <button type="button" onClick={() => { setRotation((value) => (value + 90) % 360); setDocumentMenuOpen(false); }}><Icon name="sync" size={15} /><span><strong>Rotate clockwise</strong><small>Current: {rotation}°</small></span></button>
           <button type="button" disabled={!annotations.length || exporting} onClick={() => { void exportPdf(); setDocumentMenuOpen(false); }}><Icon name="share" size={15} /><span><strong>{exporting ? 'Preparing copy…' : 'Export flattened copy'}</strong><small>Permanent compatibility copy · {annotations.length} mark{annotations.length === 1 ? '' : 's'}</small></span></button>
           <a href={sourceUrl} download={name}><Icon name="share" size={15} /><span><strong>Download original</strong><small>{name}</small></span></a>
           <button type="button" onClick={() => { setPreferencesOpen(true); setDocumentMenuOpen(false); }}><Icon name="settings" size={15} /><span><strong>Annotation preferences</strong><small>{autosaveDelay / 1000}s autosave · {saveMode === 'replace' ? 'update file' : saveMode === 'copy' ? 'save copy' : 'ask on save'}</small></span></button>
+          <button type="button" className={cx(pdfSaveDirty && styles.menuSaveDirty, pdfSaveDirty && annotationFormat === 'flattened' && styles.menuFlattenSave)} disabled={saving || !pdfSaveDirty} onClick={() => { requestSave(); setDocumentMenuOpen(false); }}><Icon name="save" size={15} /><span><strong>{saving ? 'Writing PDF…' : pdfSaveDirty ? 'Save annotations to PDF' : 'Saved to PDF'}</strong><small>{pdfSaveDirty ? annotationFormat === 'flattened' ? 'Write permanent marks into a PDF copy' : fileHandle ? 'Update the opened PDF file' : 'Create an editable annotated PDF' : 'No file-level changes to save'}</small></span></button>
+          <button type="button" className={styles.menuDanger} disabled={!annotations.length && !pdfSaveDirty} onClick={() => { setDiscardDialogOpen(true); setDocumentMenuOpen(false); }}><Icon name="trash" size={15} /><span><strong>Discard editable annotations</strong><small>{annotations.length ? `Remove all ${annotations.length} editable annotation${annotations.length === 1 ? '' : 's'}` : 'No editable annotations to discard'}</small></span></button>
         </div>}</div>
       </div>
-      {editing && toolbarCollapsed && <button type="button" className={styles.collapsedInkToolbar} style={{ left: `${collapsedToolbarPosition.x * 100}%`, top: `${collapsedToolbarPosition.y * 100}%` }} onPointerDown={beginCollapsedToolbarDrag} onPointerMove={moveCollapsedToolbar} onPointerUp={endCollapsedToolbarDrag} onPointerCancel={endCollapsedToolbarDrag} onClick={() => { if (!suppressCollapsedClickRef.current) setToolbarCollapsed(false); }} aria-label="Expand or move annotation tools" title="Drag to move · Click to show annotation tools"><Icon name={tool === 'pen' ? 'pencil' : tool === 'highlighter' ? 'highlighter' : tool === 'line' ? 'line' : 'eraser'} size={16} /><span className={autosaveState === 'saving' ? styles.savingDot : ''} /></button>}
+      {pdfSaveDirty && !onCloudAnnotationsChange && <button type="button" className={styles.localSaveWarning} onClick={requestSave} title="Save annotations into this PDF"><Icon name="save" size={14} /><span><strong>{autosaveState === 'saving' ? 'Saving on this device…' : 'Saved safely on this device'}</strong><small>Save into the PDF for a portable copy</small></span></button>}
+      {editing && toolbarCollapsed && <button type="button" className={styles.collapsedInkToolbar} style={{ left: `${collapsedToolbarPosition.x * 100}%`, top: `${collapsedToolbarPosition.y * 100}%` }} onPointerDown={beginCollapsedToolbarDrag} onPointerMove={moveCollapsedToolbar} onPointerUp={endCollapsedToolbarDrag} onPointerCancel={endCollapsedToolbarDrag} onClick={() => { if (!suppressCollapsedClickRef.current) setToolbarCollapsed(false); }} aria-label="Expand or move annotation tools" title="Drag to move · Click to show annotation tools"><Icon name={tool === 'pen' ? 'pencil' : tool === 'highlighter' ? 'highlighter' : tool === 'line' ? 'line' : 'eraser'} size={16} /><span className={persistenceIsSaving ? styles.savingDot : ''} /></button>}
       {editing && !toolbarCollapsed && <div ref={inkToolbarRef} className={styles.inkToolbar} aria-label="Annotation tools">
         {(['pen', 'highlighter', 'eraser'] as const).map((value) => <button type="button" key={value} className={tool === value ? styles.toolActive : ''} onClick={() => { if (tool === value) setToolSettingsOpen((open) => !open); else { setTool(value); setToolSettingsOpen(false); } }} onDoubleClick={() => setToolSettingsOpen(true)} aria-label={value} title={tool === value ? 'Click again for tool settings' : value}><Icon name={value === 'pen' ? 'pencil' : value === 'highlighter' ? 'highlighter' : 'eraser'} size={17} /></button>)}
         <span className={styles.inkDivider} /><input type="color" value={color} onChange={(event) => { if (tool !== 'eraser') setToolColors((current) => ({ ...current, [tool]: event.target.value })); }} aria-label="Ink colour" disabled={tool === 'eraser'} /><input type="range" min="1" max={tool === 'eraser' ? 12 : 6} step="1" value={inkSize} onChange={(event) => setToolSizes((current) => ({ ...current, [tool]: Number(event.target.value) }))} aria-label={`${tool} thickness`} title={`${tool} thickness: ${inkSize}`} />
-        <span className={styles.inkDivider} /><button type="button" onClick={undo} disabled={!historyRef.current.length} aria-label="Undo"><Icon name="undo" size={16} /></button><button type="button" onClick={redo} disabled={!futureRef.current.length} aria-label="Redo"><Icon name="redo" size={16} /></button><button type="button" className={toolbarPinned ? styles.pinActive : ''} onClick={toggleToolbarPinned} aria-pressed={toolbarPinned} aria-label={toolbarPinned ? 'Allow toolbar to minimize while drawing' : 'Keep toolbar open while drawing'} title={toolbarPinned ? 'Toolbar locked open' : 'Auto-minimize toolbar'}><Icon name={toolbarPinned ? 'lock' : 'unlock'} size={15} /></button><span className={cx(styles.savedState, (saving || autosaveState === 'saving') && styles.savingState, !pdfSaveDirty && styles.pdfSavedState)}>{saveNotice || (saving ? 'Writing PDF…' : pdfSaveDirty ? autosaveState === 'saving' ? 'Backing up…' : 'Not saved to PDF' : 'Saved to PDF')}</span>
+        <span className={styles.inkDivider} /><button type="button" onClick={undo} disabled={!historyRef.current.length} aria-label="Undo"><Icon name="undo" size={16} /></button><button type="button" onClick={redo} disabled={!futureRef.current.length} aria-label="Redo"><Icon name="redo" size={16} /></button><button type="button" className={toolbarPinned ? styles.pinActive : ''} onClick={toggleToolbarPinned} aria-pressed={toolbarPinned} aria-label={toolbarPinned ? 'Allow toolbar to minimize while drawing' : 'Keep toolbar open while drawing'} title={toolbarPinned ? 'Toolbar locked open' : 'Auto-minimize toolbar'}><Icon name={toolbarPinned ? 'lock' : 'unlock'} size={15} /></button><span className={cx(styles.savedState, (saving || persistenceIsSaving) && styles.savingState, !saveNotice && !saving && !persistenceIsSaving && styles.pdfSavedState)}>{persistenceLabel}</span>
       </div>}
       {editing && !toolbarCollapsed && toolSettingsOpen && <section ref={toolSettingsRef} className={styles.toolSettings} aria-label={`${tool} advanced settings`}>
         <header><div><strong>{tool[0]!.toUpperCase()}{tool.slice(1)} settings</strong><small>Saved automatically on this device</small></div><button type="button" onClick={() => setToolSettingsOpen(false)} aria-label="Close tool settings"><Icon name="close" size={14} /></button></header>
@@ -875,11 +970,11 @@ export function PdfCanvasViewer({ url, sourceData, name, className, fileHandle, 
         {tool === 'highlighter' && <><label className={styles.toolRange}><span>Opacity <b>{Math.round(advanced.highlighterOpacity * 100)}%</b></span><input type="range" min=".1" max=".45" step=".05" value={advanced.highlighterOpacity} onChange={(event) => setAdvanced((value) => ({ ...value, highlighterOpacity: Number(event.target.value) }))} /></label><div className={styles.toolSettingRow}><span>Stroke</span><div className={styles.toolSegments}>{(['freehand', 'straight'] as const).map((value) => <button type="button" key={value} className={(advanced.highlighterStraight ? 'straight' : 'freehand') === value ? styles.segmentedActive : ''} onClick={() => setAdvanced((items) => ({ ...items, highlighterStraight: value === 'straight' }))}>{value}</button>)}</div></div><button type="button" className={cx(styles.toolToggle, advanced.highlighterOverlap && styles.toolToggleOn)} onClick={() => setAdvanced((value) => ({ ...value, highlighterOverlap: !value.highlighterOverlap }))}><span><strong>Even colour</strong><small>Keep highlighting translucent and readable.</small></span><i /></button></>}
         {tool === 'eraser' && <div className={styles.toolSettingRow}><span>Eraser mode</span><div className={styles.toolSegments}>{(['stroke', 'precision'] as const).map((value) => <button type="button" key={value} className={advanced.eraserMode === value ? styles.segmentedActive : ''} onClick={() => setAdvanced((items) => ({ ...items, eraserMode: value }))}>{value}</button>)}</div><small>{advanced.eraserMode === 'stroke' ? 'Removes an entire mark.' : 'Cuts only the touched portion.'}</small></div>}
         <div className={styles.toolPresets}><div><span><Icon name="star" size={12} /> Favourites</span><button type="button" onClick={saveToolPreset}><Icon name="star" size={12} /> Add favourite</button></div>{toolPresets.length > 0 ? <div>{toolPresets.map((preset) => <article key={preset.id}><button type="button" onClick={() => applyToolPreset(preset)}><span className={styles.presetPreview} style={{ '--preset-colour': preset.color, '--preset-size': `${Math.max(2, preset.size)}px` } as CSSProperties}><Icon name={preset.tool === 'pen' ? 'pencil' : preset.tool === 'highlighter' ? 'highlighter' : preset.tool === 'line' ? 'line' : 'eraser'} size={14} /></span><span><strong>{preset.tool[0]!.toUpperCase()}{preset.tool.slice(1)}</strong><small>{presetDetails(preset)}</small></span></button><button type="button" onClick={() => setToolPresets((items) => items.filter((item) => item.id !== preset.id))} aria-label={`Delete ${preset.label}`} title="Remove favourite"><Icon name="close" size={11} /></button></article>)}</div> : <small className={styles.emptyPresets}>Save combinations you use often. They will appear here.</small>}</div>
-        <p>Tip: a stylus barrel button temporarily switches to the eraser. Touch drawing is ignored while the pen is active.</p>
+        <p>Tip: press a stylus barrel button once to switch between Pen and Eraser. Touch drawing is ignored while the pen is active.</p>
       </section>}
       {searchOpen && <section className={styles.searchPanel} aria-label="Search PDF"><label><Icon name="search" size={15} /><input autoFocus type="search" value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Search this PDF…" /><span>{indexing ? 'Indexing…' : query ? `${results.length} pages` : ''}</span><button type="button" onClick={() => { setSearchOpen(false); setQuery(''); }} aria-label="Close search"><Icon name="close" size={15} /></button></label>{query && !indexing && <div className={styles.searchResults}>{results.length ? results.map((result) => <button type="button" key={result.page} onClick={() => { goTo(result.page); setViewMode('page'); }}><strong>Page {result.page}</strong><span>{result.excerpt}</span></button>) : <small>No matches in this PDF.</small>}</div>}</section>}
     </>}
-    <div ref={viewportRef} className={cx(styles.viewport, viewMode === 'page' && styles.pageMode, editing && styles.editViewport)} onPointerDownCapture={undoGestureDown} onPointerMoveCapture={undoGestureMove} onPointerUpCapture={undoGestureEnd} onPointerCancelCapture={undoGestureEnd} onPointerDown={readerGestureDown} onPointerMove={readerGestureMove} onPointerUp={readerGestureEnd} onPointerCancel={readerGestureEnd} onDoubleClick={(event) => { if (!editing && (event.target as Element).closest(`.${styles.page}`)) setZoom(1); }}>
+    <div ref={viewportRef} className={cx(styles.viewport, viewMode === 'page' && styles.pageMode, editing && styles.editViewport)} onPointerDownCapture={undoGestureDown} onPointerMoveCapture={undoGestureMove} onPointerUpCapture={undoGestureEnd} onPointerCancelCapture={undoGestureEnd} onPointerDown={readerPenDown} onPointerMove={readerPenMove} onPointerUp={readerPenEnd} onPointerCancel={readerPenEnd} onClickCapture={(event) => { if (suppressReaderClickRef.current) { event.preventDefault(); event.stopPropagation(); suppressReaderClickRef.current = false; } }} onDoubleClick={() => { if (!editing) setZoom(1); }}>
       {loading && <div className={styles.status}><span className={styles.spinner} /><strong>Opening PDF…</strong><small>{name}</small></div>}{error && <div className={styles.status}><Icon name="book" size={24} /><strong>Unable to open PDF</strong><small>{error}</small></div>}
       {!error && document && visiblePages.map((page) => <PdfPage key={page} document={document} pageNumber={page} width={width} zoom={zoom} rotation={rotation} register={(number, node) => { if (node) pageRefs.current.set(number, node); else pageRefs.current.delete(number); }} annotations={annotationsByPage.get(page) ?? []} hideNativeAnnotations={nativeInkImported} editing={editing} tool={tool} color={color} inkSize={inkSize} advanced={advanced} onPrepare={prepareStroke} onBegin={begin} onExtend={extend} onEnd={end} onCancel={cancelStroke} onPan={panAnnotations} onPinch={zoomPdf} onTwoFingerTap={gestureUndo} onStylusButton={toggleStylusTool} onErase={erase} onNavigate={(destination, action) => void followLink(destination, action)} />)}
     </div>

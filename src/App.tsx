@@ -1,4 +1,4 @@
-import { lazy, Suspense } from 'react';
+import { lazy, Suspense, useEffect } from 'react';
 import { Route, Routes as RouterRoutes } from 'react-router-dom';
 import { ErrorBoundary, FirstVisitTour } from './components/common';
 import { AppShell } from './components/layout';
@@ -24,6 +24,32 @@ const Statistics = lazy(() =>
 
 /** Route table. All app pages render inside the persistent AppShell. */
 export function App() {
+  useEffect(() => {
+    const viewport = window.visualViewport;
+    let focusTimer = 0;
+    const revealFocusedField = () => {
+      window.clearTimeout(focusTimer);
+      focusTimer = window.setTimeout(() => {
+        const field = document.activeElement;
+        if (!(field instanceof HTMLElement) || !field.matches('input, textarea, select, [contenteditable="true"]')) return;
+        const visibleBottom = viewport ? viewport.offsetTop + viewport.height : window.innerHeight;
+        const bounds = field.getBoundingClientRect();
+        if (bounds.bottom > visibleBottom - 20 || bounds.top < (viewport?.offsetTop ?? 0) + 12) {
+          field.scrollIntoView({ block: 'center', inline: 'nearest', behavior: 'smooth' });
+        }
+      }, 120);
+    };
+    document.addEventListener('focusin', revealFocusedField);
+    viewport?.addEventListener('resize', revealFocusedField);
+    viewport?.addEventListener('scroll', revealFocusedField);
+    return () => {
+      window.clearTimeout(focusTimer);
+      document.removeEventListener('focusin', revealFocusedField);
+      viewport?.removeEventListener('resize', revealFocusedField);
+      viewport?.removeEventListener('scroll', revealFocusedField);
+    };
+  }, []);
+
   return (
     <ErrorBoundary>
       <FirstVisitTour />

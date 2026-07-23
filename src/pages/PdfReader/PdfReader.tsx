@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { Button, Icon } from '../../components/common';
-import { usePdfWorkspace } from '../../context/PdfWorkspaceContext';
+import { LAST_OPENED_PDF_KEY, usePdfWorkspace } from '../../context/PdfWorkspaceContext';
 import { useLibrary } from '../../hooks/useChapters';
 import { PdfCanvasViewer } from '../../components/study/PdfCanvasViewer';
 import styles from './PdfReader.module.css';
@@ -20,6 +20,7 @@ export function PdfReader() {
   const { status: authStatus } = useAuth();
   const library = useLibrary();
   const viewerRef = useRef<HTMLElement>(null);
+  const restoreAttemptedRef = useRef(false);
   const [fullscreen, setFullscreen] = useState(false);
   const [documentBrowserOpen, setDocumentBrowserOpen] = useState(false);
   const [chapterLinksOpen, setChapterLinksOpen] = useState(false);
@@ -44,9 +45,28 @@ export function PdfReader() {
   const cloudFileCount = isAuthenticated ? workspace.cloudDocuments.filter((item) => !item.sourceUrl).length : 0;
   const documentCount = new Set([...workspace.documents.map((item) => item.id), ...workspace.cloudDocuments.map((item) => item.id)]).size;
 
-  // The reader route is a library landing page. A PDF opens only after the
-  // user selects it here; an active chapter reference must not take over.
-  useEffect(() => workspace.deselectDocument(), []); // eslint-disable-line react-hooks/exhaustive-deps
+  useEffect(() => {
+    if (active) {
+      restoreAttemptedRef.current = true;
+      localStorage.setItem(LAST_OPENED_PDF_KEY, active.id);
+      return;
+    }
+    if (restoreAttemptedRef.current) return;
+    const documentId = localStorage.getItem(LAST_OPENED_PDF_KEY);
+    if (!documentId) { restoreAttemptedRef.current = true; return; }
+    const sessionDocument = workspace.documents.find((item) => item.id === documentId);
+    if (sessionDocument) {
+      restoreAttemptedRef.current = true;
+      workspace.openDocument(documentId);
+      return;
+    }
+    if (authStatus === 'loading') return;
+    if (authStatus === 'authenticated' && workspace.cloudStatus !== 'ready' && workspace.cloudStatus !== 'error') return;
+    const cloudDocument = workspace.cloudDocuments.find((item) => item.id === documentId);
+    restoreAttemptedRef.current = true;
+    if (cloudDocument) void workspace.openCloudDocument(documentId).catch(() => localStorage.removeItem(LAST_OPENED_PDF_KEY));
+    else localStorage.removeItem(LAST_OPENED_PDF_KEY);
+  }, [active, authStatus, workspace]);
   const visibleLocalDocuments = useMemo(() => {
     const query = documentQuery.trim().toLocaleLowerCase();
     const local = workspace.documents.filter((item) => item.local && !item.cloud);
@@ -145,7 +165,7 @@ export function PdfReader() {
                   </button>
                   <div className={styles.viewerActions}>
                     {isAuthenticated && <button type="button" onClick={() => { setCloudError(''); setCloudPromptOpen(true); }} title={active.cloud ? 'Synced privately across devices' : 'Save PDF to cloud'} aria-label={active.cloud ? 'PDF cloud sync active' : 'Save PDF to cloud'}>
-                      <Icon name={active.cloud?.sourceUrl ? 'share' : active.cloud ? 'cloud' : 'cloudUpload'} size={15} /><span>{active.cloud?.sourceUrl ? 'Link' : active.cloud ? 'Cloud' : 'Sync'}</span>
+                      <Icon name={active.cloud ? 'cloudCheck' : 'cloudUpload'} size={15} /><span>{active.cloud ? 'Synced' : 'Sync'}</span>
                     </button>}
                     <button type="button" onClick={() => void openChapterManager()} title="Manage linked chapters" aria-label="Manage linked chapters">
                       <Icon name="settings" size={15} />
@@ -211,7 +231,7 @@ export function PdfReader() {
         <section className={`${styles.manager} ${styles.cloudPrompt}`} role="dialog" aria-modal="true" aria-labelledby="cloud-pdf-title" onPointerDown={(event) => event.stopPropagation()}>
           <header><div><strong id="cloud-pdf-title">{active.cloud?.sourceUrl ? 'Public link is synced' : active.cloud ? 'Cloud sync is active' : 'Keep this PDF across devices?'}</strong><small>{active.name}</small></div><button type="button" disabled={cloudBusy} onClick={() => setCloudPromptOpen(false)} aria-label="Close"><Icon name="close" size={16} /></button></header>
           <div className={styles.cloudPromptBody}>
-            <span className={styles.cloudMark}><Icon name={active.cloud?.sourceUrl ? 'share' : active.cloud ? 'cloud' : 'cloudUpload'} size={22} /></span>
+            <span className={styles.cloudMark}><Icon name={active.cloud ? 'cloudCheck' : 'cloudUpload'} size={22} /></span>
             {active.cloud?.sourceUrl ? <><strong>Available across your devices</strong><p>Only the public URL, chapter links and editable annotations are synchronized. The PDF itself does not use your private cloud file storage.</p></> : active.cloud ? <><strong>Saved privately to your account</strong><p>The PDF is uploaded once. Future pen, highlighter and eraser changes sync as small annotation updates—not another full PDF.</p></> : <><strong>Upload once, annotate everywhere</strong><p>The source PDF stays private. Annotation changes are version checked, so another device cannot silently overwrite this one.</p>{(active.sizeBytes ?? 0) > PDF_SOFT_LIMIT_BYTES && <p className={styles.sizeWarning}><strong>Large PDF · {((active.sizeBytes ?? 0) / 1024 / 1024).toFixed(1)} MB</strong><br />This exceeds the recommended 10 MB cloud size. Upload only if you need it across devices.</p>}</>}
             {cloudError && <p className={styles.cloudError} role="alert">{cloudError}</p>}
           </div>
