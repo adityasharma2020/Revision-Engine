@@ -21,14 +21,14 @@ const container = document.getElementById('root');
 if (!container) throw new Error('Root element #root not found');
 
 // Desktop trackpads expose pinch as Ctrl/Command + wheel. Prevent Chrome from
-// scaling the whole application; PDF viewports handle the same gesture locally.
+// scaling the application; PDF zoom is available only through explicit controls.
 window.addEventListener('wheel', (event) => {
   if (event.ctrlKey || event.metaKey) event.preventDefault();
 }, { passive: false });
 
 // Some Android WebViews and browsers ignore `user-scalable=no` when a pinch
-// begins over nested canvas/SVG content. Cancel only native multi-touch zoom;
-// the PDF reader continues to consume the corresponding Pointer Events.
+// begins over nested canvas/SVG content. Cancel native multi-touch zoom while
+// still allowing the PDF reader to use two-finger panning.
 document.addEventListener('touchmove', (event) => {
   if (event.touches.length > 1) event.preventDefault();
 }, { passive: false, capture: true });
