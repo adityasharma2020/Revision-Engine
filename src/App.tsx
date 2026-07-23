@@ -15,6 +15,7 @@ import { SharedQuizResultPage } from './pages/SharedQuizResult';
 import { Library } from './pages/Library';
 import { DailyRevision } from './pages/DailyRevision';
 import { QuizSessionPage } from './pages/QuizSession';
+import { Nudges } from './pages/Nudges';
 
 const Statistics = lazy(() =>
   import('./pages/Statistics').then((module) => ({ default: module.Statistics })),
@@ -42,6 +43,7 @@ export function App() {
           />
           <Route path={Routes.bookmarks} element={<Bookmarks />} />
           <Route path={Routes.settings} element={<Settings />} />
+          <Route path={Routes.nudges} element={<Nudges />} />
           <Route path="*" element={<NotFound />} />
         </Route>
       </RouterRoutes>

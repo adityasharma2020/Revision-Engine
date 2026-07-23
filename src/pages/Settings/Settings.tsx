@@ -1,4 +1,5 @@
-import { useState, type ReactNode } from "react";
+import { useEffect, useState, type ReactNode } from "react";
+import { Link } from 'react-router-dom';
 import { Button, Icon, replayFirstVisitTour, Tabs, ThemeToggle } from "../../components/common";
 import { AccountPanel } from "../../components/auth/AccountPanel";
 import { Page, PageHeader } from "../../components/layout";
@@ -10,6 +11,9 @@ import styles from "./Settings.module.css";
 import { useRevisionPreferences } from "../../hooks/useRevisionPreferences";
 import { useAppSettings } from "../../context/AppSettingsContext";
 import { disableWebPush, enableWebPush, getPushStatus, sendTestNotification } from '../../services/notifications';
+import { loadNudgePreferences, saveNudgePreferences } from '../../services/nudges';
+import { DEFAULT_NUDGE_PREFERENCES, type NudgePreferences } from '../../types';
+import { Routes } from '../../constants/routes';
 
 export function Settings() {
   const { storage, cloudAvailable, online, syncing, syncNow } = useStorage();
@@ -20,6 +24,7 @@ export function Settings() {
   const [tab, setTab] = useState<'general' | 'features'>('general');
   const [pushBusy, setPushBusy] = useState(false);
   const [pushMessage, setPushMessage] = useState<string | null>(null);
+  const [nudgeSettingsOpen, setNudgeSettingsOpen] = useState(false);
   const { preferences: revisionPreferences, update: updateRevisionPreferences } = useRevisionPreferences();
   const { settings: appSettings, update: updateAppSettings, reset: resetAppSettings } = useAppSettings();
   const pushStatus = getPushStatus(status === 'authenticated');
@@ -305,15 +310,29 @@ export function Settings() {
             <ToggleSetting title='Reduce motion' description='Minimise interface animations and transitions.' checked={appSettings.accessibility.reduceMotion} onChange={(checked) => updateAppSettings({ ...appSettings, accessibility: { ...appSettings.accessibility, reduceMotion: checked } })} />
           </PreferenceGroup>
 
-          <section className={styles.addonNote}>
-            <span><Icon name='plus' size={18} /></span>
-            <div><strong>Built for future add-ons</strong><p>Optional tools such as focus timers can be added here without changing your core study workflow.</p></div>
+          <section className={styles.addonCard}>
+            <span><Icon name='sparkle' size={20} /></span>
+            <div><em>ADD-ON</em><strong>Memory Nudges</strong><p>Bring important facts, quotes and mistakes back through weighted, adaptive notifications.</p></div>
+            <Button variant='primary' size='sm' disabled={status !== 'authenticated'} onClick={() => setNudgeSettingsOpen(true)}>Configure</Button>
           </section>
+          {status !== 'authenticated' && <small className={styles.addonHelp}>Sign in to configure private, synced nudges.</small>}
           <button type='button' className={styles.resetPreferences} onClick={resetAppSettings}>Restore feature defaults</button>
         </div>
       )}
+      {nudgeSettingsOpen && <NudgeSettingsDialog onClose={() => setNudgeSettingsOpen(false)} />}
     </Page>
   );
+}
+
+function NudgeSettingsDialog({ onClose }: { onClose: () => void }) {
+  const [value, setValue] = useState<NudgePreferences>(DEFAULT_NUDGE_PREFERENCES);
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+  const [message, setMessage] = useState('');
+  useEffect(() => { void loadNudgePreferences().then(setValue).catch((error) => setMessage(error instanceof Error ? error.message : 'Could not load settings.')).finally(() => setLoading(false)); }, []);
+  const save = async () => { setSaving(true); try { await saveNudgePreferences({ ...value, timezone: Intl.DateTimeFormat().resolvedOptions().timeZone || 'UTC' }); onClose(); } catch (error) { setMessage(error instanceof Error ? error.message : 'Could not save settings.'); } finally { setSaving(false); } };
+  const toggleDay = (day: number) => setValue({ ...value, deliveryDays: value.deliveryDays.includes(day) ? value.deliveryDays.filter((item) => item !== day) : [...value.deliveryDays, day].sort() });
+  return <div className={styles.modalBackdrop} onMouseDown={onClose}><section className={styles.nudgeModal} role='dialog' aria-modal='true' aria-labelledby='nudge-settings-title' onMouseDown={(event) => event.stopPropagation()}><header><div><span>Memory Nudges add-on</span><h2 id='nudge-settings-title'>Control what returns—and when</h2><p>Weighted selection favours crucial and forgotten items while cooldowns prevent repetition.</p></div><button onClick={onClose} aria-label='Close'><Icon name='close' /></button></header>{loading ? <p>Loading preferences…</p> : <div className={styles.nudgeControls}><ToggleSetting title='Enable Memory Nudges' description='Allow the dispatcher to select and deliver eligible nudges.' checked={value.enabled} onChange={(enabled) => setValue({ ...value, enabled })} /><div className={styles.controlGrid}><label>Maximum per day<select value={value.maxPerDay} onChange={(event) => setValue({ ...value, maxPerDay: Number(event.target.value) })}>{[1,2,3,4,5,6,8].map((item) => <option key={item}>{item}</option>)}</select></label><label>Default priority<select value={value.defaultPriority} onChange={(event) => setValue({ ...value, defaultPriority: Number(event.target.value) })}>{[1,2,3,4,5].map((item) => <option key={item}>{item}</option>)}</select></label><label>Global minimum cooldown<select value={value.minimumCooldownHours} onChange={(event) => setValue({ ...value, minimumCooldownHours: Number(event.target.value) })}>{[6,12,24,48,72,168].map((item) => <option value={item} key={item}>{item < 24 ? `${item} hours` : `${item / 24} days`}</option>)}</select></label></div><fieldset><legend>Delivery days</legend><div className={styles.dayPicker}>{['S','M','T','W','T','F','S'].map((label, day) => <button type='button' className={value.deliveryDays.includes(day) ? styles.selectedDay : ''} onClick={() => toggleDay(day)} key={`${label}-${day}`}>{label}</button>)}</div></fieldset><fieldset><legend>Delivery windows</legend><div className={styles.windows}>{value.windows.map((window, index) => <div key={index}><input type='time' value={window.start} onChange={(event) => setValue({ ...value, windows: value.windows.map((item, itemIndex) => itemIndex === index ? { ...item, start: event.target.value } : item) })} /><span>to</span><input type='time' value={window.end} onChange={(event) => setValue({ ...value, windows: value.windows.map((item, itemIndex) => itemIndex === index ? { ...item, end: event.target.value } : item) })} />{value.windows.length > 1 && <button type='button' onClick={() => setValue({ ...value, windows: value.windows.filter((_, itemIndex) => itemIndex !== index) })}>Remove</button>}</div>)}</div>{value.windows.length < 3 && <button type='button' className={styles.addWindow} onClick={() => setValue({ ...value, windows: [...value.windows, { start: '12:00', end: '14:00' }] })}>+ Add another window</button>}</fieldset><fieldset><legend>Quiet hours</legend><div className={styles.quiet}><input type='time' value={value.quietStart} onChange={(event) => setValue({ ...value, quietStart: event.target.value })} /><span>to</span><input type='time' value={value.quietEnd} onChange={(event) => setValue({ ...value, quietEnd: event.target.value })} /></div></fieldset><ToggleSetting title='Adaptive scheduling' description='Remembered items wait longer; forgotten items return sooner.' checked={value.adaptiveScheduling} onChange={(adaptiveScheduling) => setValue({ ...value, adaptiveScheduling })} /><ToggleSetting title='Complete the pool before repeats' description='Prefer unseen eligible nudges before starting another cycle.' checked={value.avoidRepeatsUntilCycle} onChange={(avoidRepeatsUntilCycle) => setValue({ ...value, avoidRepeatsUntilCycle })} /><ToggleSetting title='Private lock-screen text' description='Hide nudge content until the notification is opened.' checked={value.privacyMode} onChange={(privacyMode) => setValue({ ...value, privacyMode })} /><p className={styles.timezone}>Scheduling timezone: {value.timezone}</p></div>}{message && <small className={styles.dialogError}>{message}</small>}<footer><Link to={Routes.nudges} onClick={onClose}>Manage nudge library</Link><div><Button onClick={onClose}>Cancel</Button><Button variant='primary' disabled={loading || saving || value.deliveryDays.length === 0 || value.windows.length === 0} onClick={() => void save()}>{saving ? 'Saving…' : 'Save add-on'}</Button></div></footer></section></div>;
 }
 
 function PreferenceGroup({ title, description, children }: { title: string; description: string; children: ReactNode }) {

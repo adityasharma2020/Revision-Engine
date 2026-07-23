@@ -66,3 +66,6 @@ delivery key makes repeated Cron calls safe and prevents duplicate messages.
 - Expired browser endpoints (HTTP 404/410) are disabled automatically.
 - A user can own multiple subscriptions, so each signed-in device receives the
   notification.
+- Memory Nudges use the same dispatcher. Apply migration `0006`, configure the
+  add-on in Settings, and manage content at `/nudges`; no second Cron job is
+  required.

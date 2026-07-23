@@ -25,6 +25,24 @@ function isDue(current: string, configured = '18:00') {
   return delta >= 0 && delta < 15;
 }
 
+function inRange(current: string, start: string, end: string) {
+  if (start <= end) return current >= start && current <= end;
+  return current >= start || current <= end;
+}
+
+function weightedPick(items: Array<Record<string, unknown>>) {
+  const weighted = items.map((item) => {
+    const priority = Number(item.priority ?? 3);
+    const forgotten = Number(item.forgotten_count ?? 0);
+    const remembered = Number(item.remembered_count ?? 0);
+    const elapsedDays = item.last_sent_at ? Math.max(0, (Date.now() - new Date(String(item.last_sent_at)).getTime()) / 86_400_000) : 14;
+    return { item, weight: priority * (1 + forgotten / (remembered + 1)) * (1 + Math.min(elapsedDays, 30) / 30) };
+  });
+  let cursor = Math.random() * weighted.reduce((sum, entry) => sum + entry.weight, 0);
+  for (const entry of weighted) { cursor -= entry.weight; if (cursor <= 0) return entry.item; }
+  return weighted.at(-1)?.item;
+}
+
 Deno.serve(async (request) => {
   if (request.headers.get('x-cron-secret') !== Deno.env.get('CRON_SECRET')) return new Response('Unauthorized', { status: 401 });
   const admin = adminClient();
@@ -72,6 +90,42 @@ Deno.serve(async (request) => {
         const status = typeof pushError === 'object' && pushError && 'statusCode' in pushError ? Number(pushError.statusCode) : 0;
         if (status === 404 || status === 410) await admin.from('push_subscriptions').update({ disabled_at: new Date().toISOString() }).eq('id', subscription.id);
       }
+    }
+  }
+  const { data: nudgePreferenceRows } = await admin.from('nudge_preferences').select('*').eq('enabled', true);
+  for (const preferences of nudgePreferenceRows ?? []) {
+    let clock: ReturnType<typeof localParts>;
+    try { clock = localParts(preferences.timezone || 'UTC'); } catch { clock = localParts('UTC'); }
+    if (!(preferences.delivery_days ?? []).includes(clock.weekday)) continue;
+    if (inRange(clock.time, String(preferences.quiet_start).slice(0, 5), String(preferences.quiet_end).slice(0, 5))) continue;
+    const windows = Array.isArray(preferences.windows) ? preferences.windows : [];
+    if (!windows.some((window) => inRange(clock.time, window.start, window.end))) continue;
+    const { count: deliveredToday } = await admin.from('nudge_interactions').select('id', { count: 'exact', head: true }).eq('user_id', preferences.user_id).eq('action', 'delivered').contains('metadata', { localDate: clock.date });
+    if ((deliveredToday ?? 0) >= preferences.max_per_day) continue;
+    const { data: candidates } = await admin.from('memory_nudges').select('*').eq('user_id', preferences.user_id).eq('active', true).eq('archived', false).or(`next_eligible_at.is.null,next_eligible_at.lte.${new Date().toISOString()}`);
+    if (!candidates?.length) continue;
+    let pool = candidates as Array<Record<string, unknown>>;
+    if (preferences.avoid_repeats_until_cycle) {
+      const minimumSends = Math.min(...pool.map((item) => Number(item.send_count ?? 0)));
+      pool = pool.filter((item) => Number(item.send_count ?? 0) === minimumSends);
+    }
+    const selected = weightedPick(pool);
+    if (!selected) continue;
+    const { data: subscriptions } = await admin.from('push_subscriptions').select('id,user_id,endpoint,p256dh,auth_key').eq('user_id', preferences.user_id).is('disabled_at', null);
+    if (!subscriptions?.length) continue;
+    const title = preferences.privacy_mode ? 'A memory nudge is ready' : String(selected.title);
+    const body = preferences.privacy_mode ? 'Tap to review it privately.' : String(selected.content);
+    let successful = false;
+    for (const subscription of subscriptions as SubscriptionRow[]) {
+      try { await deliver(subscription, { title, body, tag: `nudge-${selected.id}`, url: `nudges?id=${selected.id}` }); successful = true; delivered += 1; }
+      catch (pushError) { const status = typeof pushError === 'object' && pushError && 'statusCode' in pushError ? Number(pushError.statusCode) : 0; if (status === 404 || status === 410) await admin.from('push_subscriptions').update({ disabled_at: new Date().toISOString() }).eq('id', subscription.id); }
+    }
+    if (successful) {
+      const baseCooldown = Math.max(Number(selected.cooldown_hours ?? 24), Number(preferences.minimum_cooldown_hours ?? 24));
+      const remembered = Number(selected.remembered_count ?? 0); const forgotten = Number(selected.forgotten_count ?? 0);
+      const adaptiveFactor = preferences.adaptive_scheduling ? Math.max(.25, (1 + remembered * .5) / (1 + forgotten * .35)) : 1;
+      await admin.from('memory_nudges').update({ last_sent_at: new Date().toISOString(), next_eligible_at: new Date(Date.now() + baseCooldown * adaptiveFactor * 3_600_000).toISOString(), send_count: Number(selected.send_count ?? 0) + 1 }).eq('id', selected.id);
+      await admin.from('nudge_interactions').insert({ user_id: preferences.user_id, nudge_id: selected.id, action: 'delivered', metadata: { localDate: clock.date, timezone: preferences.timezone } });
     }
   }
   return Response.json({ delivered });

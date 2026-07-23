@@ -13,4 +13,5 @@ export const Routes = {
   revision: '/revision',
   import: '/import',
   settings: '/settings',
+  nudges: '/nudges',
 } as const;

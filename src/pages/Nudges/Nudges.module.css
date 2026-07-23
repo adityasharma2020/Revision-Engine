@@ -1,0 +1,37 @@
+.headerActions, .toolbar, .toolbar label, .card header, .card footer, .card footer > div, .review > div { display: flex; align-items: center; gap: var(--space-2); }
+.message { margin-bottom: var(--space-3); padding: var(--space-3); color: var(--accent); background: var(--accent-subtle); border-radius: var(--radius-md); }
+.toolbar { justify-content: space-between; margin-bottom: var(--space-4); }
+.toolbar label { flex: 1; max-width: 380px; padding: 0 var(--space-3); background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-md); }
+.toolbar input { width: 100%; height: 38px; outline: 0; }
+.toolbar > span { color: var(--text-tertiary); font-size: var(--text-xs); }
+.grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--space-3); }
+.card { display: flex; min-width: 0; flex-direction: column; padding: var(--space-4); background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-lg); }
+.card.paused { opacity: .58; }
+.card header { justify-content: space-between; color: var(--accent); font-size: 10px; text-transform: uppercase; letter-spacing: var(--tracking-wide); }
+.card header i { color: var(--border-strong); font-style: normal; }
+.card h2 { margin-top: var(--space-3); font-size: var(--text-md); }
+.card > p { display: -webkit-box; margin-top: var(--space-1); overflow: hidden; color: var(--text-secondary); font-size: var(--text-sm); -webkit-box-orient: vertical; -webkit-line-clamp: 3; }
+.tags { display: flex; flex-wrap: wrap; gap: 4px; margin-top: var(--space-3); color: var(--accent); font-size: 10px; }
+.card footer { justify-content: space-between; margin-top: auto; padding-top: var(--space-4); }
+.card footer small { color: var(--text-tertiary); font-size: 9px; }
+.card footer button { color: var(--text-secondary); font-size: 10px; }
+.card footer button:hover { color: var(--accent); }
+.review { margin-bottom: var(--space-4); padding: var(--space-5); background: linear-gradient(135deg, var(--accent-subtle), var(--surface)); border: 1px solid var(--accent); border-radius: var(--radius-xl); }
+.review > span { color: var(--accent); font-size: var(--text-xs); text-transform: uppercase; }
+.review h2 { margin-top: var(--space-2); }
+.review blockquote { margin-top: var(--space-3); font-size: var(--text-lg); font-weight: var(--weight-medium); }
+.review p, .review small { display: block; margin-top: var(--space-2); color: var(--text-secondary); }
+.review > div { flex-wrap: wrap; margin-top: var(--space-4); }
+.backdrop { position: fixed; z-index: var(--z-modal); inset: 0; display: grid; place-items: center; padding: var(--space-4); background: var(--overlay); backdrop-filter: blur(6px); }
+.editor, .importDialog { width: min(680px, 100%); max-height: calc(100dvh - 32px); overflow-y: auto; padding: var(--space-5); background: var(--surface); border: 1px solid var(--border-strong); border-radius: var(--radius-xl); box-shadow: var(--shadow-lg); }
+.editor > header { display: flex; justify-content: space-between; gap: var(--space-4); }
+.editor > header span { color: var(--accent); font-size: var(--text-xs); text-transform: uppercase; }
+.fields { display: grid; grid-template-columns: repeat(2, 1fr); gap: var(--space-3); margin-top: var(--space-4); }
+.fields label { display: flex; flex-direction: column; gap: 5px; color: var(--text-secondary); font-size: var(--text-xs); }
+.fields .wide { grid-column: 1 / -1; }
+.fields input, .fields select, .fields textarea, .importDialog textarea { padding: var(--space-3); color: var(--text-primary); background: var(--bg-sunken); border: 1px solid var(--border); border-radius: var(--radius-md); resize: vertical; }
+.editor footer, .importDialog footer { display: flex; justify-content: flex-end; gap: var(--space-2); margin-top: var(--space-4); }
+.importDialog p { margin: var(--space-2) 0; color: var(--text-secondary); font-size: var(--text-sm); }
+.importDialog textarea { width: 100%; }
+.importDialog > small { color: var(--danger); }
+@media (max-width: 650px) { .grid, .fields { grid-template-columns: 1fr; } .fields .wide { grid-column: auto; } .toolbar { align-items: stretch; flex-direction: column; } .toolbar label { max-width: none; } .backdrop { align-items: end; padding: var(--space-3) 0 0; } .editor, .importDialog { border-radius: var(--radius-xl) var(--radius-xl) 0 0; } }
