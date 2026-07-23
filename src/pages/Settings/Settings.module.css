@@ -184,6 +184,8 @@
   border: 1px solid var(--border);
   border-radius: var(--radius-md);
 }
+.buildIdentity { display: grid; justify-items: end; gap: 5px; flex: none; }
+.buildIdentity small { color: var(--text-tertiary); font-size: var(--text-xs); }
 
 .about > .row {
   border-bottom: 1px solid var(--border);

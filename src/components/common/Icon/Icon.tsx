@@ -36,6 +36,7 @@ export const ICON_PATHS = {
   clock: 'M12 3a9 9 0 1 0 0 18 9 9 0 0 0 0-18ZM12 7.5V12l3 2',
   plus: 'M12 5v14M5 12h14',
   pencil: 'M4 20l1-4L16.5 4.5a2.1 2.1 0 0 1 3 3L8 19l-4 1ZM14.5 6.5l3 3',
+  handPointer: 'M8 11V6a2 2 0 0 1 4 0v5M12 9V5a2 2 0 0 1 4 0v6M16 9a2 2 0 0 1 4 0v5c0 4-2.5 7-7 7h-1.5a7 7 0 0 1-5.7-3L3.5 14.8a2 2 0 0 1 3-2.6L8 13.5V11Z',
   highlighter: 'm4 17 3 3h4L21 10 14 3 4 13v1ZM12 5l7 7M3 21h10',
   eraser: 'm7 19-4-4L14 4a2 2 0 0 1 3 0l3 3a2 2 0 0 1 0 3L11 19H7ZM13 19l-5-5M3 21h18',
   undo: 'M9 7 4 12l5 5M5 12h8a6 6 0 0 1 6 6',

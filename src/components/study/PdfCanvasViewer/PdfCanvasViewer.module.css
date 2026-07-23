@@ -11,6 +11,8 @@
 .controls .saveAction:not(:disabled) { color: #777781; }
 .controls .saveDirty:not(:disabled) { color: #8be0b7; background: rgb(76 185 130 / 9%); }
 .controls .flattenSaveAction:not(:disabled) { color: #f1bd76; background: rgb(241 189 118 / 9%); }
+.controls .discardAction:not(:disabled) { color: #d58b8b; }
+.controls .discardAction:hover:not(:disabled) { color: #ffabab; background: rgb(239 100 97 / 12%); }
 .controls button:disabled { opacity: .3; }
 .controls label { display: flex; align-items: center; gap: 5px; font-size: 12px; }
 .controls input { width: 42px; height: 30px; padding: 0 4px; color: #f4f4f5; font: inherit; text-align: center; background: #27272a; border: 1px solid #3f3f46; border-radius: 6px; appearance: textfield; }
@@ -23,7 +25,6 @@
 .documentMenu { position: absolute; z-index: 30; top: calc(100% + 7px); right: 0; display: grid; width: 230px; padding: 6px; color: #e4e4e7; background: #202023; border: 1px solid #3f3f46; border-radius: 9px; box-shadow: 0 14px 32px rgb(0 0 0 / 50%); }
 .documentMenu > button, .documentMenu > a { display: grid; grid-template-columns: 26px minmax(0, 1fr); align-items: center; gap: 5px; width: 100%; height: auto; flex: none; padding: 8px; color: inherit; text-align: left; border-radius: 6px; place-items: initial; }
 .documentMenu > button:hover, .documentMenu > a:hover { background: rgb(255 255 255 / 8%); }
-.documentMenu > .dangerMenuAction { color: #f2a1a1; }
 .documentMenu > button:disabled { opacity: .35; pointer-events: none; }
 .documentMenu > button > span, .documentMenu > a > span { display: flex; min-width: 0; flex-direction: column; }
 .documentMenu strong { font-size: 11px; }
@@ -42,7 +43,7 @@
 .searchResults strong { color: var(--accent); font-size: 10px; }
 .searchResults span, .searchResults > small { font-size: 10px; line-height: 1.4; }
 .searchResults > small { display: block; padding: 10px; color: #a1a1aa; text-align: center; }
-.viewport { position: relative; min-width: 0; min-height: 0; flex: 1; overflow: auto; overscroll-behavior: contain; padding: 12px; scroll-behavior: smooth; text-align: center; touch-action: pan-y pinch-zoom; }
+.viewport { position: relative; min-width: 0; min-height: 0; flex: 1; overflow: auto; overscroll-behavior: contain; padding: 12px; scroll-behavior: smooth; text-align: center; touch-action: none; }
 .page { position: relative; display: block; min-width: min(100%, 240px); min-height: 160px; margin: 0 auto 14px; overflow: hidden; background: #fff; scroll-margin-top: 10px; box-shadow: 0 6px 28px rgb(0 0 0 / 35%); }
 .page > small { position: absolute; z-index: 1; top: 7px; left: 7px; padding: 2px 5px; color: #d4d4d8; background: rgb(0 0 0 / 60%); border-radius: 4px; font-size: 9px; pointer-events: none; }
 .page > canvas:not(.annotationCanvas) { position: absolute; inset: 0; display: block; width: 100% !important; height: 100% !important; background: white; }
@@ -56,10 +57,11 @@
 .textLayerDisabled { pointer-events: none; user-select: none; -webkit-user-select: none; }
 .annotationLayer { position: absolute; z-index: 4; inset: 0; display: block; width: 100%; height: 100%; pointer-events: none; }
 .annotationCanvas { position: absolute; z-index: 3; inset: 0; display: block; width: 100% !important; height: 100% !important; background: transparent; pointer-events: none; }
-.annotationEditing { pointer-events: all; touch-action: pan-y pinch-zoom; cursor: crosshair; user-select: none; -webkit-user-select: none; }
+.annotationLiveCanvas { position: absolute; z-index: 3; inset: 0; display: block; width: 100% !important; height: 100% !important; background: transparent; pointer-events: none; }
+.annotationEditing { pointer-events: all; touch-action: none; cursor: crosshair; user-select: none; -webkit-user-select: none; }
 .eraserActive { cursor: none; }
-.eraserPreview { opacity: 0; fill: rgb(255 255 255 / 16%); stroke: rgb(30 30 34 / 88%); stroke-width: 2; vector-effect: non-scaling-stroke; pointer-events: none; filter: drop-shadow(0 1px 2px rgb(255 255 255 / 55%)); transition: opacity 80ms ease; }
-.precisionEraserPreview { fill: rgb(124 131 255 / 12%); stroke: #777df0; stroke-dasharray: 3 3; }
+.eraserPreview { opacity: 0; fill: rgb(255 255 255 / 72%); stroke: rgb(35 35 40 / 92%); stroke-width: 2; vector-effect: non-scaling-stroke; pointer-events: none; filter: drop-shadow(0 1px 3px rgb(0 0 0 / 38%)); transition: opacity 60ms ease; }
+.precisionEraserPreview { fill: rgb(255 255 255 / 52%); stroke: #777df0; stroke-dasharray: 3 3; }
 .pdfLinks { position: absolute; z-index: 3; inset: 0; pointer-events: none; }
 .pdfLinks > a, .pdfLinks > button { position: absolute; display: block; min-width: 8px; min-height: 8px; padding: 0; pointer-events: auto; background: transparent; border: 0; border-radius: 2px; }
 .pdfLinks > a:hover, .pdfLinks > button:hover, .pdfLinks > a:focus-visible, .pdfLinks > button:focus-visible { background: rgb(91 91 214 / 16%); outline: 1px solid rgb(124 131 255 / 55%); }

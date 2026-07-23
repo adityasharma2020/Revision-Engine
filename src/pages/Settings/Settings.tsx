@@ -6,7 +6,7 @@ import { Page, PageHeader } from '../../components/layout';
 import { useStorage } from '../../context/StorageContext';
 import { useAuth } from '../../context/AuthContext';
 import { createLocalStorageService } from '../../services/storage';
-import { APP_NAME, APP_VERSION } from '../../constants/app';
+import { APP_BUILD_TIMESTAMP, APP_NAME, APP_VERSION } from '../../constants/app';
 import styles from './Settings.module.css';
 import { useRevisionPreferences } from '../../hooks/useRevisionPreferences';
 import { useAppSettings } from '../../context/AppSettingsContext';
@@ -482,7 +482,7 @@ export function Settings() {
                   <h3 className={styles.rowTitle}>About</h3>
                   <p className={styles.rowDesc}>{APP_NAME} application version.</p>
                 </div>
-                <code className={styles.version}>v{APP_VERSION}</code>
+                <div className={styles.buildIdentity}><code className={styles.version}>v{APP_VERSION}</code><small>Built {new Date(APP_BUILD_TIMESTAMP).toLocaleString()}</small></div>
               </div>
               <div className={styles.responsibleUse} role="note">
                 <p>

@@ -20,6 +20,12 @@ import './styles/global.css';
 const container = document.getElementById('root');
 if (!container) throw new Error('Root element #root not found');
 
+// Desktop trackpads expose pinch as Ctrl/Command + wheel. Prevent Chrome from
+// scaling the whole application; PDF viewports handle the same gesture locally.
+window.addEventListener('wheel', (event) => {
+  if (event.ctrlKey || event.metaKey) event.preventDefault();
+}, { passive: false });
+
 // An installed production worker on localhost can otherwise keep serving an
 // obsolete UI while developing. Production uses auto-update + skipWaiting.
 if (import.meta.env.DEV && 'serviceWorker' in navigator) {
