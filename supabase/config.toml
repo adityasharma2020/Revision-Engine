@@ -3,3 +3,6 @@ verify_jwt = false
 
 [functions.test-notification]
 verify_jwt = true
+
+[functions.test-nudge]
+verify_jwt = true

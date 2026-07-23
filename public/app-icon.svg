@@ -1,0 +1,23 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <defs>
+    <linearGradient id="bg" x1="70" y1="42" x2="442" y2="470" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#8b7cff"/>
+      <stop offset="1" stop-color="#5146d8"/>
+    </linearGradient>
+    <radialGradient id="glow" cx="0" cy="0" r="1" gradientTransform="translate(256 246) rotate(90) scale(202)">
+      <stop stop-color="#a99fff" stop-opacity=".6"/>
+      <stop offset="1" stop-color="#4d43cc" stop-opacity="0"/>
+    </radialGradient>
+  </defs>
+  <rect width="512" height="512" rx="116" fill="#17162b"/>
+  <circle cx="256" cy="256" r="190" fill="url(#glow)"/>
+  <path d="M114 275c34 70 101 116 178 116 45 0 87-15 121-41" fill="none" stroke="#a79cff" stroke-width="18" stroke-linecap="round" opacity=".72"/>
+  <path d="M398 237c-11-69-71-121-142-121-44 0-83 19-109 49" fill="none" stroke="#7064ee" stroke-width="18" stroke-linecap="round" opacity=".8"/>
+  <circle cx="256" cy="256" r="118" fill="url(#bg)"/>
+  <g fill="none" stroke="#fff" stroke-width="22" stroke-linecap="round">
+    <path d="M256 184v50M256 278v50M184 256h50M278 256h50"/>
+    <path d="m205 205 35 35M272 272l35 35M307 205l-35 35M240 272l-35 35" opacity=".88"/>
+  </g>
+  <circle cx="405" cy="343" r="12" fill="#fff"/>
+  <circle cx="126" cy="255" r="9" fill="#c8c2ff"/>
+</svg>

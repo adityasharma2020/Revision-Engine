@@ -98,6 +98,8 @@
   background-color: var(--surface-hover);
   color: var(--text-primary);
 }
+.featured { color: var(--text-secondary); }
+.featured svg { color: var(--accent); }
 .mobileLabel { display: none; }
 .moreButton { display: none; }
 
@@ -206,6 +208,7 @@
     padding: var(--space-1) 1px;
     font-size: 0.625rem;
   }
+  .featured:not(.active) { color: var(--text-secondary); }
 
   .link .mobileLabel {
     max-width: 100%;
@@ -232,6 +235,7 @@
   .moreItem > span { display: grid; width: 38px; height: 38px; place-items: center; color: var(--accent); background: var(--accent-subtle); border-radius: var(--radius-md); }
   .moreItem strong { font-size: var(--text-sm); }
   .moreItemActive { border-color: var(--accent); background: var(--accent-subtle); }
+  .moreItemFeatured { border-color: color-mix(in srgb, var(--accent) 40%, var(--border)); background: linear-gradient(135deg, var(--accent-subtle), var(--surface)); }
 }
 
 @media (max-width: 390px) {

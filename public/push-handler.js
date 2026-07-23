@@ -4,8 +4,8 @@ self.addEventListener('push', (event) => {
   try { payload = event.data ? event.data.json() : {}; } catch { payload = { body: event.data?.text() }; }
   event.waitUntil(self.registration.showNotification(payload.title || 'UPSC Revision Engine', {
     body: payload.body || 'You have a new study update.',
-    icon: './icon.svg',
-    badge: './icon.svg',
+    icon: new URL('app-icon-192.png', self.registration.scope).href,
+    badge: new URL('notification-badge.png', self.registration.scope).href,
     tag: payload.tag || 'study-update',
     renotify: true,
     actions: Array.isArray(payload.actions) ? payload.actions.map(({ action, title }) => ({ action, title })) : [],

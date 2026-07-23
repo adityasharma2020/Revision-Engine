@@ -22,7 +22,7 @@ export function Sidebar({ collapsed, collapseLocked = false, searchOpen = false,
   const location = useLocation();
   const [moreOpen, setMoreOpen] = useState(false);
   const signedIn = status === 'authenticated' && user;
-  const mobilePrimary = new Set<string>([Routes.dashboard, Routes.revision, Routes.library, Routes.search]);
+  const mobilePrimary = new Set<string>([Routes.dashboard, Routes.revision, Routes.nudges, Routes.search]);
   const moreItems = PRIMARY_NAV.filter((item) => !mobilePrimary.has(item.to));
   const moreActive = moreItems.some((item) => location.pathname === item.to);
 
@@ -58,6 +58,7 @@ export function Sidebar({ collapsed, collapseLocked = false, searchOpen = false,
             title={item.to === Routes.search ? 'Search (⌘⇧P or Ctrl⇧P)' : item.label}
             className={({ isActive }) => cx(
               styles.link,
+              item.featured && styles.featured,
               !mobilePrimary.has(item.to) && styles.mobileSecondary,
               (isActive || (item.to === Routes.search && searchOpen)) && styles.active,
             )}
@@ -86,7 +87,7 @@ export function Sidebar({ collapsed, collapseLocked = false, searchOpen = false,
             <div className={styles.moreHandle} />
             <div className={styles.moreHead}><strong>More</strong><button type="button" onClick={() => setMoreOpen(false)} aria-label="Close"><Icon name="close" size={19} /></button></div>
             <div className={styles.moreGrid}>{moreItems.map((item) => (
-              <NavLink key={item.to} to={item.to} className={({ isActive }) => cx(styles.moreItem, isActive && styles.moreItemActive)}>
+              <NavLink key={item.to} to={item.to} className={({ isActive }) => cx(styles.moreItem, item.featured && styles.moreItemFeatured, isActive && styles.moreItemActive)}>
                 <span><Icon name={item.icon} size={20} /></span><strong>{item.label}</strong><Icon name="chevronRight" size={16} />
               </NavLink>
             ))}</div>

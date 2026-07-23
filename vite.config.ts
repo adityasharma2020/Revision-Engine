@@ -16,7 +16,7 @@ export default defineConfig({
     react(),
     VitePWA({
       registerType: 'autoUpdate',
-      includeAssets: ['favicon.svg', 'icon.svg', 'push-handler.js'],
+      includeAssets: ['favicon.svg', 'app-icon.svg', 'app-icon-192.png', 'app-icon-512.png', 'notification-badge.png', 'push-handler.js'],
       manifest: {
         name: 'UPSC Revision Engine',
         short_name: 'Revision',
@@ -27,8 +27,9 @@ export default defineConfig({
         start_url: '.',
         scope: '.',
         icons: [
-          { src: 'icon.svg', sizes: 'any', type: 'image/svg+xml', purpose: 'any' },
-          { src: 'icon.svg', sizes: 'any', type: 'image/svg+xml', purpose: 'maskable' },
+          { src: 'app-icon-192.png', sizes: '192x192', type: 'image/png', purpose: 'any' },
+          { src: 'app-icon-512.png', sizes: '512x512', type: 'image/png', purpose: 'any' },
+          { src: 'app-icon-512.png', sizes: '512x512', type: 'image/png', purpose: 'maskable' },
         ],
       },
       workbox: {

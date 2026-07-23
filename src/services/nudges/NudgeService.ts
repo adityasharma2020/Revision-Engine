@@ -38,6 +38,16 @@ export async function updateNudge(id: string, input: NudgeInput): Promise<Memory
   return mapNudge(data);
 }
 export async function setNudgeActive(id: string, active: boolean) { const { error } = await client().from('memory_nudges').update({ active }).eq('id', id); if (error) throw error; }
+export async function sendNudgeNow(nudgeId: string): Promise<number> {
+  const { data, error } = await client().functions.invoke<{ delivered?: number }>('test-nudge', { body: { nudgeId } });
+  if (error) {
+    let message = error.message || 'Could not send this nudge.';
+    const context = (error as { context?: Response }).context;
+    if (context) { try { const payload = await context.clone().json() as { error?: string }; if (payload.error) message = payload.error; } catch { /* keep original error */ } }
+    throw new Error(message);
+  }
+  return data?.delivered ?? 0;
+}
 export async function recordNudgeOpen(nudgeId: string) { const { data: auth } = await client().auth.getUser(); if (auth.user) await client().from('nudge_interactions').insert({ user_id: auth.user.id, nudge_id: nudgeId, action: 'opened' }); }
 export async function recordNudgeFeedback(nudge: MemoryNudge, action: NudgeFeedback, snoozeHours = 24) {
   const { data: auth } = await client().auth.getUser(); if (!auth.user) throw new Error('Sign in required.');
