@@ -54,6 +54,7 @@ export function Sidebar({ collapsed, collapseLocked = false, searchOpen = false,
             to={item.to}
             end={item.end}
             aria-label={item.label}
+            data-tour={item.to === Routes.search ? 'global-search' : item.to === Routes.nudges ? 'memory-nudges' : undefined}
             aria-keyshortcuts={item.to === Routes.search ? 'Meta+Shift+P Control+Shift+P' : undefined}
             title={item.to === Routes.search ? 'Search (⌘⇧P or Ctrl⇧P)' : item.label}
             className={({ isActive }) => cx(

@@ -12,7 +12,7 @@ const SHOW_EMAIL_LINK_SIGN_IN = false;
 
 /**
  * Account + sync surface for Settings. Handles all auth states: signed in,
- * guest (with sign-in options), and Supabase-not-configured.
+ * guest (with sign-in options), and cloud-auth-not-configured.
  */
 export function AccountPanel() {
   const { status, user, supabaseConfigured, signInWithGoogle, signInWithEmail, signOut } =
@@ -27,9 +27,8 @@ export function AccountPanel() {
   if (!supabaseConfigured) {
     return (
       <div className={styles.note}>
-        Cloud sync isn't configured. Add your Supabase keys to <code>.env</code> to
-        enable accounts and cross-device sync. Your data is saved locally in the
-        meantime.
+        Account and cloud backup services are currently unavailable. Your study
+        data will continue to be saved safely on this device.
       </div>
     );
   }

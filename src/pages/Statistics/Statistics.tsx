@@ -283,11 +283,13 @@ export function Statistics() {
 
   return (
     <Page>
-      <PageHeader
-        eyebrow="Statistics"
-        title="Your progress"
-        description="A focused view of your daily activity, accuracy and study time."
-      />
+      <div data-tour="statistics-overview">
+        <PageHeader
+          eyebrow="Statistics"
+          title="Your progress"
+          description="A focused view of your daily activity, accuracy and study time."
+        />
+      </div>
 
       {!hasAnyActivity ? (
         <EmptyState

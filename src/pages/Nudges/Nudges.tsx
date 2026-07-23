@@ -52,7 +52,7 @@ function titleFromContent(content: string, kind: NudgeKind) {
 }
 
 export function Nudges() {
-  const { status } = useAuth();
+  const { status, supabaseConfigured, signInWithGoogle } = useAuth();
   const [params, setParams] = useSearchParams();
   const [nudges, setNudges] = useState<MemoryNudge[]>([]);
   const [selected, setSelected] = useState<MemoryNudge | null>(null);
@@ -69,6 +69,19 @@ export function Nudges() {
   const [deleting, setDeleting] = useState(false);
   const [mobileToolsOpen, setMobileToolsOpen] = useState(false);
   const [deliveryTestOpen, setDeliveryTestOpen] = useState(false);
+  const [signingIn, setSigningIn] = useState(false);
+  const [signInError, setSignInError] = useState("");
+
+  const continueWithGoogle = async () => {
+    setSigningIn(true);
+    setSignInError("");
+    try {
+      await signInWithGoogle(Routes.nudges);
+    } catch (error) {
+      setSignInError(error instanceof Error ? error.message : "Google sign-in could not be started.");
+      setSigningIn(false);
+    }
+  };
 
   const sendNow = async (nudge: MemoryNudge) => {
     setSendingId(nudge.id);
@@ -161,14 +174,31 @@ export function Nudges() {
     }
   };
 
+  if (status === "loading")
+    return (
+      <Page narrow>
+        <div className={styles.authLoading} role='status'><span /><p>Checking your account…</p></div>
+      </Page>
+    );
   if (status !== "authenticated")
     return (
       <Page narrow>
-        <PageHeader
-          eyebrow='Memory Nudges'
-          title='Sign in to use private nudges'
-          description='Nudges sync privately and need an account so Supabase can deliver them to your devices.'
-        />
+        <section className={styles.authGate} aria-labelledby='nudge-sign-in-title'>
+          <div className={styles.authIcon}><Icon name='sparkle' size={25} /></div>
+          <span className={styles.authEyebrow}>Memory Nudges</span>
+          <h1 id='nudge-sign-in-title'>Remember what matters</h1>
+          <p>Sign in once to keep your private reminders synced and receive them on the devices you choose.</p>
+          <div className={styles.authBenefits}>
+            <span><Icon name='check' size={14} /> Private to your account</span>
+            <span><Icon name='check' size={14} /> Synced across devices</span>
+          </div>
+          <Button className={styles.googleButton} disabled={!supabaseConfigured || signingIn} onClick={() => void continueWithGoogle()}>
+            <span className={styles.googleMark}>G</span>{signingIn ? "Opening Google…" : "Continue with Google"}
+          </Button>
+          {!supabaseConfigured && <small className={styles.authError}>Google sign-in is not configured.</small>}
+          {signInError && <small className={styles.authError} role='alert'>{signInError}</small>}
+          <Link className={styles.authBack} to={Routes.dashboard}>Not now — return home</Link>
+        </section>
       </Page>
     );
   return (

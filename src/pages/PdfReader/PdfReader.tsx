@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import { Button, EmptyState, Icon } from '../../components/common';
 import { usePdfWorkspace } from '../../context/PdfWorkspaceContext';
 import { useLibrary } from '../../hooks/useChapters';
+import { PdfCanvasViewer } from '../../components/study/PdfCanvasViewer';
 import styles from './PdfReader.module.css';
 
 export function PdfReader() {
@@ -11,9 +12,6 @@ export function PdfReader() {
   const [fullscreen, setFullscreen] = useState(false);
   const [mobileView, setMobileView] = useState<'documents' | 'reader'>(() => workspace.document ? 'reader' : 'documents');
   const active = workspace.document;
-  const viewerUrl = active
-    ? `${active.url}${active.url.includes('#') ? '&' : '#'}toolbar=0&navpanes=0&scrollbar=1&view=FitH`
-    : '';
 
   useEffect(() => {
     const update = () => setFullscreen(document.fullscreenElement === viewerRef.current);
@@ -33,7 +31,7 @@ export function PdfReader() {
   return (
     <div className={styles.page}>
       <div className={styles.reader}>
-        <header className={styles.workspaceHeader}>
+        <header className={styles.workspaceHeader} data-tour="pdf-reader">
           <div>
             <Icon name="book" size={18} />
             <span><strong>PDF Reader</strong><small>Local files stay on this device</small></span>
@@ -119,7 +117,7 @@ export function PdfReader() {
                     </button>
                   </div>
                 </header>
-                <iframe src={viewerUrl} title={`PDF: ${active.name}`} />
+                <PdfCanvasViewer className={styles.documentFrame} url={active.url} name={active.name} />
               </section>
             )}
           </div>

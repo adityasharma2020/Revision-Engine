@@ -34,7 +34,7 @@ export function getPushStatus(authenticated: boolean): PushStatus {
 
 async function registerCurrentDevice(userId: string, preferences: DeviceNotificationSettings): Promise<void> {
   const client = getSupabase();
-  if (!client) throw new Error('Supabase is not configured.');
+  if (!client) throw new Error('Cloud notification services are unavailable.');
   const registration = await Promise.race([
     navigator.serviceWorker.ready,
     new Promise<never>((_, reject) => window.setTimeout(() => reject(new Error('The notification service worker did not become ready. Install or refresh the app, then try again.')), 10_000)),
@@ -150,7 +150,7 @@ export async function disableWebPush(preferences?: DeviceNotificationSettings): 
 
 export async function sendTestNotification(): Promise<number> {
   const client = getSupabase();
-  if (!client) throw new Error('Supabase is not configured.');
+  if (!client) throw new Error('Cloud notification services are unavailable.');
   const { data, error } = await client.functions.invoke<{ delivered?: number }>('test-notification');
   if (error) {
     const response = (error as { context?: Response }).context;

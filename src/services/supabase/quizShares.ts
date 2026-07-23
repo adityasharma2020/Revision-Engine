@@ -18,7 +18,7 @@ export interface ActiveQuizShare {
 
 async function requireUser() {
   const client = getSupabase();
-  if (!client) throw new Error('Supabase is not configured.');
+  if (!client) throw new Error('Result sharing is unavailable.');
   const { data, error } = await client.auth.getUser();
   if (error || !data.user) throw new Error('Sign in before sharing a result.');
   return { client, user: data.user };

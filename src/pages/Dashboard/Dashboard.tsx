@@ -99,7 +99,7 @@ function HomeContent({ chapters }: { chapters: readonly ChapterSummary[] }) {
       <NotificationInbox />
       {appSettings.dashboard.showActivityOverview && <ProgressOverview results={quizResults} />}
 
-      <button type="button" onClick={openPreflight} className={`${styles.revisionHero} ${revisionPerformance ? styles[`revision_${revisionPerformance.tone}`] : ''}`}>
+      <button type="button" onClick={openPreflight} className={`${styles.revisionHero} ${revisionPerformance ? styles[`revision_${revisionPerformance.tone}`] : ''}`} data-tour="daily-revision">
         <span className={styles.revisionMark}><Icon name="target" size={25} /></span>
         <div className={styles.revisionMain}>
           <small>{assignment?.status === 'completed' ? '✅ Daily Revision · Completed today' : assignment?.status === 'active' ? '⏳ Daily Revision · Pending today' : 'Daily Revision · Your highest-priority study'}</small>
@@ -122,8 +122,8 @@ function HomeContent({ chapters }: { chapters: readonly ChapterSummary[] }) {
             <Icon name="chevronRight" size={16} />
           </Link>
         )}
-        <Action to={Routes.library} icon="book" title="Open library" text="Browse every subject and chapter." />
-        <Action to={continueChapter ? Routes.chapter(continueChapter.id) : Routes.library} icon="clock" title="Take a quiz" text="Start a timed attempt with saved results." />
+        <Action to={Routes.library} icon="book" title="Open library" text="Browse every subject and chapter." tour="library-shortcut" />
+        <Action to={continueChapter ? Routes.chapter(continueChapter.id) : Routes.library} icon="clock" title="Take a quiz" text="Start a timed attempt with saved results." tour="quiz-shortcut" />
       </section>
 
       {recent.length > 0 && (
@@ -154,14 +154,15 @@ function HomeContent({ chapters }: { chapters: readonly ChapterSummary[] }) {
   );
 }
 
-function Action({ to, icon, title, text }: {
+function Action({ to, icon, title, text, tour }: {
   to: string;
   icon: 'book' | 'clock' | 'search' | 'target';
   title: string;
   text: string;
+  tour?: string;
 }) {
   return (
-    <Link to={to} className={styles.action}>
+    <Link to={to} className={styles.action} data-tour={tour}>
       <span><Icon name={icon} size={19} /></span>
       <div><strong>{title}</strong><small>{text}</small></div>
       <Icon name="chevronRight" size={16} />

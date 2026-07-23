@@ -63,7 +63,7 @@ export function ProgressOverview({ results, now = new Date() }: { results: reado
 
   return (
     <>
-      <section className={styles.hero} aria-labelledby="progress-overview-title">
+      <section className={styles.hero} aria-labelledby="progress-overview-title" data-tour="activity-overview">
         <div className={styles.heroCopy}>
           <div>
             <span className={styles.eyebrow}>Your learning pulse</span>

@@ -159,7 +159,7 @@ function LoadedResult({ result }: { result: QuizResult }) {
                         Stop sharing
                       </Button>
                     )}
-                    {shareStatus === 'error' && <small>Sharing failed. Check Supabase setup.</small>}
+                    {shareStatus === 'error' && <small>Sharing is temporarily unavailable. Please try again.</small>}
                   </div>
                 )}
               </header>

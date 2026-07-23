@@ -157,7 +157,7 @@ export function Settings() {
     setSyncMessage(null);
     try {
       await syncNow();
-      setSyncMessage('Synced with Supabase just now.');
+      setSyncMessage('Cloud backup is up to date.');
     } catch {
       setSyncMessage('Sync failed. Your local data is safe; try again when online.');
     }
@@ -167,7 +167,7 @@ export function Settings() {
     <Page narrow>
       <PageHeader eyebrow="Settings" title="Preferences" description="Personalise the app and control how your study data is stored." />
 
-      <div className={styles.settingsTabs}>
+      <div className={styles.settingsTabs} data-tour="app-settings">
         <Tabs
           items={[
             { id: 'general', label: 'General' },
@@ -192,7 +192,7 @@ export function Settings() {
               {status === 'authenticated' && cloudAvailable && (
                 <div className={styles.syncPanel}>
                   <div>
-                    <strong>Local + Supabase</strong>
+                    <strong>Local + cloud backup</strong>
                     <span>Quiz attempts and responses save locally first, then sync to your account.</span>
                     {syncMessage && <small role="status">{syncMessage}</small>}
                   </div>
@@ -293,7 +293,7 @@ export function Settings() {
             <div className={styles.row}>
               <div className={styles.rowText}>
                 <h3 className={styles.rowTitle}>Product tour</h3>
-                <p className={styles.rowDesc}>A brief overview of the question bank, quizzes, revision and analytics.</p>
+                <p className={styles.rowDesc}>Walk through the app again with a guided, feature-by-feature tour.</p>
               </div>
               <Button variant="secondary" size="sm" onClick={replayFirstVisitTour}>
                 <Icon name="sparkle" size={15} /> Replay tour
@@ -327,22 +327,21 @@ export function Settings() {
                 </span>
                 <h2 id="reset-title">Where should data disappear from?</h2>
                 <p>
-                  Cloud removal is non-destructive: Supabase rows are marked as deleted and excluded from the app, while their database
-                  history is retained.
+                  Cloud removal is non-destructive: the selected data disappears from the app while a protected recovery record is retained.
                 </p>
                 <div className={styles.resetChoices}>
                   <button type="button" onClick={() => void clearDeviceOnly()}>
                     <strong>Clear this device</strong>
                     <span>
                       {cloudAvailable
-                        ? 'Signs you out and clears this browser. Supabase data remains available.'
+                        ? 'Signs you out and clears this browser. Your cloud backup remains available.'
                         : 'Clears all data stored in this browser.'}
                     </span>
                   </button>
                   {cloudAvailable && (
                     <button type="button" className={styles.cloudDelete} onClick={() => void clearDeviceAndArchiveCloud()}>
                       <strong>Clear device and remove cloud data from the app</strong>
-                      <span>Soft-deletes the active Supabase records. No database row or previous version is physically deleted.</span>
+                      <span>Removes active cloud data from the app without permanently erasing its protected recovery history.</span>
                     </button>
                   )}
                 </div>

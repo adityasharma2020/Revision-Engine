@@ -22,7 +22,7 @@ interface AuthValue {
   status: AuthStatus;
   user: AuthUser | null;
   supabaseConfigured: boolean;
-  signInWithGoogle: () => Promise<void>;
+  signInWithGoogle: (returnTo?: string) => Promise<void>;
   signInWithEmail: (
     email: string
   ) => Promise<{ sent: boolean; error?: string }>;
@@ -41,8 +41,9 @@ function mapUser(user: User): AuthUser {
   };
 }
 
-function redirectUrl() {
-  return window.location.origin;
+function redirectUrl(returnTo = "/") {
+  const safePath = returnTo.startsWith("/") && !returnTo.startsWith("//") ? returnTo : "/";
+  return new URL(safePath, window.location.origin).toString();
 }
 export function AuthProvider({ children }: { children: ReactNode }) {
   const supabase = getSupabase();
@@ -82,12 +83,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       status,
       user,
       supabaseConfigured: Boolean(supabase),
-      async signInWithGoogle() {
+      async signInWithGoogle(returnTo) {
         if (!supabase) return;
-        await supabase.auth.signInWithOAuth({
+        const { error } = await supabase.auth.signInWithOAuth({
           provider: "google",
-          options: { redirectTo: redirectUrl() },
+          options: { redirectTo: redirectUrl(returnTo) },
         });
+        if (error) throw error;
       },
       async signInWithEmail(email: string) {
         if (!supabase)

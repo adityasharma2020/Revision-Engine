@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState, type CSSProperties, type KeyboardEvent, type PointerEvent, type ReactNode } from 'react';
 import { usePdfWorkspace } from '../../../context/PdfWorkspaceContext';
 import { Icon } from '../../common';
+import { PdfCanvasViewer } from '../PdfCanvasViewer';
 import styles from './PdfWorkspace.module.css';
 
 interface PdfWorkspaceProps {
@@ -17,9 +18,6 @@ export function PdfWorkspace({ chapterId, children }: PdfWorkspaceProps) {
     ? workspace.document
     : null;
   const split = Boolean(activeDocument && workspace.visible);
-  const viewerUrl = activeDocument
-    ? `${activeDocument.url}${activeDocument.url.includes('#') ? '&' : '#'}toolbar=0&navpanes=0&scrollbar=1&view=FitH`
-    : '';
 
   useEffect(() => {
     const update = () => setFocused(document.fullscreenElement === rootRef.current);
@@ -121,7 +119,7 @@ export function PdfWorkspace({ chapterId, children }: PdfWorkspaceProps) {
                 </button>
               </div>
             </header>
-            <iframe className={styles.documentFrame} src={viewerUrl} title={`Reference PDF: ${activeDocument.name}`} />
+            <PdfCanvasViewer className={styles.documentFrame} url={activeDocument.url} name={activeDocument.name} />
           </aside>
         </>
       )}

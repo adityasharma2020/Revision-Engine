@@ -8,7 +8,7 @@ export interface NudgeAnalyticsData { nudges: MemoryNudge[]; interactions: Nudge
 
 const client = () => {
   const value = getSupabase();
-  if (!value) throw new Error('Sign in with Supabase to use Memory Nudges.');
+  if (!value) throw new Error('Sign in to use Memory Nudges across devices.');
   return value;
 };
 

@@ -36,9 +36,9 @@
 .viewerActions { display: flex; flex: none; align-items: center; gap: 2px; }
 .viewer header .viewerActions button { flex: none; min-height: 34px; padding: 0 10px; border: 0; border-radius: var(--radius-sm); background: transparent; color: var(--text-secondary); font-size: var(--text-xs); }
 .viewer header button:hover { background: var(--surface-hover); color: var(--text-primary); }
-.viewer iframe { display: block; width: 100%; height: calc(100% - 50px); min-height: 0; border: 0; background: #303030; }
+.documentFrame { width: 100%; height: calc(100% - 50px); min-height: 0; }
 .viewer:fullscreen { width: 100vw; height: 100dvh; border: 0; border-radius: 0; background: var(--surface); }
-.viewer:fullscreen iframe { height: calc(100dvh - 50px); min-height: 0; }
+.viewer:fullscreen .documentFrame { height: calc(100dvh - 50px); min-height: 0; }
 
 @media (max-width: 800px) {
   .page { height: calc(100dvh - 68px - env(safe-area-inset-bottom)); padding: 6px; }
@@ -55,7 +55,7 @@
   .links { border-top: 1px solid var(--border); }
   .chapterLinks { max-height: none; }
   .viewer { width: 100%; height: 100%; min-height: 0; border-radius: var(--radius-md); }
-  .viewer iframe { height: calc(100% - 50px); min-height: 0; }
+  .viewer .documentFrame { height: calc(100% - 50px); min-height: 0; }
 }
 
 @media (max-width: 520px) {

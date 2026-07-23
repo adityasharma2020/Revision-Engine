@@ -1,4 +1,20 @@
 .headerActions, .desktopTools, .toolbar, .toolbar label, .card header, .card footer, .card footer > div { display: flex; align-items: center; gap: var(--space-2); }
+.authGate { display: flex; width: min(100%, 560px); min-height: min(620px, calc(100dvh - 150px)); align-items: center; justify-content: center; flex-direction: column; margin: 0 auto; padding: clamp(28px, 6vw, 56px); text-align: center; background: radial-gradient(circle at 50% 0%, var(--accent-subtle), transparent 44%), var(--surface); border: 1px solid var(--border); border-radius: var(--radius-xl); box-shadow: var(--shadow-sm); }
+.authIcon { display: grid; width: 54px; height: 54px; margin-bottom: var(--space-4); place-items: center; color: var(--accent); background: var(--accent-subtle); border: 1px solid color-mix(in srgb, var(--accent) 28%, var(--border)); border-radius: var(--radius-lg); }
+.authEyebrow { color: var(--accent); font-size: var(--text-xs); font-weight: var(--weight-semibold); letter-spacing: var(--tracking-wide); text-transform: uppercase; }
+.authGate h1 { max-width: 12ch; margin-top: var(--space-2); font-size: clamp(28px, 5vw, 40px); line-height: 1.1; }
+.authGate > p { max-width: 46ch; margin-top: var(--space-3); color: var(--text-secondary); line-height: 1.6; }
+.authBenefits { display: flex; flex-wrap: wrap; justify-content: center; gap: var(--space-2) var(--space-4); margin: var(--space-5) 0; color: var(--text-secondary); font-size: var(--text-xs); }
+.authBenefits span { display: inline-flex; align-items: center; gap: 5px; }
+.authBenefits svg { color: var(--success); }
+.googleButton { width: min(100%, 320px); min-height: 46px; color: #202124 !important; background: #fff !important; border-color: #dadce0 !important; box-shadow: 0 1px 3px rgb(0 0 0 / 20%); }
+.googleButton:hover:not(:disabled) { background: #f8f9fa !important; box-shadow: 0 2px 7px rgb(0 0 0 / 24%); }
+.googleMark { display: inline-grid; width: 22px; height: 22px; place-items: center; color: #4285f4; font-size: 18px; font-weight: 800; }
+.authBack { margin-top: var(--space-4); color: var(--text-tertiary); font-size: var(--text-xs); }
+.authBack:hover { color: var(--text-primary); }
+.authError { margin-top: var(--space-3); color: var(--danger); }
+.authLoading { display: flex; min-height: 55dvh; align-items: center; justify-content: center; flex-direction: column; gap: var(--space-3); color: var(--text-tertiary); }
+.authLoading span { width: 28px; height: 28px; border: 2px solid var(--border-strong); border-top-color: var(--accent); border-radius: 50%; animation: nudgeSpin .7s linear infinite; }
 .settingsLink { display: inline-flex; height: 30px; align-items: center; gap: var(--space-2); padding: 0 var(--space-3); color: var(--accent); background: var(--accent-subtle); border-radius: var(--radius-md); font-size: var(--text-sm); font-weight: var(--weight-medium); white-space: nowrap; }
 .mobileTools { position: relative; display: none; }
 .mobileToolsMenu { position: absolute; z-index: var(--z-overlay); top: calc(100% + 6px); right: 0; width: 220px; overflow: hidden; padding: 6px; background: var(--surface-elevated); border: 1px solid var(--border-strong); border-radius: var(--radius-lg); box-shadow: var(--shadow-lg); }
@@ -104,6 +120,7 @@
 .importProgress small { color: var(--text-secondary); }
 @keyframes nudgeSpin { to { transform: rotate(360deg); } }
 @media (max-width: 650px) {
+  .authGate { min-height: calc(100dvh - 150px); padding: var(--space-6) var(--space-4); }
   .headerActions { width: 100%; justify-content: flex-end; }
   .desktopTools { display: none; }
   .mobileTools { display: block; }

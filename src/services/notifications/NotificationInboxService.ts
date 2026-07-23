@@ -13,7 +13,7 @@ export interface InboxNotification {
 
 const client = () => {
   const value = getSupabase();
-  if (!value) throw new Error('Supabase is required for notification history.');
+  if (!value) throw new Error('Cloud notification history is unavailable.');
   return value;
 };
 
