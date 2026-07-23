@@ -58,6 +58,43 @@ x-cron-secret: <the same CRON_SECRET value>
 The dispatcher evaluates each user's timezone and configured schedule. A unique
 delivery key makes repeated Cron calls safe and prevents duplicate messages.
 
+## Verify that scheduling—not only Web Push—is working
+
+The **Send test notification** button proves the browser subscription and VAPID
+keys work. It does not invoke Cron. After migration `0016`, Settings → Alerts
+also shows a scheduler heartbeat. With a 15-minute job, a completed heartbeat
+within the last 35 minutes is healthy.
+
+Inspect the actual Cron job and recent executions in the SQL editor:
+
+```sql
+select jobid, jobname, schedule, active, command
+from cron.job
+order by jobid;
+
+select jobid, status, return_message, start_time, end_time
+from cron.job_run_details
+order by start_time desc
+limit 20;
+
+select * from public.notification_dispatch_health;
+```
+
+You can also invoke the deployed scheduler once without waiting for Cron:
+
+```bash
+curl --fail-with-body --request POST \
+  'https://<project-ref>.supabase.co/functions/v1/dispatch-notifications' \
+  --header 'x-cron-secret: <the same CRON_SECRET value>' \
+  --header 'content-type: application/json' \
+  --data '{}'
+```
+
+That request may correctly return `{"delivered":0}` when nothing is due; the
+heartbeat should still update. A `401` means the Cron header and function secret
+do not match. No recent `cron.job_run_details` row means the job is absent or
+inactive. A failed run should be inspected in Dashboard → Edge Functions → Logs.
+
 ## Delivery behavior
 
 - Daily revision: sent only when today's assignment is not complete.

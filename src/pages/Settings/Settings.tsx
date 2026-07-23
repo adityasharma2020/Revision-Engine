@@ -10,7 +10,8 @@ import { APP_BUILD_TIMESTAMP, APP_NAME, APP_VERSION } from '../../constants/app'
 import styles from './Settings.module.css';
 import { useRevisionPreferences } from '../../hooks/useRevisionPreferences';
 import { useAppSettings } from '../../context/AppSettingsContext';
-import { disableWebPush, enableWebPush, getPushStatus, sendTestNotification, syncWebPushSubscription } from '../../services/notifications';
+import { disableWebPush, enableWebPush, getNotificationSchedulerHealth, getPushStatus, sendTestNotification, syncWebPushSubscription } from '../../services/notifications';
+import type { NotificationSchedulerHealth } from '../../services/notifications';
 import { loadNudgePreferences, saveNudgePreferences } from '../../services/nudges';
 import { DEFAULT_NUDGE_PREFERENCES, type NudgePreferences } from '../../types';
 import { Routes } from '../../constants/routes';
@@ -30,6 +31,9 @@ export function Settings() {
   const [tab, setTab] = useState<'general' | 'alerts' | 'addons'>('general');
   const [pushBusy, setPushBusy] = useState(false);
   const [pushMessage, setPushMessage] = useState<string | null>(null);
+  const [schedulerHealth, setSchedulerHealth] = useState<NotificationSchedulerHealth | null>(null);
+  const [schedulerHealthError, setSchedulerHealthError] = useState('');
+  const [schedulerHealthBusy, setSchedulerHealthBusy] = useState(false);
   const [nudgeSettingsOpen, setNudgeSettingsOpen] = useState(false);
   const [installMessage, setInstallMessage] = useState('');
   const [refreshingApp, setRefreshingApp] = useState(false);
@@ -52,6 +56,27 @@ export function Settings() {
     if (requestedTab === 'addons') setTab('addons');
     if (searchParams.get('nudge') === '1') { setTab('addons'); setNudgeSettingsOpen(true); }
   }, [searchParams]);
+
+  const checkSchedulerHealth = async () => {
+    setSchedulerHealthBusy(true);
+    setSchedulerHealthError('');
+    try {
+      setSchedulerHealth(await getNotificationSchedulerHealth());
+    } catch {
+      setSchedulerHealth(null);
+      setSchedulerHealthError('Scheduler health is unavailable. Apply the latest Supabase migration and redeploy the dispatcher.');
+    } finally {
+      setSchedulerHealthBusy(false);
+    }
+  };
+
+  useEffect(() => {
+    if (tab === 'alerts' && status === 'authenticated') void checkSchedulerHealth();
+  }, [tab, status]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  const schedulerLastRun = schedulerHealth?.lastCompletedAt ? new Date(schedulerHealth.lastCompletedAt) : null;
+  const schedulerAgeMinutes = schedulerLastRun ? Math.max(0, Math.round((Date.now() - schedulerLastRun.getTime()) / 60_000)) : null;
+  const schedulerState = schedulerAgeMinutes === null ? 'unknown' : schedulerAgeMinutes <= 35 ? 'healthy' : 'late';
 
   const closeNudgeSettings = () => {
     setNudgeSettingsOpen(false);
@@ -619,6 +644,14 @@ export function Settings() {
                 Send test notification
               </Button>
               {pushMessage && <small role="status">{pushMessage}</small>}
+            </div>
+            <div className={`${styles.schedulerHealth} ${styles[`scheduler_${schedulerState}`]}`}>
+              <span><Icon name={schedulerState === 'healthy' ? 'check' : 'clock'} size={16} /></span>
+              <div>
+                <strong>{schedulerState === 'healthy' ? 'Scheduled delivery is running' : schedulerState === 'late' ? 'Scheduled delivery appears delayed' : 'Scheduled delivery not verified yet'}</strong>
+                <small>{schedulerLastRun ? `Last completed ${schedulerLastRun.toLocaleString()} · ${schedulerHealth?.lastDeliveredCount ?? 0} notifications due in that run` : schedulerHealthError || 'No Cron heartbeat has been recorded. Test delivery alone does not verify the schedule.'}</small>
+              </div>
+              <Button size="sm" variant="secondary" disabled={schedulerHealthBusy || status !== 'authenticated'} onClick={() => void checkSchedulerHealth()}>{schedulerHealthBusy ? 'Checking…' : 'Check now'}</Button>
             </div>
           </PreferenceGroup>
 

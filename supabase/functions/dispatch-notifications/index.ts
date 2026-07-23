@@ -30,7 +30,9 @@ function isDue(current: string, configured = '18:00') {
   const [hour, minute] = current.split(':').map(Number);
   const [targetHour, targetMinute] = configured.split(':').map(Number);
   const delta = hour * 60 + minute - (targetHour * 60 + targetMinute);
-  return delta >= 0 && delta < 15;
+  // Cron runs every 15 minutes. A 30-minute window tolerates one delayed or
+  // missed invocation; notification_deliveries still prevents duplicates.
+  return delta >= 0 && delta < 30;
 }
 
 function inRange(current: string, start: string, end: string) {
@@ -54,6 +56,7 @@ function weightedPick(items: Array<Record<string, unknown>>) {
 Deno.serve(async (request) => {
   if (request.headers.get('x-cron-secret') !== Deno.env.get('CRON_SECRET')) return new Response('Unauthorized', { status: 401 });
   const admin = adminClient();
+  await admin.from('notification_dispatch_health').upsert({ id: true, last_started_at: new Date().toISOString(), updated_at: new Date().toISOString() });
   const { data: deviceRows, error } = await admin.from('push_subscriptions').select('id,user_id,endpoint,p256dh,auth_key,preferences').is('disabled_at', null);
   if (error) throw error;
   let delivered = 0;
@@ -187,5 +190,6 @@ Deno.serve(async (request) => {
       await admin.from('notification_inbox').insert({ user_id: preferences.user_id, notification_type: 'memory-nudge', dedupe_key: `${selected.id}-${new Date().toISOString()}`, title, body, url: `nudges?id=${selected.id}`, metadata: { nudgeId: selected.id, kind: selected.kind } });
     }
   }
+  await admin.from('notification_dispatch_health').upsert({ id: true, last_completed_at: new Date().toISOString(), last_delivered_count: delivered, updated_at: new Date().toISOString() });
   return Response.json({ delivered });
 });

@@ -8,6 +8,12 @@ import {
 
 export type PushStatus = 'unsupported' | 'install-required' | 'unconfigured' | 'signed-out' | 'prompt' | 'granted' | 'denied';
 
+export interface NotificationSchedulerHealth {
+  readonly lastStartedAt: string | null;
+  readonly lastCompletedAt: string | null;
+  readonly lastDeliveredCount: number;
+}
+
 function decodeVapidKey(value: string): Uint8Array<ArrayBuffer> {
   const padded = `${value}${'='.repeat((4 - value.length % 4) % 4)}`.replace(/-/g, '+').replace(/_/g, '/');
   const bytes = atob(padded);
@@ -170,4 +176,22 @@ export async function sendTestNotification(
     throw error;
   }
   return Number(data?.delivered ?? 0);
+}
+
+/** Proves the scheduled dispatcher is being invoked; test pushes do not. */
+export async function getNotificationSchedulerHealth(): Promise<NotificationSchedulerHealth | null> {
+  const client = getSupabase();
+  if (!client) return null;
+  const { data, error } = await client
+    .from('notification_dispatch_health')
+    .select('last_started_at,last_completed_at,last_delivered_count')
+    .eq('id', true)
+    .maybeSingle();
+  if (error) throw error;
+  if (!data) return null;
+  return {
+    lastStartedAt: data.last_started_at ? String(data.last_started_at) : null,
+    lastCompletedAt: data.last_completed_at ? String(data.last_completed_at) : null,
+    lastDeliveredCount: Number(data.last_delivered_count ?? 0),
+  };
 }

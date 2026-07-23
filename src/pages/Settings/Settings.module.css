@@ -32,6 +32,15 @@
 .notificationSchedule > small { grid-column: 1 / -1; color: var(--text-tertiary); font-size: 10px; }
 .pushActions { display: flex; align-items: center; gap: var(--space-3); padding: 0 0 var(--space-4); }
 .pushActions small { color: var(--text-secondary); font-size: var(--text-xs); }
+.schedulerHealth { display: grid; grid-template-columns: 34px minmax(0, 1fr) auto; align-items: center; gap: var(--space-3); margin-bottom: var(--space-4); padding: var(--space-3); background: var(--bg-sunken); border: 1px solid var(--border); border-radius: var(--radius-md); }
+.schedulerHealth > span { display: grid; width: 34px; height: 34px; color: var(--text-secondary); background: var(--surface); border-radius: var(--radius-md); place-items: center; }
+.schedulerHealth > div { display: flex; min-width: 0; flex-direction: column; gap: 2px; }
+.schedulerHealth strong { font-size: var(--text-sm); }
+.schedulerHealth small { color: var(--text-secondary); font-size: var(--text-xs); line-height: var(--leading-normal); }
+.scheduler_healthy { border-color: color-mix(in srgb, var(--success) 42%, var(--border)); }
+.scheduler_healthy > span { color: var(--success); }
+.scheduler_late { border-color: color-mix(in srgb, var(--warning) 48%, var(--border)); }
+.scheduler_late > span { color: var(--warning); }
 .disabled { pointer-events: none; opacity: .48; }
 .motivationPanel { margin: var(--space-3) 0 var(--space-4); overflow: hidden; background: var(--bg-sunken); border: 1px solid var(--border); border-radius: var(--radius-lg); }
 .motivationPanel > summary { display: grid; grid-template-columns: 34px minmax(0, 1fr) auto; align-items: center; gap: var(--space-3); padding: var(--space-3); cursor: pointer; list-style: none; }
@@ -294,6 +303,8 @@
   .toggleRow { min-height: 76px; gap: var(--space-3); }
   .notificationSchedule { grid-template-columns: 1fr; }
   .pushActions { align-items: flex-start; flex-direction: column; }
+  .schedulerHealth { grid-template-columns: 34px minmax(0, 1fr); }
+  .schedulerHealth > button { grid-column: 1 / -1; width: 100%; }
   .motivationFields { grid-template-columns: 1fr; }
   .motivationDays { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); }
   .motivationDays button { width: 100%; max-width: 34px; height: auto; aspect-ratio: 1; }

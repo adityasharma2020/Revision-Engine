@@ -12,7 +12,7 @@ import {
 import { createPortal } from 'react-dom';
 import { Button, Icon } from '../components/common';
 import styles from '../components/study/PdfWorkspace/PdfWorkspace.module.css';
-import { deleteStoredWorkspacePdf, loadStoredWorkspacePdfs, saveStoredWorkspacePdf, type StoredWorkspacePdf } from '../services/pdf/PdfWorkspaceStore';
+import { clearStoredWorkspacePdfs } from '../services/pdf/PdfWorkspaceStore';
 import { downloadCloudPdf, listCloudPdfs, PdfCloudConflictError, syncCloudPdfUrl, updateCloudAnnotations, uploadCloudPdf, type CloudPdfRecord } from '../services/pdf/PdfCloudStore';
 import type { PdfInkAnnotation } from '../services/pdf/PdfAnnotationStore';
 import { useAuth } from './AuthContext';
@@ -104,31 +104,10 @@ export function PdfWorkspaceProvider({ children }: { children: ReactNode }) {
   }, []);
 
   useEffect(() => {
-    let cancelled = false;
-    void loadStoredWorkspacePdfs().then(async (stored) => {
-      if (cancelled) return;
-      const candidates = await Promise.all(stored.map(async (item): Promise<WorkspacePdf | null> => {
-        let blob = item.blob;
-        if (item.local && item.fileHandle) blob = await item.fileHandle.getFile().catch(() => blob);
-        if (item.local && !blob) return null;
-        const url = item.local ? URL.createObjectURL(blob!) : item.sourceUrl;
-        if (!url) return null;
-        if (item.local) { localObjectUrls.current.set(item.id, url); localBlobs.current.set(item.id, blob!); }
-        return { id: item.id, name: item.name, url, local: item.local, linkedChapterIds: item.linkedChapterIds, fileHandle: item.fileHandle, sizeBytes: blob?.size };
-      }));
-      if (cancelled) return;
-      const restored = candidates.filter((item): item is WorkspacePdf => item !== null);
-      // Legacy versions cached full PDF blobs in IndexedDB. Keep any restored
-      // bytes only in memory for this session, then evict the persistent blob.
-      // Durable PDFs belong in cloud storage; device-only imports must not
-      // silently consume hundreds of megabytes of browser quota.
-      for (const item of stored) {
-        if (item.blob) void saveStoredWorkspacePdf({ ...item, blob: undefined }).catch(() => undefined);
-      }
-      setDocuments((current) => [...restored.filter((saved) => !current.some((item) => item.id === saved.id)), ...current]);
-      // Restoring metadata must not automatically open the last PDF.
-    }).catch(() => undefined);
-    return () => { cancelled = true; };
+    // Device files and unsynced public URLs are deliberately session-only.
+    // Remove metadata written by older versions so a refresh always starts
+    // clean unless the document was explicitly synchronized to Supabase.
+    void clearStoredWorkspacePdfs().catch(() => undefined);
   }, []);
 
   const refreshCloudDocuments = useCallback(async () => {
@@ -162,9 +141,8 @@ export function PdfWorkspaceProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => { void refreshCloudDocuments(); }, [refreshCloudDocuments]);
 
-  // Restoring IndexedDB and fetching Supabase happen independently. Reconcile
-  // whenever either side finishes so a refresh cannot leave an uploaded PDF
-  // incorrectly presented as device-only.
+  // Reconcile an already-open session document with its cloud record without
+  // retaining any device-only workspace metadata between page loads.
   useEffect(() => {
     if (cloudStatus !== 'ready') return;
     setDocuments((current) => current.map((item) => {
@@ -174,27 +152,6 @@ export function PdfWorkspaceProvider({ children }: { children: ReactNode }) {
       return { ...item, cloud, linkedChapterIds: cloud.linkedChapterIds };
     }));
   }, [cloudDocuments, cloudStatus]);
-
-  const persistDocument = useCallback((document: WorkspacePdf, _blob?: Blob) => {
-    const stored: StoredWorkspacePdf = {
-      id: document.id,
-      name: document.name,
-      local: document.local,
-      linkedChapterIds: document.linkedChapterIds,
-      sourceUrl: document.local ? undefined : document.url,
-      // Never persist complete PDF bytes in IndexedDB. A file handle may be
-      // reused where supported; otherwise local files intentionally disappear
-      // after the browser session and can be selected again by the user.
-      blob: undefined,
-      fileHandle: document.fileHandle,
-      openedAt: Date.now(),
-    };
-    void saveStoredWorkspacePdf(stored).catch(() => {
-      // Some browsers cannot structured-clone file handles. Metadata is still
-      // retained, but the user will need to select the local PDF again.
-      if (stored.fileHandle) void saveStoredWorkspacePdf({ ...stored, fileHandle: undefined }).catch(() => undefined);
-    });
-  }, []);
 
   const createDocumentId = () => globalThis.crypto?.randomUUID?.() ?? `pdf-${Date.now()}-${Math.random().toString(36).slice(2)}`;
 
@@ -217,12 +174,8 @@ export function PdfWorkspaceProvider({ children }: { children: ReactNode }) {
   }, [cloudDocuments]);
 
   const updateLocalChapterAssignment = useCallback((documentId: string, chapterId: string, link: boolean) => {
-    setDocuments((current) => {
-      const next = assignChapterToDocument(current, documentId, chapterId, link);
-      next.forEach((item, index) => { if (item !== current[index]) persistDocument(item); });
-      return next;
-    });
-  }, [persistDocument]);
+    setDocuments((current) => assignChapterToDocument(current, documentId, chapterId, link));
+  }, []);
 
   const openFile = (file: File, chapterId?: string, fileHandle?: FileSystemFileHandle) => {
     const isPdf = file.type === 'application/pdf' || file.name.toLowerCase().endsWith('.pdf');
@@ -242,11 +195,9 @@ export function PdfWorkspaceProvider({ children }: { children: ReactNode }) {
     };
     setDocuments((current) => {
       const unlinked = chapterId ? assignChapterToDocument(current, id, chapterId, true) : current;
-      unlinked.forEach((item, index) => { if (item !== current[index]) persistDocument(item); });
       return [...unlinked, next];
     });
     if (chapterId) void syncExclusiveCloudLink(id, chapterId, true).catch(() => undefined);
-    persistDocument(next, file);
     setActiveDocumentId(id);
     setVisible(true);
     setMobileView('document');
@@ -281,11 +232,9 @@ export function PdfWorkspaceProvider({ children }: { children: ReactNode }) {
     };
     setDocuments((current) => {
       const unlinked = chapterId ? assignChapterToDocument(current, id, chapterId, true) : current;
-      unlinked.forEach((item, index) => { if (item !== current[index]) persistDocument(item); });
       return [...unlinked, next];
     });
     if (chapterId) void syncExclusiveCloudLink(id, chapterId, true).catch(() => undefined);
-    persistDocument(next);
     setActiveDocumentId(id);
     setVisible(true);
     setMobileView('document');
@@ -333,7 +282,6 @@ export function PdfWorkspaceProvider({ children }: { children: ReactNode }) {
   const removeDocument = useCallback((documentId: string) => {
     releaseLocalFile(documentId);
     localBlobs.current.delete(documentId);
-    void deleteStoredWorkspacePdf(documentId).catch(() => undefined);
     setDocuments((current) => current.filter((item) => item.id !== documentId));
     setActiveDocumentId((current) => current === documentId ? null : current);
     if (activeDocumentId === documentId) {
@@ -363,7 +311,7 @@ export function PdfWorkspaceProvider({ children }: { children: ReactNode }) {
     if (record.sourceUrl) {
       const next: WorkspacePdf = { id: record.id, name: record.name, url: record.sourceUrl, local: false, linkedChapterIds: record.linkedChapterIds, cloud: record, sizeBytes: 0 };
       setDocuments((current) => existing ? current.map((item) => item.id === record!.id ? next : item) : [...current, next]);
-      persistDocument(next); setActiveDocumentId(record.id); setVisible(true); setMobileView('document'); setPicker(null);
+      setActiveDocumentId(record.id); setVisible(true); setMobileView('document'); setPicker(null);
       return;
     }
     const blob = await downloadCloudPdf(record);
@@ -378,10 +326,9 @@ export function PdfWorkspaceProvider({ children }: { children: ReactNode }) {
     setDocuments((current) => existing
       ? current.map((item) => item.id === record.id ? next : item)
       : [...current, next]);
-    persistDocument(next, blob);
     setActiveDocumentId(record.id); setVisible(true); setMobileView('document');
     setPicker(null);
-  }, [cloudDocuments, documents, persistDocument, syncExclusiveCloudLink, updateLocalChapterAssignment]);
+  }, [cloudDocuments, documents, syncExclusiveCloudLink, updateLocalChapterAssignment]);
 
   const syncCloudAnnotations = useCallback(async (documentId: string, annotations: readonly PdfInkAnnotation[]) => {
     const item = documents.find((candidate) => candidate.id === documentId); if (!item?.cloud) return;
@@ -492,6 +439,10 @@ function PdfPickerDialog({
   const currentChapterPdf = request.chapterId
     ? [...documents, ...cloudDocuments].find((item) => item.linkedChapterIds.includes(request.chapterId!))
     : undefined;
+  const localDocuments = documents.filter((item) => item.local && !item.cloud);
+  const publicDocuments = documents.filter((item) => !item.local && !item.cloud);
+  const publicCloudDocuments = cloudDocuments.filter((item) => item.sourceUrl);
+  const storedCloudDocuments = cloudDocuments.filter((item) => !item.sourceUrl);
 
   const runOrConfirmReplacement = (nextId: string | undefined, nextName: string, action: () => void | Promise<void>) => {
     if (currentChapterPdf && currentChapterPdf.id !== nextId) {
@@ -552,39 +503,61 @@ function PdfPickerDialog({
         </header>
         <p className={styles.privacyNote}>
           <Icon name='monitor' size={17} />
-          Device-only entries use a reusable file permission or web link. Complete local PDF files are not retained in browser storage.
+          Device files and unsynced public links last only for this session. Refreshing the app removes them.
         </p>
-        {documents.some((item) => !item.cloud) && (
+        {localDocuments.length > 0 && (
           <div className={styles.existingDocuments}>
-            <strong>{request.chapterId ? 'Link a device document' : 'On this device'}</strong>
-            {documents.filter((item) => !item.cloud).map((item) => (
+            <strong>Local files · {localDocuments.length}</strong>
+            {localDocuments.map((item) => (
               <button type='button' key={item.id} onClick={() => runOrConfirmReplacement(item.id, item.name, () => onExisting(item.id, request.chapterId))}>
                 <Icon name='book' size={16} />
-                <span>{item.name}<small>{item.local ? 'This session' : 'Web link'} · Linked to {item.linkedChapterIds.length} chapter{item.linkedChapterIds.length === 1 ? '' : 's'}</small></span>
+                <span>{item.name}<small>Local file · Linked to {item.linkedChapterIds.length} chapter{item.linkedChapterIds.length === 1 ? '' : 's'}</small></span>
                 <Icon name='chevronRight' size={15} />
               </button>
             ))}
-            <div className={styles.or}><span>or add another PDF</span></div>
+          </div>
+        )}
+        {(publicDocuments.length > 0 || publicCloudDocuments.length > 0) && (
+          <div className={styles.existingDocuments}>
+            <strong>Public PDF links · {publicDocuments.length + publicCloudDocuments.length}</strong>
+            {publicDocuments.map((item) => (
+              <button type='button' key={item.id} onClick={() => runOrConfirmReplacement(item.id, item.name, () => onExisting(item.id, request.chapterId))}>
+                <Icon name='share' size={16} />
+                <span>{item.name}<small>Public URL · Linked to {item.linkedChapterIds.length} chapter{item.linkedChapterIds.length === 1 ? '' : 's'}</small></span>
+                <Icon name='chevronRight' size={15} />
+              </button>
+            ))}
+            {publicCloudDocuments.map((item) => (
+              <button type='button' key={item.id} onClick={() => runOrConfirmReplacement(item.id, item.name, () => {
+                setError('');
+                return onCloud(item.id, request.chapterId).then(onClose).catch((reason) => setError(reason instanceof Error ? reason.message : 'Could not open this public PDF.'));
+              })}>
+                <Icon name='share' size={16} />
+                <span>{item.name}<small>Public URL · Synced · Linked to {item.linkedChapterIds.length} chapter{item.linkedChapterIds.length === 1 ? '' : 's'}</small></span>
+                <Icon name='chevronRight' size={15} />
+              </button>
+            ))}
           </div>
         )}
         {cloudStatus !== 'unavailable' && (
           <div className={styles.existingDocuments}>
-            <strong>Cloud library · {cloudDocuments.length} PDF{cloudDocuments.length === 1 ? '' : 's'}</strong>
+            <strong>Private cloud files · {storedCloudDocuments.length}</strong>
             {cloudStatus === 'loading' && <small>Loading PDFs saved to your account…</small>}
-            {cloudStatus === 'error' && <p className={styles.pickerError} role='alert'>{cloudError || 'Could not load your cloud PDFs.'} <button type='button' onClick={() => void onRefreshCloud()}>Retry</button></p>}
-            {cloudStatus === 'ready' && cloudDocuments.length === 0 && <small>No PDFs are currently saved to your cloud account.</small>}
-            {cloudDocuments.map((item) => (
+            {cloudStatus === 'error' && <p className={styles.pickerError} role='alert'>{cloudError || 'Could not load your cloud files.'} <button type='button' onClick={() => void onRefreshCloud()}>Retry</button></p>}
+            {cloudStatus === 'ready' && storedCloudDocuments.length === 0 && <small>No complete PDF files are stored in your private cloud.</small>}
+            {storedCloudDocuments.map((item) => (
               <button type='button' key={item.id} onClick={() => runOrConfirmReplacement(item.id, item.name, () => {
                 setError('');
                 return onCloud(item.id, request.chapterId).then(onClose).catch((reason) => setError(reason instanceof Error ? reason.message : 'Could not open this cloud PDF.'));
               })}>
-                <Icon name='book' size={16} />
-                <span>{item.name}<small>{item.sourceUrl ? 'Public link · synced' : `Cloud file · ${(item.sizeBytes / 1024 / 1024).toFixed(1)} MB`} · Linked to {item.linkedChapterIds.length} chapter{item.linkedChapterIds.length === 1 ? '' : 's'}</small></span>
+                <Icon name='cloud' size={16} />
+                <span>{item.name}<small>{(item.sizeBytes / 1024 / 1024).toFixed(1)} MB stored · Linked to {item.linkedChapterIds.length} chapter{item.linkedChapterIds.length === 1 ? '' : 's'}</small></span>
                 <Icon name='chevronRight' size={15} />
               </button>
             ))}
           </div>
         )}
+        {(localDocuments.length > 0 || publicDocuments.length > 0 || cloudDocuments.length > 0) && <div className={styles.or}><span>or add another PDF</span></div>}
         <input
           ref={inputRef}
           className={styles.fileInput}
