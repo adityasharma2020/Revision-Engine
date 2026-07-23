@@ -284,15 +284,17 @@ export function useQuizSession(
   chapterId: string,
   settings: QuizSettings,
   questionSet: QuizQuestionSet,
+  persist = true,
 ) {
   const draftKey = quizDraftKey(chapterId);
   const [state, dispatch] = useReducer(
     reducer,
     undefined,
-    () => restoreDraft(draftKey, questions, settings),
+    () => persist ? restoreDraft(draftKey, questions, settings) : init(questions.length, settings),
   );
 
   useEffect(() => {
+    if (!persist) return;
     if (state.status === 'finished') {
       sessionStorage.removeItem(draftKey);
       return;
@@ -304,9 +306,10 @@ export function useQuizSession(
       state,
     };
     sessionStorage.setItem(draftKey, JSON.stringify(draft));
-  }, [draftKey, questionSet, questions, state]);
+  }, [draftKey, persist, questionSet, questions, state]);
 
   useEffect(() => {
+    if (!persist) return;
     const warn = (event: BeforeUnloadEvent) => {
       if (state.status !== 'active' || !state.settings.lockNavigation) return;
       event.preventDefault();
@@ -314,7 +317,7 @@ export function useQuizSession(
     };
     window.addEventListener('beforeunload', warn);
     return () => window.removeEventListener('beforeunload', warn);
-  }, [state.status, state.settings.lockNavigation]);
+  }, [persist, state.status, state.settings.lockNavigation]);
 
   const actions = useMemo(
     () => ({

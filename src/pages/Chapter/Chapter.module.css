@@ -29,17 +29,17 @@
   font-weight: var(--weight-medium);
   color: var(--text-tertiary);
 }
-.revisionAdd, .revisionIncluded { display: inline-flex; align-items: center; gap: var(--space-1); padding: 6px var(--space-2); font-size: var(--text-xs); font-weight: var(--weight-semibold); color: var(--text-secondary); border: 1px solid var(--border); border-radius: var(--radius-full); }
+.headTools { display: flex; align-items: center; justify-content: flex-end; gap: 5px; min-width: 0; margin-left: auto; }
+.revisionAdd, .revisionIncluded { display: inline-flex; align-items: center; height: 32px; gap: 5px; padding: 0 9px; font-size: 11px; font-weight: var(--weight-semibold); color: var(--text-secondary); border: 1px solid var(--border); border-radius: var(--radius-sm); white-space: nowrap; }
 .revisionAdd:hover { color: var(--accent); border-color: var(--accent); }
-.revisionIncluded { color: var(--success); background: var(--success-subtle); border-color: var(--success); }
+.revisionIncluded { color: var(--success); background: color-mix(in srgb, var(--success-subtle) 58%, transparent); border-color: color-mix(in srgb, var(--success) 55%, var(--border)); }
 
 .chapterSearch {
   display: inline-flex;
   align-items: center;
   gap: var(--space-2);
-  margin-left: auto;
-  padding: var(--space-2) var(--space-3);
-  font-size: var(--text-sm);
+  padding: 6px 8px;
+  font-size: var(--text-xs);
   font-weight: var(--weight-medium);
   color: var(--text-secondary);
   border-radius: var(--radius-md);
@@ -177,10 +177,11 @@
 }
 
 @media (max-width: 560px) {
+  .pdfAction span { display: none; }
   .searchShortcut { display: none; }
-  .revisionAdd, .revisionIncluded { order: 3; }
   .headTop { flex-wrap: wrap; }
-  .chapterSearch { margin-left: 0; }
+  .headTools { flex: 1; }
+  .chapterSearch span { display: none; }
   .modeOption, .modeActive { min-width: 0; }
   .modeOption em, .modeActive em { display: none; }
 
@@ -244,3 +245,25 @@
   .modal { padding: var(--space-5); }
   .modalActions { align-items: stretch; flex-direction: column-reverse; }
 }
+.workspacePage { max-width: none; }
+
+.pdfAction {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  flex: none;
+  gap: 0;
+  margin-left: 0;
+  padding: 0;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: transparent;
+  color: var(--text-secondary);
+  font-size: var(--text-xs);
+  font-weight: 600;
+  white-space: nowrap;
+}
+.pdfAction span { display: none; }
+.pdfAction:hover { border-color: var(--border-strong); background: var(--surface-hover); color: var(--text-primary); }

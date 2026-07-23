@@ -5,12 +5,14 @@ import { Page } from '../../components/layout';
 import { MainsCard } from '../../components/quiz/MainsCard';
 import { PrelimsCard } from '../../components/quiz/PrelimsCard';
 import { QuizRunner } from '../../components/quiz/QuizRunner';
+import { PdfWorkspace } from '../../components/study/PdfWorkspace';
 import { Routes } from '../../constants/routes';
 import { subjectStyle } from '../../constants/subjects';
 import { useChapter } from '../../hooks/useChapters';
 import type { Chapter as ChapterModel, MainsQuestion, PrelimsQuestion } from '../../types';
 import { questionOriginKind, type QuestionOriginKind } from '../../utils/questionOrigin';
 import { useRevisionPreferences } from '../../hooks/useRevisionPreferences';
+import { usePdfWorkspace } from '../../context/PdfWorkspaceContext';
 import styles from './Chapter.module.css';
 
 type Mode = 'learning' | 'quiz';
@@ -22,15 +24,20 @@ export function Chapter() {
   const state = useChapter(chapterId);
 
   return (
-    <Page narrow>
+    <Page className={styles.workspacePage}>
       <AsyncBoundary state={state} loadingLabel="Loading chapter…">
-        {(chapter) => <ChapterView key={chapter.id} chapter={chapter} />}
+        {(chapter) => (
+          <PdfWorkspace chapterId={chapter.id}>
+            <ChapterView key={chapter.id} chapter={chapter} />
+          </PdfWorkspace>
+        )}
       </AsyncBoundary>
     </Page>
   );
 }
 
 function ChapterView({ chapter }: { chapter: ChapterModel }) {
+  const pdfWorkspace = usePdfWorkspace();
   const { preferences, toggleChapter } = useRevisionPreferences();
   const [searchParams] = useSearchParams();
   const location = useLocation();
@@ -71,6 +78,7 @@ function ChapterView({ chapter }: { chapter: ChapterModel }) {
   );
   const hideStudyChrome = mode === 'quiz' && quizImmersive;
   const includedInRevision = preferences.includedChapterIds.includes(chapter.id);
+  const chapterPdf = pdfWorkspace.documents.find((item) => item.linkedChapterIds.includes(chapter.id)) ?? null;
 
   useEffect(() => {
     if (!hasQuestionTarget) return;
@@ -96,25 +104,46 @@ function ChapterView({ chapter }: { chapter: ChapterModel }) {
   return (
     <>
       {!hideStudyChrome && (
-        <Link to={Routes.library} className={styles.back}>
+        <Link to={Routes.library} className={styles.back} data-pdf-focus-hide>
           <Icon name="arrowLeft" size={16} />
           Library
         </Link>
       )}
-      {!hideStudyChrome && <header className={styles.header}>
+      {!hideStudyChrome && <header className={styles.header} data-pdf-focus-hide>
         <div className={styles.headTop}>
           <Badge hue={hue}>{label}</Badge>
           <span className={styles.chapterNo}>Chapter {chapter.chapterNumber}</span>
-          <button
-            type="button"
-            className={includedInRevision ? styles.revisionIncluded : styles.revisionAdd}
-            aria-pressed={includedInRevision}
-            onClick={() => toggleChapter(chapter.id)}
-          >
-            <Icon name={includedInRevision ? 'check' : 'plus'} size={14} />
-            {includedInRevision ? 'In daily revision' : 'Mark studied'}
-          </button>
-          {!hideStudyChrome && (
+          <div className={styles.headTools}>
+            <button
+              type="button"
+              className={includedInRevision ? styles.revisionIncluded : styles.revisionAdd}
+              aria-pressed={includedInRevision}
+              onClick={() => toggleChapter(chapter.id)}
+              title={includedInRevision ? 'Remove from Daily Revision' : 'Add to Daily Revision'}
+            >
+              <Icon name={includedInRevision ? 'check' : 'plus'} size={13} />
+              {includedInRevision ? 'Daily revision' : 'Add to revision'}
+            </button>
+            <button
+              type="button"
+              className={styles.pdfAction}
+              onClick={() => chapterPdf
+                ? pdfWorkspace.document?.id === chapterPdf.id && pdfWorkspace.visible
+                  ? pdfWorkspace.setVisible(false)
+                  : pdfWorkspace.openDocument(chapterPdf.id)
+                : pdfWorkspace.chooseDocument(chapter.id)}
+              title={chapterPdf
+                ? pdfWorkspace.visible ? 'Hide reference PDF' : 'Show reference PDF'
+                : 'Open a local or linked reference PDF'}
+              aria-label={chapterPdf
+                ? pdfWorkspace.visible ? 'Hide reference PDF' : 'Show reference PDF'
+                : 'Open a local or linked reference PDF'}
+            >
+              <Icon name="book" size={14} />
+              <span>{chapterPdf
+                ? pdfWorkspace.document?.id === chapterPdf.id && pdfWorkspace.visible ? 'Hide PDF' : 'Show PDF'
+                : 'Open PDF'}</span>
+            </button>
             <Link
               to={Routes.search}
               className={styles.chapterSearch}
@@ -125,7 +154,7 @@ function ChapterView({ chapter }: { chapter: ChapterModel }) {
               <span>Global search</span>
               <kbd className={styles.searchShortcut}>⌘⇧P</kbd>
             </Link>
-          )}
+          </div>
         </div>
         <h1 className={styles.title}>{chapter.title}</h1>
         {chapter.description && (
@@ -134,7 +163,7 @@ function ChapterView({ chapter }: { chapter: ChapterModel }) {
         {chapter.source && <p className={styles.source}>Source · {chapter.source}</p>}
       </header>}
 
-      {!hideStudyChrome && <div className={styles.modeRow}>
+      {!hideStudyChrome && <div className={styles.modeRow} data-pdf-focus-hide>
         <button
           type="button"
           className={mode === 'quiz' ? styles.modeActive : styles.modeOption}

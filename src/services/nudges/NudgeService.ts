@@ -1,5 +1,6 @@
 import { DEFAULT_NUDGE_PREFERENCES, type MemoryNudge, type NudgeFeedback, type NudgeKind, type NudgePreferences } from '../../types';
 import { getSupabase } from '../supabase/client';
+import { markNudgeInboxRead } from '../notifications/NotificationInboxService';
 
 type NudgeInput = Pick<MemoryNudge, 'title' | 'content' | 'kind' | 'context' | 'source' | 'sourceUrl' | 'tags' | 'priority' | 'cooldownHours'>;
 export interface NudgeInteractionRecord { id: number; nudgeId: string; action: string; metadata: Record<string, unknown>; createdAt: string }
@@ -85,6 +86,15 @@ export async function recordNudgeFeedback(nudge: MemoryNudge, action: NudgeFeedb
   if (action === 'archive') { patch.archived = true; patch.active = false; }
   const { error } = await client().from('memory_nudges').update(patch).eq('id', nudge.id); if (error) throw error;
   await client().from('nudge_interactions').insert({ user_id: auth.user.id, nudge_id: nudge.id, action, metadata: action === 'snooze' ? { hours: snoozeHours } : {} });
+  // Remembered, forgot, snoozed and archived are all definitive review
+  // outcomes, so their matching inbox deliveries are no longer unread.
+  try {
+    await markNudgeInboxRead(nudge.id);
+  } catch (error) {
+    // The review itself is already safely recorded. Do not make a retry from
+    // the UI duplicate its counters if the secondary inbox update is offline.
+    console.warn('[nudges] Review saved, but its inbox item could not be marked read.', error);
+  }
 }
 
 export async function loadNudgePreferences(): Promise<NudgePreferences> {

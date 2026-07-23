@@ -9,6 +9,7 @@ import { ThemeProvider } from './context/ThemeContext';
 import { UserDataProvider } from './context/UserDataContext';
 import { AppSettingsProvider } from './context/AppSettingsContext';
 import { DeviceNotificationSettingsProvider } from './context/DeviceNotificationSettingsContext';
+import { PdfWorkspaceProvider } from './context/PdfWorkspaceContext';
 import './services/pwa/InstallService';
 
 import './styles/tokens.css';
@@ -44,9 +45,11 @@ createRoot(container).render(
             <ThemeProvider>
               <AppSettingsProvider>
                 <DeviceNotificationSettingsProvider>
-                  <UserDataProvider>
-                    <App />
-                  </UserDataProvider>
+                  <PdfWorkspaceProvider>
+                    <UserDataProvider>
+                      <App />
+                    </UserDataProvider>
+                  </PdfWorkspaceProvider>
                 </DeviceNotificationSettingsProvider>
               </AppSettingsProvider>
             </ThemeProvider>

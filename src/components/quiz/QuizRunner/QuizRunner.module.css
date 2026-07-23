@@ -35,6 +35,20 @@
   color: var(--text-tertiary);
 }
 
+.testRunLaunch {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 2px !important;
+  padding: 5px 8px;
+  color: var(--text-tertiary);
+  font-size: var(--text-xs);
+  border-radius: var(--radius-sm);
+}
+.testRunLaunch:hover { color: var(--text-secondary); background: var(--surface-hover); }
+.testRunLaunch span { color: var(--text-tertiary); }
+.testRunLaunch span::before { content: '·'; margin-right: 6px; }
+
 .questionSetPanel { width: 100%; padding: var(--space-4); text-align: left; background-color: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-lg); }
 .questionSetHead { display: flex; align-items: center; justify-content: space-between; gap: var(--space-3); }
 .questionSetHead h3 { font-size: var(--text-sm); font-weight: var(--weight-semibold); }
@@ -365,6 +379,10 @@
 .focusMeta { margin-bottom: var(--space-4); font-size: var(--text-xs); font-weight: var(--weight-semibold); color: var(--warning); text-transform: uppercase; letter-spacing: var(--tracking-wide); }
 .focusDialog button { width: 100%; }
 .savingResult { padding: var(--space-8); text-align: center; color: var(--text-secondary); }
+.testResult { width: 100%; }
+.testResultNotice { display: flex; align-items: center; justify-content: center; gap: 7px; margin: 0 auto var(--space-4); color: var(--text-tertiary); font-size: var(--text-xs); }
+.testResultNotice strong { color: var(--text-secondary); }
+.testRunBadge { align-self: center; color: var(--text-tertiary); font-size: 10px; white-space: nowrap; }
 
 .navQuestion,
 .navAnswered,

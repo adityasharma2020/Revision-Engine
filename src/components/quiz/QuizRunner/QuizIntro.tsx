@@ -19,7 +19,7 @@ interface QuizIntroProps {
   onOrigin?: (origin: 'all' | QuestionOriginKind) => void;
   results: QuizResultList;
   lastScore?: { correct: number; total: number } | null;
-  onStart: (settings: QuizSettings, questionSet: QuizQuestionSet) => void;
+  onStart: (settings: QuizSettings, questionSet: QuizQuestionSet, testRun?: boolean) => void;
 }
 
 export function QuizIntro({ chapterId, questions, origin, availableOrigins, onOrigin, results, lastScore, onStart }: QuizIntroProps) {
@@ -58,7 +58,7 @@ export function QuizIntro({ chapterId, questions, origin, availableOrigins, onOr
   ];
   const preset = getQuizPreset(settings);
 
-  const start = () => {
+  const start = (testRun = false) => {
     if (settings.trackFocusLoss && !document.fullscreenElement) {
       void document.documentElement.requestFullscreen().catch(() => {
         // Fullscreen can be denied by browser/device policy; the quiz still
@@ -66,8 +66,8 @@ export function QuizIntro({ chapterId, questions, origin, availableOrigins, onOr
       });
     }
     const normalized = { ...settings, secondsPerQuestion: Math.max(1, Math.round(settings.secondsPerQuestion)) };
-    saveSettings(normalized);
-    onStart(normalized, questionSet);
+    if (!testRun) saveSettings(normalized);
+    onStart(normalized, questionSet, testRun);
   };
 
   return (
@@ -145,9 +145,13 @@ export function QuizIntro({ chapterId, questions, origin, availableOrigins, onOr
 
       {lastScore && <p className={styles.introLast}>Last attempt · {lastScore.correct}/{lastScore.total} correct</p>}
 
-      <Button variant="primary" size="lg" onClick={start}>
+      <Button variant="primary" size="lg" onClick={() => start(false)}>
         Start {questionSet.type === 'full' ? 'full quiz' : 'targeted quiz'}
       </Button>
+      <button type="button" className={styles.testRunLaunch} onClick={() => start(true)}>
+        <Icon name="monitor" size={14} />
+        Test run <span>Not saved</span>
+      </button>
       {selectorOpen && (
         <QuestionSelectorModal
           questions={questions}

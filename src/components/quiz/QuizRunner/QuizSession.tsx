@@ -6,8 +6,10 @@ import { useUserData } from '../../../context/UserDataContext';
 import { createId } from '../../../utils/id';
 import { Button } from '../../common/Button';
 import { Icon } from '../../common/Icon';
+import { usePdfWorkspace } from '../../../context/PdfWorkspaceContext';
 import { QuizProgress } from './QuizProgress';
 import { QuizQuestion } from './QuizQuestion';
+import { QuizResults } from './QuizResults';
 import styles from './QuizRunner.module.css';
 
 interface QuizSessionProps {
@@ -24,12 +26,15 @@ interface QuizSessionProps {
   studyQuote?: { quote: string; author: string; topics: readonly string[] };
   purpose?: 'daily-revision';
   dailyDateKey?: string;
+  /** Ephemeral interface preview: never persist a draft, attempt, result, or analytics event. */
+  testRun?: boolean;
 }
 
 /** One live quiz run: active question flow → finished results. */
-export function QuizSession({ sessionId, chapter, questions, onComplete, onActiveChange, settings, questionSet, questionChapterIds, questionRevisionMeta, studyQuote, purpose, dailyDateKey }: QuizSessionProps) {
+export function QuizSession({ sessionId, chapter, questions, onComplete, onActiveChange, settings, questionSet, questionChapterIds, questionRevisionMeta, studyQuote, purpose, dailyDateKey, testRun = false }: QuizSessionProps) {
+  const pdfWorkspace = usePdfWorkspace();
   const quizId = sessionId;
-  const { state, current, actions, summary } = useQuizSession(questions, quizId, settings, questionSet);
+  const { state, current, actions, summary } = useQuizSession(questions, quizId, settings, questionSet, !testRun);
   const running = state.status === 'active';
   const liveElapsedMs = useElapsed(state.startedAt, running);
   const elapsedMs = state.status === 'paused' && state.pausedAt
@@ -54,14 +59,20 @@ export function QuizSession({ sessionId, chapter, questions, onComplete, onActiv
     ? Math.max(0, focusLossCount - state.settings.focusLossGrace)
     : 0;
   const focusPenaltyTotal = penalizedInterruptions * state.settings.focusPenaltyPerLoss;
+  const chapterPdf = pdfWorkspace.documents.find((item) => item.linkedChapterIds.includes(chapter.id)) ?? null;
 
   useEffect(() => {
     onActiveChange?.(state.status === 'active');
     announceQuizLock(
-      state.status === 'finished' ? null : quizId,
-      state.status === 'active' && state.settings.lockNavigation,
+      state.status === 'finished' || testRun ? null : quizId,
+      !testRun && state.status === 'active' && state.settings.lockNavigation,
     );
-  }, [state.status, state.settings.lockNavigation, onActiveChange, quizId]);
+  }, [state.status, state.settings.lockNavigation, onActiveChange, quizId, testRun]);
+
+  useEffect(() => {
+    if (!testRun || state.status !== 'finished' || !document.fullscreenElement) return;
+    void document.exitFullscreen().catch(() => undefined);
+  }, [state.status, testRun]);
 
   useEffect(() => {
     if (!state.settings.trackFocusLoss || state.status !== 'active') return;
@@ -163,7 +174,7 @@ export function QuizSession({ sessionId, chapter, questions, onComplete, onActiv
   // Persist the finished session exactly once.
   const recorded = useRef(false);
   useEffect(() => {
-    if (state.status !== 'finished' || recorded.current) return;
+    if (state.status !== 'finished' || recorded.current || testRun) return;
     recorded.current = true;
     const s = summary();
     const perQuestion = questions.map((q) => {
@@ -218,7 +229,38 @@ export function QuizSession({ sessionId, chapter, questions, onComplete, onActiv
       onComplete(resultId.current, { correct: s.correct, total: s.total, answered: s.answered, skipped: s.skipped });
     };
     void finishNavigation();
-  }, [state.status, state.answers, state.settings, state.focusInterruptions, summary, recordQuizResult, onComplete, quizId, chapter.id, chapter.title, chapter.subject, questions, questionSet, questionChapterIds, focusLossCount, focusPenaltyTotal, timeLimitMs, purpose, dailyDateKey]);
+  }, [state.status, state.answers, state.settings, state.focusInterruptions, summary, recordQuizResult, onComplete, quizId, chapter.id, chapter.title, chapter.subject, questions, questionSet, questionChapterIds, focusLossCount, focusPenaltyTotal, timeLimitMs, purpose, dailyDateKey, testRun]);
+
+  if (state.status === 'finished' && testRun) {
+    const testSummary = summary();
+    return (
+      <div className={styles.testResult}>
+        <p className={styles.testResultNotice}><Icon name="monitor" size={15} /><strong>Test run</strong><span>This result is temporary and was not saved anywhere.</span></p>
+        <QuizResults
+          questions={questions}
+          answers={state.answers}
+          summary={testSummary}
+          onRetry={actions.restart}
+          onExit={() => onComplete(resultId.current, {
+            correct: testSummary.correct,
+            total: testSummary.total,
+            answered: testSummary.answered,
+            skipped: testSummary.skipped,
+          })}
+          exitLabel="Exit test run"
+          focusLossCount={focusLossCount}
+          focusPenaltyTotal={focusPenaltyTotal}
+          adjustedScore={testSummary.correct - focusPenaltyTotal}
+          focusPenaltyPolicy={{
+            enabled: state.settings.focusPenaltyEnabled,
+            warningsAllowed: state.settings.focusLossGrace,
+            deductionPerExit: state.settings.focusPenaltyPerLoss,
+          }}
+          chapterId={chapter.id}
+        />
+      </div>
+    );
+  }
 
   if (state.status === 'finished') {
     return <p className={styles.savingResult}>Saving your result…</p>;
@@ -255,6 +297,25 @@ export function QuizSession({ sessionId, chapter, questions, onComplete, onActiv
           urgent={timerUrgent}
         />
         <div className={styles.sessionActions}>
+          {testRun && <span className={styles.testRunBadge}>Test run · not saved</span>}
+          <Button
+            variant="ghost"
+            size="sm"
+            iconOnly
+            onClick={() => chapterPdf
+              ? pdfWorkspace.document?.id === chapterPdf.id && pdfWorkspace.visible
+                ? pdfWorkspace.setVisible(false)
+                : pdfWorkspace.openDocument(chapterPdf.id)
+              : pdfWorkspace.chooseDocument(chapter.id)}
+            title={chapterPdf
+              ? pdfWorkspace.document?.id === chapterPdf.id && pdfWorkspace.visible ? 'Hide reference PDF' : 'Show reference PDF'
+              : 'Open a local or linked reference PDF'}
+            aria-label={chapterPdf
+              ? pdfWorkspace.document?.id === chapterPdf.id && pdfWorkspace.visible ? 'Hide reference PDF' : 'Show reference PDF'
+              : 'Open a local or linked reference PDF'}
+          >
+            <Icon name="book" size={15} />
+          </Button>
           {state.settings.allowPause && (
             <Button variant="ghost" size="sm" onClick={paused ? actions.resume : actions.pause}>
               <Icon name={paused ? 'target' : 'clock'} size={15} />
@@ -338,7 +399,7 @@ export function QuizSession({ sessionId, chapter, questions, onComplete, onActiv
             <h2 id="submit-quiz-title">Submit this quiz?</h2>
             <p>
               {answeredCount === state.total
-                ? 'You have answered every question. Your result will be saved to quiz history.'
+                ? testRun ? 'You have answered every question. This temporary result will not be saved.' : 'You have answered every question. Your result will be saved to quiz history.'
                 : `${state.total - answeredCount} question${state.total - answeredCount === 1 ? '' : 's'} will be marked as skipped.`}
             </p>
             <div className={styles.submitStats}>

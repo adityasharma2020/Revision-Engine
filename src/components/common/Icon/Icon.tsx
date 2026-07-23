@@ -12,6 +12,7 @@ export const ICON_PATHS = {
   bell: 'M18 8a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9ZM10 21h4',
   bookmark: 'M6 3h12v18l-6-4-6 4V3Z',
   settings: 'M4 7h8M16 7h4M4 17h4M12 17h8M14 4v6M10 14v6',
+  more: 'M5 12h.01M12 12h.01M19 12h.01',
   sync: 'M20 7h-5V2M4 17h5v5M19 12a7 7 0 0 0-12-5L4 10M5 12a7 7 0 0 0 12 5l3-3',
   share: 'M12 16V3M7 8l5-5 5 5M5 13v7h14v-7',
   sun: 'M12 4V2M12 22v-2M4 12H2M22 12h-2M6 6 4.5 4.5M19.5 19.5 18 18M18 6l1.5-1.5M4.5 19.5 6 18M12 8a4 4 0 1 0 0 8 4 4 0 0 0 0-8Z',

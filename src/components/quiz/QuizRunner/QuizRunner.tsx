@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import type { Chapter, QuizQuestionSet } from '../../../types';
+import type { Chapter, QuizDefinition, QuizQuestionSet } from '../../../types';
 import type { QuestionOriginKind } from '../../../utils/questionOrigin';
 import { useUserData } from '../../../context/UserDataContext';
 import { EmptyState } from '../../common/EmptyState';
@@ -14,6 +14,7 @@ import { Routes } from '../../../constants/routes';
 import { humanizeDuration } from '../../../utils/time';
 import { createId } from '../../../utils/id';
 import { saveQuizDefinition } from '../../../services/quiz';
+import { QuizSession } from './QuizSession';
 import styles from './QuizRunner.module.css';
 
 interface QuizRunnerProps {
@@ -40,6 +41,7 @@ export function QuizRunner({
   const navigate = useNavigate();
   const activeDraft = findActiveQuizDraft();
   const [historyOpen, setHistoryOpen] = useState(false);
+  const [testDefinition, setTestDefinition] = useState<QuizDefinition | null>(null);
   const chapterHistory = useMemo(
     () => quizResults.filter((result) => result.chapterId === chapter.id),
     [quizResults, chapter.id],
@@ -49,6 +51,26 @@ export function QuizRunner({
     const last = quizResults.find((r) => r.chapterId === chapter.id);
     return last ? { correct: last.correct, total: last.totalQuestions } : null;
   }, [quizResults, chapter.id]);
+
+  if (testDefinition) {
+    return (
+      <QuizSession
+        sessionId={testDefinition.id}
+        chapter={testDefinition.chapter}
+        questions={testDefinition.questions}
+        settings={testDefinition.settings}
+        questionSet={testDefinition.questionSet}
+        questionChapterIds={testDefinition.questionChapterIds}
+        testRun
+        onActiveChange={onActiveChange}
+        onComplete={() => {
+          setTestDefinition(null);
+          onActiveChange?.(false);
+          onImmersiveChange?.(false);
+        }}
+      />
+    );
+  }
 
   if (activeDraft) {
     return (
@@ -84,7 +106,7 @@ export function QuizRunner({
         onOrigin={onOrigin}
         results={quizResults}
         lastScore={lastScore}
-        onStart={(selectedSettings, selectedQuestionSet) => {
+        onStart={(selectedSettings, selectedQuestionSet, testRun) => {
           const selectedIds = new Set(selectedQuestionSet.questionIds);
           const selectedQuestions = selectedQuestionSet.questionIds.length
             ? chapter.prelims.filter((question) => selectedIds.has(question.id))
@@ -94,7 +116,7 @@ export function QuizRunner({
             ...selectedQuestionSet,
             questionIds: selectedQuestions.map((question) => question.id),
           };
-          saveQuizDefinition({
+          const definition: QuizDefinition = {
             id: quizId,
             chapter,
             questions: selectedQuestions,
@@ -102,9 +124,14 @@ export function QuizRunner({
             questionSet,
             questionChapterIds: Object.fromEntries(selectedQuestions.map((question) => [question.id, chapter.id])),
             createdAt: Date.now(),
-          });
+          };
           onActiveChange?.(true);
-          onImmersiveChange?.(false);
+          onImmersiveChange?.(Boolean(testRun));
+          if (testRun) {
+            setTestDefinition(definition);
+            return;
+          }
+          saveQuizDefinition(definition);
           navigate(Routes.quizSession(quizId));
         }}
       />

@@ -20,7 +20,14 @@ export function NotificationInbox() {
     const load = () => void listInboxNotifications().then((next) => { if (active) setItems(next); }).catch(() => undefined);
     load();
     const timer = window.setInterval(load, 60_000);
-    return () => { active = false; window.clearInterval(timer); };
+    window.addEventListener('focus', load);
+    window.addEventListener('revision-engine:notifications-changed', load);
+    return () => {
+      active = false;
+      window.clearInterval(timer);
+      window.removeEventListener('focus', load);
+      window.removeEventListener('revision-engine:notifications-changed', load);
+    };
   }, [status]);
 
   useEffect(() => {

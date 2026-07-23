@@ -5,6 +5,8 @@ import { QuizSession } from '../../components/quiz/QuizRunner/QuizSession';
 import { Routes } from '../../constants/routes';
 import { loadQuizDefinition, removeQuizDefinition, saveQuizDefinition } from '../../services/quiz';
 import { useDailyRevisionAssignment } from '../../hooks/useDailyRevisionAssignment';
+import { PdfWorkspace } from '../../components/study/PdfWorkspace';
+import styles from './QuizSession.module.css';
 
 export function QuizSessionPage() {
   const { quizId = '' } = useParams();
@@ -22,8 +24,9 @@ export function QuizSessionPage() {
     return <Page narrow><EmptyState icon="clock" title="Quiz session unavailable" description="This quiz definition is missing or expired. Generate a new quiz to continue." action={<Button variant="primary" onClick={() => navigate(Routes.revision)}>Open Daily Revision</Button>} /></Page>;
   }
 
-  return <Page narrow>
-    <QuizSession
+  return <Page className={styles.workspacePage}>
+    <PdfWorkspace chapterId={definition.chapter.id}>
+      <QuizSession
       sessionId={definition.id}
       chapter={definition.chapter}
       questions={definition.questions}
@@ -56,6 +59,7 @@ export function QuizSessionPage() {
         removeQuizDefinition(definition.id);
         navigate(Routes.quizResult(resultId), { replace: true });
       }}
-    />
+      />
+    </PdfWorkspace>
   </Page>;
 }

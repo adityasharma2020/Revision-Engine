@@ -20,5 +20,6 @@ export const PRIMARY_NAV: readonly NavItem[] = [
   { to: Routes.import, label: 'Import', icon: 'plus' },
   { to: Routes.statistics, label: 'Statistics', mobileLabel: 'Stats', icon: 'chart' },
   { to: Routes.bookmarks, label: 'Bookmarks', mobileLabel: 'Saved', icon: 'bookmark' },
+  { to: Routes.pdfReader, label: 'PDF Reader', mobileLabel: 'PDFs', icon: 'monitor' },
   { to: Routes.settings, label: 'Settings', icon: 'settings' },
 ];

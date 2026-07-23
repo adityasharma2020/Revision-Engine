@@ -75,7 +75,7 @@ export function Sidebar({ collapsed, collapseLocked = false, searchOpen = false,
           aria-expanded={moreOpen}
           aria-controls="mobile-more-menu"
         >
-          <Icon name="settings" size={18} />
+          <Icon name="more" size={18} />
           <span className={styles.mobileLabel}>More</span>
         </button>
       </nav>

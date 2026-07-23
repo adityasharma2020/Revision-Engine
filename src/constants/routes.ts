@@ -10,6 +10,7 @@ export const Routes = {
   sharedQuizResult: (shareToken: string = ':shareToken') => `/shared/${shareToken}`,
   statistics: '/statistics',
   bookmarks: '/bookmarks',
+  pdfReader: '/pdf-reader',
   revision: '/revision',
   import: '/import',
   settings: '/settings',

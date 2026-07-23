@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
+import { createPortal } from 'react-dom';
 import type { QuizResult } from '../../../types';
 import { Icon } from '../../common';
 import styles from './ProgressOverview.module.css';
@@ -92,7 +93,10 @@ export function ProgressOverview({ results, now = new Date() }: { results: reado
           })}
         </button>
       </section>
-      {calendarOpen && <ActivityCalendar data={data} today={today} visibleMonth={visibleMonth} onMonthChange={setVisibleMonth} onClose={() => setCalendarOpen(false)} />}
+      {calendarOpen && createPortal(
+        <ActivityCalendar data={data} today={today} visibleMonth={visibleMonth} onMonthChange={setVisibleMonth} onClose={() => setCalendarOpen(false)} />,
+        document.body,
+      )}
     </>
   );
 }
@@ -112,8 +116,13 @@ function ActivityCalendar({ data, today, visibleMonth, onMonthChange, onClose }:
   const [selectedDate, setSelectedDate] = useState(today);
   useEffect(() => {
     const close = (event: KeyboardEvent) => event.key === 'Escape' && onClose();
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
     window.addEventListener('keydown', close);
-    return () => window.removeEventListener('keydown', close);
+    return () => {
+      document.body.style.overflow = previousOverflow;
+      window.removeEventListener('keydown', close);
+    };
   }, [onClose]);
   const first = new Date(visibleMonth.getFullYear(), visibleMonth.getMonth(), 1);
   const gridStart = startOfWeek(first);
