@@ -19,6 +19,13 @@ Deno.serve(async (request) => {
     })));
     return Response.json({ delivered: data.length }, { headers: corsHeaders });
   } catch (error) {
-    return Response.json({ error: error instanceof Error ? error.message : 'Delivery failed.' }, { status: 500, headers: corsHeaders });
+    const details = error && typeof error === 'object' ? {
+      name: 'name' in error ? String(error.name) : 'PushDeliveryError',
+      message: 'message' in error ? String(error.message) : 'Delivery failed.',
+      statusCode: 'statusCode' in error ? Number(error.statusCode) : undefined,
+      body: 'body' in error ? String(error.body).slice(0, 500) : undefined,
+    } : { name: 'PushDeliveryError', message: String(error) };
+    console.error('[test-notification] delivery failed', details);
+    return Response.json({ error: details.message, code: details.statusCode, provider: details.body }, { status: 500, headers: corsHeaders });
   }
 });

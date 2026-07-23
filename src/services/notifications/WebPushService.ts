@@ -11,6 +11,12 @@ function decodeVapidKey(value: string): Uint8Array<ArrayBuffer> {
   return output;
 }
 
+function sameKey(current: ArrayBuffer | null, expected: Uint8Array<ArrayBuffer>) {
+  if (!current || current.byteLength !== expected.byteLength) return false;
+  const bytes = new Uint8Array(current);
+  return bytes.every((value, index) => value === expected[index]);
+}
+
 export function getPushStatus(authenticated: boolean): PushStatus {
   if (!('serviceWorker' in navigator) || !('PushManager' in window) || !('Notification' in window)) return 'unsupported';
   if (!env.pushConfigured || !env.supabaseConfigured) return 'unconfigured';
@@ -26,10 +32,15 @@ export async function enableWebPush(): Promise<PushStatus> {
   const permission = await Notification.requestPermission();
   if (permission !== 'granted') return permission === 'default' ? 'prompt' : permission;
   const registration = await navigator.serviceWorker.ready;
-  const existing = await registration.pushManager.getSubscription();
+  let existing = await registration.pushManager.getSubscription();
+  const applicationServerKey = decodeVapidKey(env.vapidPublicKey);
+  if (existing && !sameKey(existing.options.applicationServerKey, applicationServerKey)) {
+    await existing.unsubscribe();
+    existing = null;
+  }
   const subscription = existing ?? await registration.pushManager.subscribe({
     userVisibleOnly: true,
-    applicationServerKey: decodeVapidKey(env.vapidPublicKey),
+    applicationServerKey,
   });
   const json = subscription.toJSON();
   if (!json.endpoint || !json.keys?.p256dh || !json.keys.auth) throw new Error('Browser returned an incomplete push subscription.');
@@ -60,5 +71,16 @@ export async function sendTestNotification(): Promise<void> {
   const client = getSupabase();
   if (!client) throw new Error('Supabase is not configured.');
   const { error } = await client.functions.invoke('test-notification');
-  if (error) throw error;
+  if (error) {
+    const response = (error as { context?: Response }).context;
+    if (response) {
+      try {
+        const details = await response.clone().json() as { error?: string; code?: number; provider?: string };
+        throw new Error([details.error, details.code ? `(HTTP ${details.code})` : '', details.provider].filter(Boolean).join(' '));
+      } catch (reason) {
+        if (reason instanceof Error && reason.message !== 'Unexpected end of JSON input') throw reason;
+      }
+    }
+    throw error;
+  }
 }
