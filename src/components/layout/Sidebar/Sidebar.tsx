@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { Fragment, useEffect, useState } from 'react';
 import { Link, NavLink, useLocation } from 'react-router-dom';
 import { APP_NAME, APP_VERSION } from '../../../constants/app';
 import { PRIMARY_NAV } from '../../../constants/navigation';
@@ -49,8 +49,8 @@ export function Sidebar({ collapsed, collapseLocked = false, searchOpen = false,
 
       <nav className={styles.nav} aria-label="Primary">
         {PRIMARY_NAV.map((item) => (
+          <Fragment key={item.to}>
           <NavLink
-            key={item.to}
             to={item.to}
             end={item.end}
             aria-label={item.label}
@@ -68,17 +68,18 @@ export function Sidebar({ collapsed, collapseLocked = false, searchOpen = false,
             <span className={styles.desktopLabel}>{item.label}</span>
             <span className={styles.mobileLabel}>{item.mobileLabel ?? item.label}</span>
           </NavLink>
+          {item.to === Routes.statistics && <button
+            type="button"
+            className={cx(styles.link, styles.focusNavAction, styles.mobileSecondary)}
+            onClick={() => window.dispatchEvent(new CustomEvent('revision-engine:open-focus-timer'))}
+            aria-label="Open Focus Timer"
+            title="Open Focus Timer"
+          >
+            <Icon name="clock" size={18} />
+            <span className={styles.desktopLabel}>Focus Timer</span>
+          </button>}
+          </Fragment>
         ))}
-        <button
-          type="button"
-          className={cx(styles.link, styles.focusNavAction, styles.mobileSecondary)}
-          onClick={() => window.dispatchEvent(new CustomEvent('revision-engine:open-focus-timer'))}
-          aria-label="Open Focus Timer"
-          title="Open Focus Timer"
-        >
-          <Icon name="clock" size={18} />
-          <span className={styles.desktopLabel}>Focus Timer</span>
-        </button>
         <button
           type="button"
           className={cx(styles.link, styles.moreButton, (moreOpen || moreActive) && styles.active)}
@@ -98,13 +99,15 @@ export function Sidebar({ collapsed, collapseLocked = false, searchOpen = false,
             <div className={styles.moreHandle} />
             <div className={styles.moreHead}><strong>More</strong><button type="button" onClick={() => setMoreOpen(false)} aria-label="Close"><Icon name="close" size={19} /></button></div>
             <div className={styles.moreGrid}>
-              <button type="button" className={cx(styles.moreItem, styles.moreFocusItem)} onClick={() => { setMoreOpen(false); window.dispatchEvent(new CustomEvent('revision-engine:open-focus-timer')); }}>
-                <span><Icon name="clock" size={20} /></span><strong>Focus Timer</strong><Icon name="chevronRight" size={16} />
-              </button>
               {moreItems.map((item) => (
+              <Fragment key={item.to}>
               <NavLink key={item.to} to={item.to} className={({ isActive }) => cx(styles.moreItem, item.featured && styles.moreItemFeatured, isActive && styles.moreItemActive)}>
                 <span><Icon name={item.icon} size={20} /></span><strong>{item.label}</strong><Icon name="chevronRight" size={16} />
               </NavLink>
+              {item.to === Routes.statistics && <button type="button" className={cx(styles.moreItem, styles.moreFocusItem)} onClick={() => { setMoreOpen(false); window.dispatchEvent(new CustomEvent('revision-engine:open-focus-timer')); }}>
+                <span><Icon name="clock" size={20} /></span><strong>Focus Timer</strong><Icon name="chevronRight" size={16} />
+              </button>}
+              </Fragment>
             ))}</div>
           </section>
         </>

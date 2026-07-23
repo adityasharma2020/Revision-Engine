@@ -299,7 +299,7 @@ export function Settings() {
                     {syncMessage && <small role="status">{syncMessage}</small>}
                   </div>
                   <Button variant="secondary" size="sm" disabled={!online || syncing} onClick={() => void manualSync()}>
-                    <Icon name="sync" size={15} />
+                    <Icon name="cloud" size={15} />
                     {syncing ? 'Syncing…' : 'Sync now'}
                   </Button>
                 </div>

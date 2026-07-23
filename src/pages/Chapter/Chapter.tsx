@@ -126,7 +126,7 @@ function ChapterView({ chapter }: { chapter: ChapterModel }) {
             </button>
             <button
               type="button"
-              className={styles.pdfAction}
+              className={`${styles.pdfAction} ${chapterPdf ? styles.pdfLinked : ''}`}
               onClick={() => chapterPdf
                 ? pdfWorkspace.document?.id === chapterPdf.id && pdfWorkspace.visible
                   ? pdfWorkspace.setVisible(false)

@@ -268,6 +268,7 @@
 }
 .pdfAction span { display: none; }
 .pdfAction:hover { border-color: var(--border-strong); background: var(--surface-hover); color: var(--text-primary); }
+.pdfLinked { color: var(--accent); background: var(--accent-subtle); border-color: var(--accent); }
 .pdfUnlink { display: inline-flex; align-items: center; justify-content: center; width: 32px; height: 32px; flex: none; padding: 0; color: var(--text-secondary); background: transparent; border: 1px solid var(--border); border-radius: var(--radius-sm); }
 .pdfUnlink span { display: none; }
 .pdfUnlink:hover { color: var(--accent); background: var(--accent-subtle); border-color: color-mix(in srgb, var(--accent) 50%, var(--border)); }

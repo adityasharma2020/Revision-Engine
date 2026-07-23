@@ -2,6 +2,8 @@
 .reader { display: grid; grid-template-rows: 48px minmax(0, 1fr); width: 100%; height: 100%; min-width: 0; gap: 10px; background: var(--bg); }
 .workspaceHeader { display: flex; align-items: center; justify-content: space-between; gap: var(--space-3); min-width: 0; padding: 0 4px; }
 .workspaceHeader > div { display: flex; align-items: center; gap: 10px; min-width: 0; color: var(--accent); }
+.workspaceHome { display: flex; align-items: center; gap: 10px; min-width: 0; padding: 4px; color: var(--accent); text-align: left; border-radius: var(--radius-md); }
+.workspaceHome:hover { background: var(--surface-hover); }
 .workspaceHeader span { display: grid; min-width: 0; gap: 1px; }
 .workspaceHeader strong { color: var(--text-primary); font-size: var(--text-md); }
 .workspaceHeader small { color: var(--text-tertiary); font-size: 10px; }
@@ -45,8 +47,17 @@
 .viewer:fullscreen { width: 100vw; height: 100dvh; border: 0; border-radius: 0; background: var(--surface); }
 .viewer:fullscreen .documentFrame { height: calc(100dvh - 50px); min-height: 0; }
 
-.noSelection { display: grid; align-content: center; justify-items: center; gap: var(--space-3); min-height: 360px; color: var(--text-secondary); border: 1px dashed var(--border); border-radius: var(--radius-lg); }
-.noSelection svg { color: var(--accent); }
+.libraryLanding { display: grid; min-height: 0; padding: clamp(20px, 6vh, 64px) 20px; overflow-y: auto; place-items: start center; }
+.libraryLandingCard { display: grid; grid-template-columns: auto minmax(0, 1fr); width: min(680px, 100%); margin-top: clamp(20px, 9vh, 100px); padding: 28px; column-gap: 18px; row-gap: 22px; background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-xl); box-shadow: var(--shadow-sm); }
+.libraryLandingIcon { display: grid; width: 50px; height: 50px; color: var(--accent); background: var(--accent-subtle); border-radius: var(--radius-lg); place-items: center; }
+.libraryLandingCopy { display: grid; align-content: center; gap: 4px; min-width: 0; }
+.libraryLandingCopy > span { color: var(--accent); font-size: 10px; font-weight: 700; letter-spacing: .09em; text-transform: uppercase; }
+.libraryLandingCopy h2 { margin: 0; color: var(--text-primary); font-size: clamp(20px, 2vw, 26px); }
+.libraryLandingCopy p { max-width: 520px; margin: 2px 0 0; color: var(--text-secondary); font-size: var(--text-sm); line-height: 1.5; }
+.libraryLandingActions { grid-column: 1 / -1; display: flex; gap: 10px; }
+.libraryLandingMeta { grid-column: 1 / -1; display: flex; gap: 18px; padding-top: 16px; color: var(--text-tertiary); border-top: 1px solid var(--border); font-size: 11px; }
+.libraryLandingMeta span { display: inline-flex; align-items: center; gap: 6px; }
+.libraryLandingMeta svg { color: var(--text-secondary); }
 
 .managerBackdrop { position: fixed; z-index: 1300; inset: 0; display: grid; padding: 20px; background: rgb(0 0 0 / 68%); backdrop-filter: blur(10px); place-items: center; }
 .manager { display: grid; grid-template-rows: auto auto minmax(0, 1fr) auto; width: min(620px, calc(100vw - 32px)); max-height: min(760px, calc(100dvh - 40px)); overflow: hidden; color: var(--text-primary); background: var(--surface-elevated); border: 1px solid var(--border-strong); border-radius: var(--radius-xl); box-shadow: var(--shadow-lg); }
@@ -70,6 +81,7 @@
 .managedList article > button:last-child { display: grid; width: 30px; height: 30px; padding: 0; color: var(--text-tertiary); border-radius: var(--radius-sm); place-items: center; }
 .managedList article > button:last-child:hover { color: var(--danger); background: var(--danger-subtle); }
 .managerEmpty { display: grid; min-height: 130px; padding: 20px; color: var(--text-tertiary); text-align: center; place-items: center; }
+.managerSectionLabel { padding: 9px 8px 6px; color: var(--text-tertiary); font-size: 10px; font-weight: 650; letter-spacing: .06em; text-transform: uppercase; }
 .manager > footer { display: flex; min-height: 58px; align-items: center; justify-content: flex-end; gap: var(--space-3); padding: 10px 16px; border-top: 1px solid var(--border); }
 .manager > footer > span { margin-right: auto; color: var(--text-tertiary); font-size: 10px; }
 .chapterManager { grid-template-rows: auto auto auto minmax(0, 1fr) auto; }
@@ -91,8 +103,12 @@
   .viewer header .viewerActions button { width: 34px; padding: 0; justify-content: center; }
   .viewer header .viewerActions button > span { display: none; }
 }
-.cloudDocument { border-color: color-mix(in srgb, var(--accent) 22%, transparent) !important; }
+.cloudDocument { border-color: var(--border) !important; }
 .cloudDocument .documentIcon, .cloudMark { color: var(--accent); background: var(--accent-subtle); }
+.managedList article.cloudDocument { grid-template-columns: minmax(0, 1fr); }
+.managedList article.cloudDocument > button:last-child { display: grid; grid-template-columns: 34px minmax(0, 1fr) 24px; width: 100%; height: auto; min-height: 58px; align-items: center; justify-items: stretch; gap: 10px; padding: 8px 12px; color: var(--text-primary); text-align: left; border-radius: var(--radius-md); }
+.managedList article.cloudDocument > button:last-child > svg:last-child { justify-self: end; }
+.managedList article.cloudDocument > button:last-child:hover { color: var(--text-primary); background: var(--surface-hover); }
 .cloudError { padding: 8px 12px; color: var(--danger); font-size: var(--text-xs); }
 .cloudPrompt { grid-template-rows: auto auto auto; width: min(480px, calc(100vw - 32px)); }
 .cloudPromptBody { display: grid; justify-items: center; gap: 10px; padding: 24px; text-align: center; }
@@ -131,4 +147,16 @@
   .activeDocument { max-width: calc(100vw - 190px); padding-inline: 5px; }
   .activeDocument > span, .activeDocument > svg:last-child { display: none; }
   .manager > header { padding: 15px 16px 12px; }
+  .managerSearch { margin-inline: 10px; }
+  .managedList { padding-inline: 8px; }
+  .managedList article.cloudDocument > button:last-child { grid-template-columns: 32px minmax(0, 1fr) 20px; min-height: 54px; gap: 8px; padding-inline: 9px; }
+  .managedList article strong { font-size: var(--text-xs); }
+  .manager > footer { padding: 9px 10px calc(9px + env(safe-area-inset-bottom)); }
+  .manager > footer > button:only-child { width: 100%; justify-content: center; }
+  .libraryLanding { padding: 12px 6px; }
+  .libraryLandingCard { grid-template-columns: 42px minmax(0, 1fr); margin-top: 16px; padding: 18px; column-gap: 12px; row-gap: 18px; }
+  .libraryLandingIcon { width: 42px; height: 42px; }
+  .libraryLandingActions { display: grid; }
+  .libraryLandingActions button { width: 100%; justify-content: center; }
+  .libraryLandingMeta { display: grid; gap: 8px; }
 }

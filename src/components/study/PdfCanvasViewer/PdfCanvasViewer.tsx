@@ -6,7 +6,7 @@ import { cx } from '../../../utils/cx';
 import { Icon } from '../../common';
 import styles from './PdfCanvasViewer.module.css';
 
-interface PdfCanvasViewerProps { readonly url: string; readonly name: string; readonly className?: string; readonly fileHandle?: FileSystemFileHandle; readonly controlsInHeader?: boolean; readonly cloudAnnotations?: readonly PdfInkAnnotation[]; readonly onCloudAnnotationsChange?: (annotations: readonly PdfInkAnnotation[]) => Promise<void> }
+interface PdfCanvasViewerProps { readonly url: string; readonly sourceData?: Uint8Array; readonly name: string; readonly className?: string; readonly fileHandle?: FileSystemFileHandle; readonly controlsInHeader?: boolean; readonly cloudAnnotations?: readonly PdfInkAnnotation[]; readonly onCloudAnnotationsChange?: (annotations: readonly PdfInkAnnotation[]) => Promise<void> }
 type ViewMode = 'continuous' | 'page';
 type InkTool = 'pen' | 'highlighter' | 'line' | 'eraser';
 type DrawableTool = Exclude<InkTool, 'eraser'>;
@@ -391,7 +391,7 @@ function PdfPage({ document, pageNumber, width, zoom, rotation, register, annota
 }
 
 /** Virtualized PDF.js reader with stylus annotations and single-page navigation. */
-export function PdfCanvasViewer({ url, name, className, fileHandle, controlsInHeader = false, cloudAnnotations, onCloudAnnotationsChange }: PdfCanvasViewerProps) {
+export function PdfCanvasViewer({ url, sourceData, name, className, fileHandle, controlsInHeader = false, cloudAnnotations, onCloudAnnotationsChange }: PdfCanvasViewerProps) {
   const viewportRef = useRef<HTMLDivElement>(null);
   const documentMenuRef = useRef<HTMLDivElement>(null);
   const inkToolbarRef = useRef<HTMLDivElement>(null);
@@ -468,11 +468,18 @@ export function PdfCanvasViewer({ url, name, className, fileHandle, controlsInHe
     let cancelled = false; let task: PDFDocumentLoadingTask | null = null; let saved: { page?: number; zoom?: number; rotation?: number; viewMode?: ViewMode } = {};
     try { saved = JSON.parse(localStorage.getItem(positionKey) ?? '{}') as typeof saved; } catch { /* use defaults */ }
     setLoading(true); setError(''); setDocument(null); setPageNumber(Math.max(1, Number(saved.page) || 1)); setZoom(Number(saved.zoom) || 1); setRotation(Number(saved.rotation) || 0); setViewMode(saved.viewMode === 'page' ? 'page' : 'continuous'); setPageText([]); setAnnotations([]); setAnnotationsReady(false); setNativeInkImported(false); setPdfSaveDirty(false);
-    void import('pdfjs-dist').then((pdfjs) => { if (cancelled) return undefined; pdfjs.GlobalWorkerOptions.workerSrc = pdfWorker; task = pdfjs.getDocument({ url: sourceUrl }); return task.promise; })
+    void import('pdfjs-dist').then((pdfjs) => {
+      if (cancelled) return undefined;
+      pdfjs.GlobalWorkerOptions.workerSrc = pdfWorker;
+      // PDF.js transfers the buffer to its worker, so always give it a copy.
+      // Cloud documents therefore do not depend on a temporary blob URL.
+      task = pdfjs.getDocument(sourceData ? { data: sourceData.slice() } : { url: sourceUrl });
+      return task.promise;
+    })
       .then((loaded) => { if (loaded && !cancelled) { setDocument(loaded); setPageNumber((value) => Math.min(loaded.numPages, value)); setLoading(false); } })
       .catch(() => { if (!cancelled) { setError('This PDF could not be displayed inside the app.'); setLoading(false); } });
     return () => { cancelled = true; void task?.destroy(); };
-  }, [positionKey, sourceUrl]);
+  }, [positionKey, sourceData, sourceUrl]);
   useEffect(() => {
     if (!fingerprint || !document) return; let cancelled = false;
     void loadPdfAnnotations(fingerprint).then((items) => {
