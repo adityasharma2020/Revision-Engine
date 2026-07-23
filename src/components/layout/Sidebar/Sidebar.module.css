@@ -164,6 +164,7 @@
   letter-spacing: var(--tracking-wide);
   color: var(--text-tertiary);
 }
+.focusNavAction { width: 100%; text-align: left; }
 
 /* On phones the primary navigation becomes a reachable bottom bar. */
 @media (max-width: 900px) {
@@ -194,7 +195,7 @@
 
   .nav {
     display: grid;
-    grid-template-columns: repeat(5, minmax(0, 1fr));
+    grid-template-columns: repeat(6, minmax(0, 1fr));
     gap: var(--space-1);
     height: 100%;
   }
@@ -206,7 +207,7 @@
     height: 52px;
     min-width: 0;
     padding: var(--space-1) 1px;
-    font-size: 0.625rem;
+    font-size: 0.58rem;
   }
   .featured:not(.active) { color: var(--text-secondary); }
 
@@ -236,10 +237,11 @@
   .moreItem strong { font-size: var(--text-sm); }
   .moreItemActive { border-color: var(--accent); background: var(--accent-subtle); }
   .moreItemFeatured { border-color: color-mix(in srgb, var(--accent) 40%, var(--border)); background: linear-gradient(135deg, var(--accent-subtle), var(--surface)); }
+  .moreFocusItem { text-align: left; }
 }
 
 @media (max-width: 390px) {
-  .link { font-size: 0.5625rem; }
-  .link svg { width: 17px; height: 17px; }
+  .link { font-size: 0.52rem; }
+  .link svg { width: 16px; height: 16px; }
   .moreGrid { grid-template-columns: 1fr; }
 }

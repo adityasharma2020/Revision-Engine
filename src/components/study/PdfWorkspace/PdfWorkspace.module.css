@@ -24,12 +24,18 @@
 .split {
   display: grid;
   grid-template-columns: minmax(360px, var(--study-percent)) 12px minmax(360px, 1fr);
-  align-items: start;
+  align-items: stretch;
+  height: 100%;
+  max-height: 100%;
+  overflow: hidden;
   max-width: 1680px;
   margin-inline: auto;
 }
 
 .split .studyPane {
+  height: 100%;
+  overflow-y: auto;
+  overscroll-behavior: contain;
   max-width: none;
   margin: 0;
   padding-right: clamp(12px, 1.5vw, 24px);
@@ -46,11 +52,11 @@
 }
 
 .divider {
-  position: sticky;
-  top: 12px;
+  position: relative;
+  top: 0;
   z-index: 4;
   width: 12px;
-  height: calc(100dvh - 24px);
+  height: 100%;
   padding: 0;
   border: 0;
   background: transparent;
@@ -91,15 +97,16 @@
 }
 
 .documentPane {
-  position: sticky;
-  top: 12px;
+  position: relative;
+  top: 0;
   min-width: 0;
-  height: calc(100dvh - 24px);
+  height: 100%;
   overflow: hidden;
   border: 1px solid var(--border);
   border-radius: var(--radius-lg);
   background: var(--surface-elevated);
   box-shadow: var(--shadow-md);
+  overscroll-behavior: contain;
 }
 
 .workspace:fullscreen .documentPane {
@@ -281,8 +288,8 @@
 .pickerError { margin: 12px 0 0; color: var(--danger); font-size: var(--text-sm); }
 
 @media (max-width: 800px) {
-  .split { display: block; max-width: none; }
-  .split .studyPane { padding-right: 0; }
+  .split { display: block; height: auto; overflow: visible; max-width: none; }
+  .split .studyPane { height: auto; overflow: visible; padding-right: 0; }
   .divider { display: none; }
   .mobileSwitcher {
     position: sticky;

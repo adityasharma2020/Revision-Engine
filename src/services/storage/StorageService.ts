@@ -9,6 +9,8 @@ import type {
   RevisionPreferences,
   QuizSettings,
   DailyRevisionAssignment,
+  ActiveFocusSession,
+  CompletedFocusSessionList,
 } from '../../types';
 import { DEFAULT_REVISION_PREFERENCES } from '../../types/revision';
 import { StorageKeys } from './keys';
@@ -35,6 +37,14 @@ export interface AppSettings {
   readonly accessibility: {
     readonly reduceMotion: boolean;
   };
+  readonly focusTimer: {
+    readonly enabled: boolean;
+    readonly defaultMinutes: number;
+    readonly allowPause: boolean;
+    readonly midpointNudge: boolean;
+    readonly opacity: number;
+    readonly size: number;
+  };
 }
 
 export const DEFAULT_SETTINGS: AppSettings = {
@@ -51,6 +61,7 @@ export const DEFAULT_SETTINGS: AppSettings = {
     timezone: 'UTC',
   },
   accessibility: { reduceMotion: false },
+  focusTimer: { enabled: true, defaultMinutes: 30, allowPause: true, midpointNudge: true, opacity: 35, size: 20 },
 };
 
 /**
@@ -111,6 +122,24 @@ export class StorageService {
     return next;
   }
 
+  // ---- Focus timer -----------------------------------------------------
+  async loadActiveFocusSession(): Promise<ActiveFocusSession | null> {
+    return this.store.get<ActiveFocusSession>(StorageKeys.activeFocusSession);
+  }
+
+  async saveActiveFocusSession(session: ActiveFocusSession | null): Promise<void> {
+    if (session) await this.store.set(StorageKeys.activeFocusSession, session);
+    else await this.store.remove(StorageKeys.activeFocusSession);
+  }
+
+  async loadCompletedFocusSessions(): Promise<CompletedFocusSessionList> {
+    return (await this.store.get<CompletedFocusSessionList>(StorageKeys.completedFocusSessions)) ?? [];
+  }
+
+  async saveCompletedFocusSessions(sessions: CompletedFocusSessionList): Promise<void> {
+    await this.store.set(StorageKeys.completedFocusSessions, sessions);
+  }
+
   // ---- User-uploaded chapters ------------------------------------------
   async loadUserChapters(): Promise<Chapter[]> {
     return (await this.store.get<Chapter[]>(StorageKeys.userChapters)) ?? [];
@@ -140,6 +169,16 @@ export class StorageService {
       dashboard: { ...DEFAULT_SETTINGS.dashboard, ...stored?.dashboard },
       notifications: { ...DEFAULT_SETTINGS.notifications, ...stored?.notifications },
       accessibility: { ...DEFAULT_SETTINGS.accessibility, ...stored?.accessibility },
+      focusTimer: {
+        ...DEFAULT_SETTINGS.focusTimer,
+        ...stored?.focusTimer,
+        // The first timer release used a large 44px/92%-opacity presentation.
+        // Migrate that shape once so existing users receive the intentionally
+        // unobtrusive defaults; later user-selected values remain untouched.
+        ...(!stored?.focusTimer || !('size' in stored.focusTimer)
+          ? { opacity: DEFAULT_SETTINGS.focusTimer.opacity, size: DEFAULT_SETTINGS.focusTimer.size }
+          : {}),
+      },
       schemaVersion: DEFAULT_SETTINGS.schemaVersion,
     };
   }

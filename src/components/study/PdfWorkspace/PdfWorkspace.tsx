@@ -58,7 +58,7 @@ export function PdfWorkspace({ chapterId, children }: PdfWorkspaceProps) {
   const style = { '--study-percent': `${workspace.splitPercent}%` } as CSSProperties;
 
   return (
-    <div ref={rootRef} className={`${styles.workspace} ${split ? styles.split : ''}`} style={style}>
+    <div ref={rootRef} className={`${styles.workspace} ${split ? styles.split : ''}`} style={style} data-pdf-workspace-split={split}>
       {split && (
         <div className={styles.mobileSwitcher} role="tablist" aria-label="Study workspace view">
           <button
@@ -111,6 +111,9 @@ export function PdfWorkspace({ chapterId, children }: PdfWorkspaceProps) {
                 {activeDocument.local && <small>On this device</small>}
               </div>
               <div className={styles.documentActions}>
+                <button type="button" onClick={() => { workspace.toggleChapterLink(activeDocument.id, chapterId); workspace.closeDocument(); }} title="Unlink PDF from this chapter" aria-label="Unlink PDF from this chapter">
+                  <Icon name="unlink" size={15} />
+                </button>
                 <button type="button" onClick={() => void toggleFocus()} title={focused ? 'Exit focused workspace' : 'Focus study and PDF'} aria-label={focused ? 'Exit focused workspace' : 'Focus study and PDF'}>
                   <Icon name={focused ? 'minimize' : 'expand'} size={15} />
                 </button>

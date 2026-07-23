@@ -573,6 +573,11 @@ export function Settings() {
             <div><h2>Powerful optional tools</h2><p>Add-ons extend Revision Engine with focused workflows. Enable only what helps you study; more independent tools can be added here later.</p></div>
           </section>
           <section className={styles.addonCard}>
+            <span><Icon name="clock" size={20} /></span>
+            <div><em>FOCUS & TIME</em><strong>Floating Focus Timer</strong><p>Run timestamp-accurate study sessions across the app, with completed time added to analytics.</p></div>
+            <Button variant="primary" size="sm" onClick={() => window.dispatchEvent(new CustomEvent('revision-engine:open-focus-timer', { detail: { tab: 'appearance' } }))}>Configure</Button>
+          </section>
+          <section className={styles.addonCard}>
             <span><Icon name="sparkle" size={20} /></span>
             <div><em>MEMORY & RETENTION</em><strong>Memory Nudges</strong><p>Bring important facts, quotes and mistakes back through weighted, adaptive notifications.</p></div>
             <Button variant="primary" size="sm" disabled={status !== 'authenticated'} onClick={() => setNudgeSettingsOpen(true)}>Configure</Button>

@@ -208,6 +208,7 @@
 .reviewLink { display: inline-flex; padding: 5px 9px; color: var(--accent); background: var(--accent-subtle); border-radius: var(--radius-md); font-size: var(--text-xs); font-weight: var(--weight-semibold); }
 .analyticsTabs { margin-bottom: var(--space-4); }
 .nudgeAnalytics { min-width: 0; }
+.focusAnalytics { min-width: 0; }
 .nudgeGrid { display: grid; grid-template-columns: minmax(0, 1.45fr) minmax(280px, .55fr); gap: var(--space-4); }
 .nudgeGrid > * { min-width: 0; }
 .retentionTable { min-width: 720px; }

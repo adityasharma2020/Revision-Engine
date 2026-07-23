@@ -10,6 +10,7 @@ import { UserDataProvider } from './context/UserDataContext';
 import { AppSettingsProvider } from './context/AppSettingsContext';
 import { DeviceNotificationSettingsProvider } from './context/DeviceNotificationSettingsContext';
 import { PdfWorkspaceProvider } from './context/PdfWorkspaceContext';
+import { FocusTimerProvider } from './context/FocusTimerContext';
 import './services/pwa/InstallService';
 
 import './styles/tokens.css';
@@ -47,7 +48,9 @@ createRoot(container).render(
                 <DeviceNotificationSettingsProvider>
                   <PdfWorkspaceProvider>
                     <UserDataProvider>
-                      <App />
+                      <FocusTimerProvider>
+                        <App />
+                      </FocusTimerProvider>
                     </UserDataProvider>
                   </PdfWorkspaceProvider>
                 </DeviceNotificationSettingsProvider>

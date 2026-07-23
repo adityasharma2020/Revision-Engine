@@ -21,11 +21,13 @@ import {
 import { humanizeDuration } from '../../utils/time';
 import styles from './Statistics.module.css';
 import { Routes } from '../../constants/routes';
+import { useFocusTimer } from '../../context/FocusTimerContext';
+import type { CompletedFocusSession } from '../../types';
 
 type TimeRange = 'today' | 'yesterday' | 'week' | 'month' | 'year' | 'all';
 type QuestionView = 'all' | 'weak' | 'mastered' | 'skipped';
 type QuestionSort = 'attempts' | 'wrong' | 'accuracy' | 'reviews' | 'recent';
-type AnalyticsTab = 'overview' | 'questions' | 'nudges';
+type AnalyticsTab = 'overview' | 'questions' | 'focus' | 'nudges';
 
 function startOfRange(range: TimeRange, now = new Date()): number {
   if (range === 'all') return 0;
@@ -94,6 +96,7 @@ export function Statistics() {
   const [nudgeLoading, setNudgeLoading] = useState(false);
   const [nudgeError, setNudgeError] = useState('');
   const deferredQuestionSearch = useDeferredValue(questionSearch);
+  const { completed: focusSessions } = useFocusTimer();
 
   useEffect(() => {
     if (authStatus !== 'authenticated') { setNudgeData({ nudges: [], interactions: [] }); return; }
@@ -278,7 +281,7 @@ export function Statistics() {
     visibleQuestionPage * questionPageSize,
   );
 
-  const hasAnyActivity = quizResults.length > 0 || Object.keys(progress).length > 0 || nudgeData.nudges.length > 0 || nudgeData.interactions.length > 0;
+  const hasAnyActivity = quizResults.length > 0 || Object.keys(progress).length > 0 || focusSessions.length > 0 || nudgeData.nudges.length > 0 || nudgeData.interactions.length > 0;
   const scopeHasData = overview.answered > 0 || overview.quizzes > 0 || overview.chaptersRevised > 0;
 
   return (
@@ -302,8 +305,8 @@ export function Statistics() {
           <section className={styles.filters} aria-label="Analytics filters">
             <div className={styles.filterHead}>
               <div>
-                <strong>{analyticsTab === 'nudges' ? 'Filter nudge activity' : 'Filter your statistics'}</strong>
-                <span>{analyticsTab === 'nudges' ? 'The date range applies to deliveries, opens and feedback. Saved-content totals remain current.' : 'The range and chapter selection apply to everything below.'}</span>
+                <strong>{analyticsTab === 'nudges' ? 'Filter nudge activity' : analyticsTab === 'focus' ? 'Filter focus sessions' : 'Filter your statistics'}</strong>
+                <span>{analyticsTab === 'nudges' ? 'The date range applies to deliveries, opens and feedback. Saved-content totals remain current.' : analyticsTab === 'focus' ? 'Only sessions completed and confirmed in this period are included.' : 'The range and chapter selection apply to everything below.'}</span>
               </div>
               <div className={styles.timeOptions} aria-label="Analytics time range">
               {([
@@ -333,7 +336,7 @@ export function Statistics() {
               </label>
             </div>
 
-            {analyticsTab !== 'nudges' && scopeChapters.length > 0 && (
+            {analyticsTab !== 'nudges' && analyticsTab !== 'focus' && scopeChapters.length > 0 && (
               <ScopeFilter chapters={scopeChapters} selected={selected} onChange={setSelected} />
             )}
           </section>
@@ -341,7 +344,7 @@ export function Statistics() {
           <div className={styles.analyticsTabs}>
             <Tabs
               aria-label="Analytics sections"
-              items={[{ id: 'overview', label: 'Overview' }, { id: 'questions', label: 'Questions' }, { id: 'nudges', label: 'Memory Nudges' }]}
+              items={[{ id: 'overview', label: 'Overview' }, { id: 'questions', label: 'Questions' }, { id: 'focus', label: 'Focus' }, { id: 'nudges', label: 'Memory Nudges' }]}
               value={analyticsTab}
               onChange={setAnalyticsTab}
             />
@@ -349,6 +352,8 @@ export function Statistics() {
 
           {analyticsTab === 'nudges' ? (
             <NudgeAnalytics data={nudgeData} range={timeRange} loading={nudgeLoading} error={nudgeError} />
+          ) : analyticsTab === 'focus' ? (
+            <FocusAnalytics sessions={focusSessions} range={timeRange} />
           ) : analyticsTab === 'questions' ? (
             <QuestionAnalytics
               items={visibleQuestionStats}
@@ -539,6 +544,54 @@ export function Statistics() {
       )}
     </Page>
   );
+}
+
+function dayKey(timestamp: number) {
+  const date = new Date(timestamp);
+  return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
+}
+
+function focusStreak(sessions: CompletedFocusSession[]) {
+  const days = new Set(sessions.map((session) => dayKey(session.completedAt)));
+  const cursor = new Date();
+  cursor.setHours(0, 0, 0, 0);
+  if (!days.has(dayKey(cursor.getTime()))) cursor.setDate(cursor.getDate() - 1);
+  let streak = 0;
+  while (days.has(dayKey(cursor.getTime()))) { streak += 1; cursor.setDate(cursor.getDate() - 1); }
+  return streak;
+}
+
+function FocusAnalytics({ sessions, range }: { sessions: CompletedFocusSession[]; range: TimeRange }) {
+  const cutoff = startOfRange(range);
+  const end = endOfRange(range);
+  const filtered = sessions.filter((session) => session.completedAt >= cutoff && session.completedAt < end);
+  const totalMs = filtered.reduce((sum, session) => sum + session.creditedMs, 0);
+  const averageMs = filtered.length ? totalMs / filtered.length : 0;
+  const reachedTarget = filtered.filter((session) => (session.outcome ?? 'completed') === 'completed').length;
+  const byDay = new Map<string, { at: number; value: number; count: number }>();
+  for (const session of filtered) {
+    const date = new Date(session.completedAt); date.setHours(0, 0, 0, 0);
+    const key = dayKey(date.getTime());
+    const item = byDay.get(key) ?? { at: date.getTime(), value: 0, count: 0 };
+    item.value += Math.round(session.creditedMs / 60_000); item.count += 1; byDay.set(key, item);
+  }
+  const chart = [...byDay.values()].sort((a, b) => a.at - b.at);
+  if (!filtered.length) return <EmptyState icon="clock" title="No focus sessions yet" description={`Start a timer and any focused time you save will appear in ${TIME_RANGE_LABELS[range].toLowerCase()} analytics.`} />;
+  return <section className={styles.focusAnalytics}>
+    <div className={styles.primaryTiles}>
+      <StatTile icon="clock" label="Total focus time" value={humanizeDuration(totalMs)} sublabel={TIME_RANGE_LABELS[range]} />
+      <StatTile icon="check" label="Sessions tracked" value={String(filtered.length)} sublabel={`${reachedTarget} reached target`} />
+      <StatTile icon="target" label="Average session" value={humanizeDuration(averageMs)} sublabel={`${focusStreak(sessions)} day current streak`} />
+    </div>
+    <section className={`${styles.card} ${styles.activityCard}`}>
+      <div className={styles.cardHead}><div><h2 className={styles.cardTitle}>Focused minutes by day</h2><span className={styles.cardHint}>Includes both completed targets and sessions ended early.</span></div></div>
+      <BarChart data={chart.map((item) => ({ label: new Date(item.at).toLocaleDateString(undefined, { day: 'numeric', month: 'short' }), value: item.value, tooltip: `${new Date(item.at).toLocaleDateString(undefined, { weekday: 'long', day: 'numeric', month: 'short' })} · ${item.value} focused minutes · ${item.count} session${item.count === 1 ? '' : 's'}` }))} valueSuffix=" min" />
+    </section>
+    <section className={`${styles.card} ${styles.standaloneCard}`}>
+      <div className={styles.cardHead}><div><h2 className={styles.cardTitle}>Session history</h2><span className={styles.cardHint}>The target and actual focused time remain separate and transparent.</span></div></div>
+      <div className={styles.tableWrap}><table className={styles.table}><thead><tr><th>Ended</th><th>Status</th><th className={styles.num}>Target</th><th className={styles.num}>Focused</th><th className={styles.num}>Paused</th></tr></thead><tbody>{filtered.slice().sort((a, b) => b.completedAt - a.completedAt).slice(0, 50).map((session) => <tr key={session.id}><td>{new Intl.DateTimeFormat(undefined, { day: 'numeric', month: 'short', year: 'numeric', hour: 'numeric', minute: '2-digit' }).format(session.completedAt)}</td><td>{(session.outcome ?? 'completed') === 'completed' ? 'Target reached' : 'Ended early'}</td><td className={styles.num}>{humanizeDuration(session.targetMs)}</td><td className={styles.num}>{humanizeDuration(session.creditedMs)}</td><td className={styles.num}>{session.totalPausedMs ? humanizeDuration(session.totalPausedMs) : '—'}</td></tr>)}</tbody></table></div>
+    </section>
+  </section>;
 }
 
 function NudgeAnalytics({ data, range, loading, error }: { data: NudgeAnalyticsData; range: TimeRange; loading: boolean; error: string }) {

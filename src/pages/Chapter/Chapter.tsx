@@ -144,6 +144,13 @@ function ChapterView({ chapter }: { chapter: ChapterModel }) {
                 ? pdfWorkspace.document?.id === chapterPdf.id && pdfWorkspace.visible ? 'Hide PDF' : 'Show PDF'
                 : 'Open PDF'}</span>
             </button>
+            {chapterPdf && <button
+              type="button"
+              className={styles.pdfUnlink}
+              onClick={() => { pdfWorkspace.toggleChapterLink(chapterPdf.id, chapter.id); if (pdfWorkspace.document?.id === chapterPdf.id) pdfWorkspace.closeDocument(); }}
+              title="Unlink this PDF from the chapter"
+              aria-label="Unlink this PDF from the chapter"
+            ><Icon name="unlink" size={14} /><span>Unlink PDF</span></button>}
             <Link
               to={Routes.search}
               className={styles.chapterSearch}

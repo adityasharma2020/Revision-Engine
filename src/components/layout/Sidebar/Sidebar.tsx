@@ -22,7 +22,7 @@ export function Sidebar({ collapsed, collapseLocked = false, searchOpen = false,
   const location = useLocation();
   const [moreOpen, setMoreOpen] = useState(false);
   const signedIn = status === 'authenticated' && user;
-  const mobilePrimary = new Set<string>([Routes.dashboard, Routes.revision, Routes.nudges, Routes.search]);
+  const mobilePrimary = new Set<string>([Routes.dashboard, Routes.library, Routes.revision, Routes.nudges, Routes.search]);
   const moreItems = PRIMARY_NAV.filter((item) => !mobilePrimary.has(item.to));
   const moreActive = moreItems.some((item) => location.pathname === item.to);
 
@@ -71,6 +71,16 @@ export function Sidebar({ collapsed, collapseLocked = false, searchOpen = false,
         ))}
         <button
           type="button"
+          className={cx(styles.link, styles.focusNavAction, styles.mobileSecondary)}
+          onClick={() => window.dispatchEvent(new CustomEvent('revision-engine:open-focus-timer'))}
+          aria-label="Open Focus Timer"
+          title="Open Focus Timer"
+        >
+          <Icon name="clock" size={18} />
+          <span className={styles.desktopLabel}>Focus Timer</span>
+        </button>
+        <button
+          type="button"
           className={cx(styles.link, styles.moreButton, (moreOpen || moreActive) && styles.active)}
           onClick={() => setMoreOpen((open) => !open)}
           aria-expanded={moreOpen}
@@ -87,7 +97,11 @@ export function Sidebar({ collapsed, collapseLocked = false, searchOpen = false,
           <section id="mobile-more-menu" className={styles.moreSheet} aria-label="More pages">
             <div className={styles.moreHandle} />
             <div className={styles.moreHead}><strong>More</strong><button type="button" onClick={() => setMoreOpen(false)} aria-label="Close"><Icon name="close" size={19} /></button></div>
-            <div className={styles.moreGrid}>{moreItems.map((item) => (
+            <div className={styles.moreGrid}>
+              <button type="button" className={cx(styles.moreItem, styles.moreFocusItem)} onClick={() => { setMoreOpen(false); window.dispatchEvent(new CustomEvent('revision-engine:open-focus-timer')); }}>
+                <span><Icon name="clock" size={20} /></span><strong>Focus Timer</strong><Icon name="chevronRight" size={16} />
+              </button>
+              {moreItems.map((item) => (
               <NavLink key={item.to} to={item.to} className={({ isActive }) => cx(styles.moreItem, item.featured && styles.moreItemFeatured, isActive && styles.moreItemActive)}>
                 <span><Icon name={item.icon} size={20} /></span><strong>{item.label}</strong><Icon name="chevronRight" size={16} />
               </NavLink>

@@ -20,6 +20,8 @@ export const StorageKeys = {
   quizSettings: 'quiz-settings',
   dailyRevisionAssignment: 'daily-revision-assignment',
   deviceNotificationSettings: '__device-notification-settings',
+  activeFocusSession: '__active-focus-session',
+  completedFocusSessions: 'completed-focus-sessions',
 } as const;
 
 export type StorageKey = (typeof StorageKeys)[keyof typeof StorageKeys];

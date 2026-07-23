@@ -12,6 +12,7 @@ import { StoragePressureNudge } from '../StoragePressureNudge';
 import { useAuth } from '../../../context/AuthContext';
 import { disableWebPush, getPushStatus, syncWebPushSubscription } from '../../../services/notifications';
 import { useDeviceNotificationSettings } from '../../../context/DeviceNotificationSettingsContext';
+import { FocusTimerWidget } from '../../focus/FocusTimerWidget';
 
 const SIDEBAR_KEY = 'revision-engine:sidebar-collapsed';
 const QUIZ_HISTORY_GUARD = '__revisionEngineQuizGuard';
@@ -232,6 +233,7 @@ export function AppShell() {
         <Outlet />
       </main>
       <StoragePressureNudge />
+      <FocusTimerWidget />
       {searchOpen && (
         <div className={styles.searchBackdrop} onMouseDown={() => setSearchOpen(false)}>
           <section

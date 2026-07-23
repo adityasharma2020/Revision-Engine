@@ -77,6 +77,27 @@
 .addonCard em { color: var(--accent); font-size: 9px; font-style: normal; font-weight: var(--weight-semibold); letter-spacing: var(--tracking-wide); }
 .addonCard p { margin-top: 2px; color: var(--text-secondary); font-size: var(--text-xs); }
 .addonHelp { margin-top: calc(-1 * var(--space-2)); color: var(--text-tertiary); }
+.addonOptions { margin-top: calc(-1 * var(--space-2)); padding: var(--space-4); background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-lg); }
+.addonOptions summary { color: var(--text-secondary); font-size: var(--text-sm); font-weight: var(--weight-semibold); cursor: pointer; }
+.addonOptions > div { display: grid; gap: var(--space-2); margin-top: var(--space-3); }
+.addonOptions label { display: flex; align-items: center; justify-content: space-between; gap: var(--space-4); padding: var(--space-3); background: var(--bg-sunken); border-radius: var(--radius-md); }
+.addonOptions label > span { display: flex; flex-direction: column; }
+.addonOptions label small { color: var(--text-tertiary); font-size: var(--text-xs); }
+.addonOptions select { padding: 8px; color: var(--text-primary); background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-md); }
+.addonRange { width: min(180px, 42vw); accent-color: var(--accent); }
+.focusSettingsModal { width: min(100%, 620px); }
+.focusSettingsBody { display: grid; gap: var(--space-2); padding: var(--space-5); }
+.focusSettingsBody > label { display: flex; align-items: center; justify-content: space-between; gap: var(--space-5); padding: var(--space-4); background: var(--bg-sunken); border: 1px solid var(--border); border-radius: var(--radius-md); }
+.focusSettingsBody label > span:first-child { display: flex; flex-direction: column; }
+.focusSettingsBody label small { color: var(--text-tertiary); font-size: var(--text-xs); }
+.focusSettingsBody select { padding: 8px; color: var(--text-primary); background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-md); }
+.minuteField { display: flex; align-items: center; gap: var(--space-2); }
+.minuteField input { width: 92px; padding: 8px; color: var(--text-primary); background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-md); }
+.minuteField em { color: var(--text-secondary); font-size: var(--text-xs); font-style: normal; }
+.rangeValue { display: flex; align-items: center; gap: var(--space-2); }
+.rangeValue b { min-width: 38px; color: var(--text-secondary); font-size: var(--text-xs); }
+.focusSettingsModal footer { display: flex; justify-content: flex-end; padding: 0 var(--space-5) var(--space-5); }
+.focusSettingsBody .settingLocked { opacity: .55; }
 .addonIntro { display: flex; align-items: center; gap: var(--space-4); padding: var(--space-5); background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-lg); }
 .addonIntro > span { display: grid; width: 48px; height: 48px; flex: 0 0 auto; color: var(--accent); background: var(--accent-subtle); border-radius: var(--radius-lg); place-items: center; }
 .addonIntro h2 { font-size: var(--text-lg); }
