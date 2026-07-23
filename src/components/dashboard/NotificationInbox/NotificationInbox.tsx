@@ -15,7 +15,7 @@ function InboxItem({ item, onOpen }: { item: InboxNotification; onOpen: () => vo
       <Link to={destination(item.url)} onClick={onOpen}>
         <span className={styles.historyIcon}><Icon name={iconFor(item.type)} size={17} /></span>
         <div>
-          <span>{item.title}{!item.readAt && <i>New</i>}</span>
+          <span className={styles.itemHeading}><strong>{item.title}</strong>{!item.readAt && <i>New</i>}</span>
           <p>{item.body}</p>
           <time>{new Intl.DateTimeFormat(undefined, { weekday: 'short', day: 'numeric', month: 'short', hour: 'numeric', minute: '2-digit' }).format(new Date(item.deliveredAt))}</time>
         </div>
