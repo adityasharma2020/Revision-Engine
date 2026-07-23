@@ -118,7 +118,7 @@ function AnnotationLayer({ pageNumber, rotation, annotations, editing, tool, col
     if (tool !== 'pen' || advanced.penSmoothing === 'off') return raw;
     // Strong low-pass filtering trails visibly behind a stylus. These values
     // remove digitizer jitter without adding the former rubber-band latency.
-    const factor = advanced.penSmoothing === 'smooth' ? .58 : .78;
+    const factor = advanced.penSmoothing === 'smooth' ? .72 : .92;
     return raw.map((point) => {
       const previous = lastPointRef.current;
       const smoothed = previous ? { x: previous.x + (point.x - previous.x) * factor, y: previous.y + (point.y - previous.y) * factor, pressure: previous.pressure + (point.pressure - previous.pressure) * factor } : point;
@@ -353,6 +353,9 @@ export function PdfCanvasViewer({ url, sourceData, name, className, fileHandle, 
   const inkToolbarRef = useRef<HTMLDivElement>(null);
   const toolSettingsRef = useRef<HTMLElement>(null);
   const pageRefs = useRef(new Map<number, HTMLElement>());
+  const penContactRef = useRef(false);
+  const editTouchesRef = useRef(new Map<number, { x: number; y: number }>());
+  const editTouchGestureRef = useRef<{ startedAt: number; maxTouches: number; lastCenterX: number; lastCenterY: number; travel: number } | null>(null);
   const historyRef = useRef<PdfInkAnnotation[][]>([]); const futureRef = useRef<PdfInkAnnotation[][]>([]);
   const drawingSnapshotRef = useRef<PdfInkAnnotation[] | null>(null);
   const pendingInkRef = useRef<{ id: string; points: PdfAnnotationPoint[] } | null>(null);
@@ -649,6 +652,43 @@ export function PdfCanvasViewer({ url, sourceData, name, className, fileHandle, 
   };
   const undo = () => { const previous = historyRef.current.pop(); if (!previous) return; setPdfSaveDirty(true); futureRef.current.push(annotations); setAnnotations(previous); };
   const redo = () => { const next = futureRef.current.pop(); if (!next) return; setPdfSaveDirty(true); historyRef.current.push(annotations); setAnnotations(next); };
+  const editPointerDown = (event: ReactPointerEvent<HTMLDivElement>) => {
+    if (!editing) return;
+    if (event.pointerType === 'pen') { penContactRef.current = true; return; }
+    if (event.pointerType !== 'touch' || penContactRef.current) return;
+    event.preventDefault(); event.currentTarget.setPointerCapture(event.pointerId);
+    editTouchesRef.current.set(event.pointerId, { x: event.clientX, y: event.clientY });
+    const touches = [...editTouchesRef.current.values()];
+    const centerX = touches.reduce((sum, point) => sum + point.x, 0) / touches.length;
+    const centerY = touches.reduce((sum, point) => sum + point.y, 0) / touches.length;
+    const gesture = editTouchGestureRef.current;
+    if (gesture) { gesture.maxTouches = Math.max(gesture.maxTouches, touches.length); gesture.lastCenterX = centerX; gesture.lastCenterY = centerY; }
+    else editTouchGestureRef.current = { startedAt: performance.now(), maxTouches: 1, lastCenterX: centerX, lastCenterY: centerY, travel: 0 };
+  };
+  const editPointerMove = (event: ReactPointerEvent<HTMLDivElement>) => {
+    if (!editing || event.pointerType !== 'touch' || !editTouchesRef.current.has(event.pointerId) || penContactRef.current) return;
+    event.preventDefault(); editTouchesRef.current.set(event.pointerId, { x: event.clientX, y: event.clientY });
+    const touches = [...editTouchesRef.current.values()]; const gesture = editTouchGestureRef.current;
+    if (!gesture || touches.length > 2) return;
+    const centerX = touches.reduce((sum, point) => sum + point.x, 0) / touches.length;
+    const centerY = touches.reduce((sum, point) => sum + point.y, 0) / touches.length;
+    const dx = centerX - gesture.lastCenterX; const dy = centerY - gesture.lastCenterY;
+    gesture.travel += Math.hypot(dx, dy); gesture.lastCenterX = centerX; gesture.lastCenterY = centerY;
+    viewportRef.current?.scrollBy({ left: -dx, top: -dy, behavior: 'auto' });
+  };
+  const editPointerEnd = (event: ReactPointerEvent<HTMLDivElement>) => {
+    if (event.pointerType === 'pen') { penContactRef.current = false; return; }
+    if (event.pointerType !== 'touch') return;
+    editTouchesRef.current.delete(event.pointerId);
+    const gesture = editTouchGestureRef.current;
+    const remaining = [...editTouchesRef.current.values()];
+    if (remaining.length > 0) {
+      if (gesture) { gesture.lastCenterX = remaining.reduce((sum, point) => sum + point.x, 0) / remaining.length; gesture.lastCenterY = remaining.reduce((sum, point) => sum + point.y, 0) / remaining.length; }
+      return;
+    }
+    editTouchGestureRef.current = null;
+    if (editing && gesture?.maxTouches === 2 && gesture.travel < 12 && performance.now() - gesture.startedAt < 650) undo();
+  };
   const createAnnotatedPdf = async (editable: boolean) => {
     if (!document) throw new Error('PDF is unavailable.');
     const [{ createAnnotatedPdf: encode }, bytes] = await Promise.all([import('../../../services/pdf/PdfEditableAnnotationCodec'), document.getData()]);
@@ -801,7 +841,7 @@ export function PdfCanvasViewer({ url, sourceData, name, className, fileHandle, 
       </section>}
       {searchOpen && <section className={styles.searchPanel} aria-label="Search PDF"><label><Icon name="search" size={15} /><input autoFocus type="search" value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Search this PDF…" /><span>{indexing ? 'Indexing…' : query ? `${results.length} pages` : ''}</span><button type="button" onClick={() => { setSearchOpen(false); setQuery(''); }} aria-label="Close search"><Icon name="close" size={15} /></button></label>{query && !indexing && <div className={styles.searchResults}>{results.length ? results.map((result) => <button type="button" key={result.page} onClick={() => { goTo(result.page); setViewMode('page'); }}><strong>Page {result.page}</strong><span>{result.excerpt}</span></button>) : <small>No matches in this PDF.</small>}</div>}</section>}
     </>}
-    <div ref={viewportRef} className={cx(styles.viewport, viewMode === 'page' && styles.pageMode, editing && styles.editViewport)} onDoubleClick={() => { if (!editing) setZoom(1); }}>
+    <div ref={viewportRef} className={cx(styles.viewport, viewMode === 'page' && styles.pageMode, editing && styles.editViewport)} onPointerDownCapture={editPointerDown} onPointerMoveCapture={editPointerMove} onPointerUpCapture={editPointerEnd} onPointerCancelCapture={editPointerEnd} onDoubleClick={() => { if (!editing) setZoom(1); }}>
       {loading && <div className={styles.status}><span className={styles.spinner} /><strong>Opening PDF…</strong><small>{name}</small></div>}{error && <div className={styles.status}><Icon name="book" size={24} /><strong>Unable to open PDF</strong><small>{error}</small></div>}
       {!error && document && visiblePages.map((page) => <PdfPage key={page} document={document} pageNumber={page} width={width} zoom={zoom} rotation={rotation} register={(number, node) => { if (node) pageRefs.current.set(number, node); else pageRefs.current.delete(number); }} annotations={annotationsByPage.get(page) ?? []} hideNativeAnnotations={nativeInkImported} editing={editing} tool={tool} color={color} inkSize={inkSize} advanced={advanced} onPrepare={prepareStroke} onBegin={begin} onExtend={extend} onEnd={end} onErase={erase} onNavigate={(destination, action) => void followLink(destination, action)} />)}
     </div>
