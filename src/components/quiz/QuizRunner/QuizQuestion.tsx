@@ -32,9 +32,10 @@ export function QuizQuestion({ question, selected, onSelect, disabled = false, c
           </Badge>
           )}
           {revisionMeta && (
-            <span className={styles.revisionMeta}>
-              Reviewed {revisionMeta.attempts}× · Level {revisionMeta.level}
-              {revisionMeta.accuracy !== null ? ` · ${revisionMeta.accuracy}% accuracy` : ' · New'}
+            <span className={styles.revisionMeta} title={revisionMeta.reason}>
+              {revisionMeta.attempts === 0
+                ? `New · Level ${revisionMeta.level}`
+                : `Attempted ${revisionMeta.attempts}× · Level ${revisionMeta.level}${revisionMeta.accuracy !== null ? ` · ${revisionMeta.accuracy}% accuracy` : ' · Skipped only'}`}
             </span>
           )}
           {question.tags?.slice(0, 3).map((tag) => (

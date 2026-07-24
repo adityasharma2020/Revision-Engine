@@ -327,6 +327,7 @@
 }
 .pausedBanner > div { display: flex; flex: 1; flex-direction: column; }
 .pausedBanner span { font-size: var(--text-sm); color: var(--text-secondary); }
+.pausedBanner .pausedActions { flex: 0 0 auto; flex-direction: row; gap: var(--space-2); }
 .focusGuard {
   position: fixed;
   inset: 0;
@@ -378,6 +379,7 @@
 .focusDialog p { margin: var(--space-2) 0 var(--space-4); font-size: var(--text-sm); line-height: var(--leading-relaxed); color: var(--text-secondary); }
 .focusMeta { margin-bottom: var(--space-4); font-size: var(--text-xs); font-weight: var(--weight-semibold); color: var(--warning); text-transform: uppercase; letter-spacing: var(--tracking-wide); }
 .focusDialog button { width: 100%; }
+.focusActions { display: grid; gap: var(--space-2); }
 .savingResult { padding: var(--space-8); text-align: center; color: var(--text-secondary); }
 .testResult { width: 100%; }
 .testResultNotice { display: flex; align-items: center; justify-content: center; gap: 7px; margin: 0 auto var(--space-4); color: var(--text-tertiary); font-size: var(--text-xs); }
@@ -701,6 +703,7 @@
 
   .sessionActions { width: 100%; justify-content: flex-end; }
   .pausedBanner { align-items: flex-start; flex-wrap: wrap; }
+  .pausedBanner .pausedActions { width: 100%; flex-wrap: wrap; }
 
   .question {
     padding: var(--space-4);

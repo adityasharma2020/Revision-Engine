@@ -1,0 +1,62 @@
+.customize { margin-top: var(--space-5); border-top: 1px solid var(--border); }
+.customize summary { display: flex; align-items: center; justify-content: space-between; gap: var(--space-4); padding: var(--space-4) 0 0; cursor: pointer; list-style: none; }
+.customize summary::-webkit-details-marker { display: none; }
+.customize summary > span { display: flex; flex-direction: column; }
+.customize summary small { color: var(--text-secondary); }
+.customize summary em { padding: 4px var(--space-2); color: var(--accent); background: var(--accent-subtle); border-radius: var(--radius-full); font-size: var(--text-xs); font-style: normal; }
+.customBody { display: grid; gap: var(--space-4); padding-top: var(--space-4); }
+.presetGrid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: var(--space-2); }
+.preset, .presetActive { display: flex; flex-direction: column; gap: 2px; padding: var(--space-3); color: var(--text-primary); text-align: left; border: 1px solid var(--border); border-radius: var(--radius-md); }
+.preset:hover { background: var(--surface-hover); }
+.presetActive { color: var(--accent); background: var(--accent-subtle); border-color: var(--accent); }
+.preset span, .presetActive span { color: var(--text-secondary); font-size: var(--text-xs); }
+.customFields { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: var(--space-3); }
+.customFields label { display: flex; flex-direction: column; gap: var(--space-2); font-size: var(--text-sm); font-weight: var(--weight-medium); }
+.customFields select, .intervalEditor input { padding: var(--space-3); color: var(--text-primary); background: var(--bg); border: 1px solid var(--border-strong); border-radius: var(--radius-md); }
+.intervalEditor { padding: var(--space-4); background: var(--bg-sunken); border-radius: var(--radius-md); }
+.intervalEditor > div:first-child { display: flex; flex-direction: column; }
+.intervalEditor small { color: var(--text-secondary); }
+.intervalEditor > div:last-child { display: grid; grid-template-columns: repeat(4, 1fr); gap: var(--space-3); margin-top: var(--space-3); }
+.intervalEditor label { display: flex; flex-direction: column; gap: 4px; color: var(--text-tertiary); font-size: var(--text-xs); }
+.intervalEditor label > div { position: relative; }
+.intervalEditor input { width: 100%; padding: var(--space-2) 42px var(--space-2) var(--space-2); }
+.intervalEditor label em { position: absolute; top: 50%; right: var(--space-2); color: var(--text-tertiary); font-style: normal; transform: translateY(-50%); }
+.toggleList { overflow: hidden; border: 1px solid var(--border); border-radius: var(--radius-md); }
+.sessionPicker { display: grid; gap: var(--space-4); padding: var(--space-4); background: var(--bg-sunken); border-radius: var(--radius-md); }
+.sessionPicker > div:first-child { display: flex; flex-direction: column; }
+.sessionPicker small { color: var(--text-secondary); }
+.sessionPicker > div:last-child { display: grid; grid-template-columns: 1fr 1fr; gap: var(--space-2); }
+.sessionOption, .sessionActive { display: flex; min-height: 116px; flex-direction: column; gap: 4px; padding: var(--space-4); color: var(--text-primary); text-align: left; background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-lg); }
+.sessionActive { color: var(--accent); background: var(--accent-subtle); border-color: var(--accent); }
+.sessionOption span, .sessionActive span { color: var(--text-secondary); font-size: var(--text-xs); }
+.sessionOption .modeTitle, .sessionActive .modeTitle { display: flex; align-items: center; gap: var(--space-2); color: var(--text-primary); font-size: var(--text-sm); font-weight: var(--weight-semibold); }
+.modeTitle i { display: block; width: 15px; height: 15px; border: 1px solid var(--border-strong); border-radius: var(--radius-full); }
+.sessionActive .modeTitle i { border: 4px solid var(--accent); }
+.infoTip { position: relative; display: inline-grid; width: 17px; height: 17px; margin-left: 3px; color: var(--text-secondary); border: 1px solid var(--border-strong); border-radius: var(--radius-full); cursor: help; font-size: 11px; font-weight: var(--weight-bold); place-items: center; }
+.infoTip > span { position: absolute; z-index: var(--z-overlay); bottom: calc(100% + 8px); left: 50%; width: 240px; padding: var(--space-3); color: var(--text-primary); background: var(--surface-elevated); border: 1px solid var(--border-strong); border-radius: var(--radius-md); box-shadow: var(--shadow-md); font-size: var(--text-xs); font-weight: var(--weight-regular); line-height: var(--leading-normal); opacity: 0; pointer-events: none; transform: translate(-50%, 4px); transition: opacity var(--duration-fast), transform var(--duration-fast); }
+.infoTip:hover > span, .infoTip:focus > span { opacity: 1; transform: translate(-50%, 0); }
+.toggleSetting { display: flex; width: 100%; align-items: center; justify-content: space-between; gap: var(--space-4); padding: var(--space-3) var(--space-4); color: var(--text-primary); text-align: left; }
+.toggleSetting + .toggleSetting { border-top: 1px solid var(--border); }
+.toggleSetting > span:first-child { display: flex; flex-direction: column; }
+.toggleSetting small { color: var(--text-secondary); }
+.switchOn, .switchOff { display: flex; flex: 0 0 38px; width: 38px; padding: 3px; background: var(--border-strong); border-radius: var(--radius-full); }
+.switchOn { justify-content: flex-end; background: var(--accent); }
+.switchOn span, .switchOff span { width: 16px; height: 16px; background: var(--surface); border-radius: var(--radius-full); }
+.resetDefaults { justify-self: start; color: var(--accent); font-size: var(--text-sm); font-weight: var(--weight-semibold); }
+
+@media (max-width: 700px) {
+  .presetGrid { grid-template-columns: repeat(2, 1fr); }
+  .customFields { grid-template-columns: 1fr 1fr; }
+  .intervalEditor > div:last-child { grid-template-columns: repeat(2, 1fr); }
+}
+
+@media (max-width: 480px) {
+  .presetGrid, .customFields, .sessionPicker > div:last-child { grid-template-columns: 1fr; }
+  .customize summary { align-items: flex-start; }
+  .customize summary em { flex-shrink: 0; }
+  .customBody { min-width: 0; }
+  .intervalEditor { padding: var(--space-3); }
+  .intervalEditor > div:last-child { grid-template-columns: 1fr; }
+  .infoTip > span { right: -8px; left: auto; width: min(240px, calc(100vw - 32px)); transform: translateY(4px); }
+  .infoTip:hover > span, .infoTip:focus > span { transform: translateY(0); }
+}

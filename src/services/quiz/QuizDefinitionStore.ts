@@ -1,4 +1,5 @@
 import type { PrelimsQuestion, QuizDefinition } from '../../types';
+import { readQuizRecoveryItem, removeQuizRecoveryItem, writeQuizRecoveryItem } from './QuizRecoveryStorage';
 
 const PREFIX = 'revision-engine:quiz-definition:';
 
@@ -36,12 +37,12 @@ export function objectiveQuizDefinition(definition: QuizDefinition): QuizDefinit
 export function saveQuizDefinition(definition: QuizDefinition): void {
   const objectiveDefinition = objectiveQuizDefinition(definition);
   if (!objectiveDefinition) return;
-  sessionStorage.setItem(`${PREFIX}${definition.id}`, JSON.stringify(objectiveDefinition));
+  writeQuizRecoveryItem(`${PREFIX}${definition.id}`, JSON.stringify(objectiveDefinition));
 }
 
 export function loadQuizDefinition(id: string): QuizDefinition | null {
   try {
-    const raw = sessionStorage.getItem(`${PREFIX}${id}`);
+    const raw = readQuizRecoveryItem(`${PREFIX}${id}`);
     return raw ? objectiveQuizDefinition(JSON.parse(raw) as QuizDefinition) : null;
   } catch {
     return null;
@@ -49,5 +50,5 @@ export function loadQuizDefinition(id: string): QuizDefinition | null {
 }
 
 export function removeQuizDefinition(id: string): void {
-  sessionStorage.removeItem(`${PREFIX}${id}`);
+  removeQuizRecoveryItem(`${PREFIX}${id}`);
 }

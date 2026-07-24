@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
-import type { Chapter, PrelimsQuestion, QuizQuestionSet } from '../../../types';
+import type { Chapter, PrelimsQuestion, QuizPurpose, QuizQuestionSet } from '../../../types';
 import { useElapsed } from '../../../hooks/useElapsed';
-import { announceQuizLock, useQuizSession, type QuizSettings } from '../../../hooks/useQuizSession';
+import { announceQuizLock, pauseQuizDraft, useQuizSession, type QuizSettings } from '../../../hooks/useQuizSession';
 import { useUserData } from '../../../context/UserDataContext';
 import { createId } from '../../../utils/id';
 import { Button } from '../../common/Button';
@@ -22,16 +22,19 @@ interface QuizSessionProps {
   questionSet: QuizQuestionSet;
   /** Original chapter by question id for cross-chapter generated quizzes. */
   questionChapterIds?: Readonly<Record<string, string>>;
+  questionSourceIds?: Readonly<Record<string, string>>;
   questionRevisionMeta?: Readonly<Record<string, { attempts: number; accuracy: number | null; level: number; reason: string }>>;
   studyQuote?: { quote: string; author: string; topics: readonly string[] };
-  purpose?: 'daily-revision';
+  purpose?: QuizPurpose;
   dailyDateKey?: string;
   /** Ephemeral interface preview: never persist a draft, attempt, result, or analytics event. */
   testRun?: boolean;
+  /** Finish a restored draft immediately after the user chooses Submit from recovery. */
+  submitOnMount?: boolean;
 }
 
 /** One live quiz run: active question flow → finished results. */
-export function QuizSession({ sessionId, chapter, questions, onComplete, onActiveChange, settings, questionSet, questionChapterIds, questionRevisionMeta, studyQuote, purpose, dailyDateKey, testRun = false }: QuizSessionProps) {
+export function QuizSession({ sessionId, chapter, questions, onComplete, onActiveChange, settings, questionSet, questionChapterIds, questionSourceIds, questionRevisionMeta, studyQuote, purpose, dailyDateKey, testRun = false, submitOnMount = false }: QuizSessionProps) {
   const pdfWorkspace = usePdfWorkspace();
   const quizId = sessionId;
   const { state, current, actions, summary } = useQuizSession(questions, quizId, settings, questionSet, !testRun);
@@ -60,6 +63,39 @@ export function QuizSession({ sessionId, chapter, questions, onComplete, onActiv
     : 0;
   const focusPenaltyTotal = penalizedInterruptions * state.settings.focusPenaltyPerLoss;
   const chapterPdf = pdfWorkspace.documents.find((item) => item.linkedChapterIds.includes(chapter.id)) ?? null;
+  const latestState = useRef(state);
+  latestState.current = state;
+  const submittedOnMount = useRef(false);
+
+  useEffect(() => {
+    if (!submitOnMount || submittedOnMount.current || state.status === 'finished') return;
+    submittedOnMount.current = true;
+    actions.finish();
+  }, [actions, state.status, submitOnMount]);
+
+  useEffect(() => {
+    if (!state.settings.allowPause || state.status !== 'active') return;
+    const pauseForRecovery = () => {
+      if (!testRun) pauseQuizDraft(quizId);
+      actions.pause();
+    };
+    const pauseWhenHidden = () => {
+      if (document.hidden) pauseForRecovery();
+    };
+    document.addEventListener('visibilitychange', pauseWhenHidden);
+    window.addEventListener('pagehide', pauseForRecovery);
+    return () => {
+      document.removeEventListener('visibilitychange', pauseWhenHidden);
+      window.removeEventListener('pagehide', pauseForRecovery);
+    };
+  }, [actions, quizId, state.settings.allowPause, state.status, testRun]);
+
+  useEffect(() => () => {
+    const latest = latestState.current;
+    if (!testRun && latest.status === 'active' && latest.settings.allowPause) {
+      pauseQuizDraft(quizId);
+    }
+  }, [quizId, testRun]);
 
   useEffect(() => {
     onActiveChange?.(state.status === 'active');
@@ -180,7 +216,8 @@ export function QuizSession({ sessionId, chapter, questions, onComplete, onActiv
     const perQuestion = questions.map((q) => {
       const selected = state.answers[q.id] ?? null;
       return {
-        questionId: q.id,
+        questionId: questionSourceIds?.[q.id] ?? q.id,
+        sessionQuestionId: questionSourceIds?.[q.id] ? q.id : undefined,
         chapterId: questionChapterIds?.[q.id] ?? chapter.id,
         questionStatement: q.statement,
         tags: q.tags,
@@ -229,7 +266,7 @@ export function QuizSession({ sessionId, chapter, questions, onComplete, onActiv
       onComplete(resultId.current, { correct: s.correct, total: s.total, answered: s.answered, skipped: s.skipped });
     };
     void finishNavigation();
-  }, [state.status, state.answers, state.settings, state.focusInterruptions, summary, recordQuizResult, onComplete, quizId, chapter.id, chapter.title, chapter.subject, questions, questionSet, questionChapterIds, focusLossCount, focusPenaltyTotal, timeLimitMs, purpose, dailyDateKey, testRun]);
+  }, [state.status, state.answers, state.settings, state.focusInterruptions, summary, recordQuizResult, onComplete, quizId, chapter.id, chapter.title, chapter.subject, questions, questionSet, questionChapterIds, questionSourceIds, focusLossCount, focusPenaltyTotal, timeLimitMs, purpose, dailyDateKey, testRun]);
 
   if (state.status === 'finished' && testRun) {
     const testSummary = summary();
@@ -352,7 +389,10 @@ export function QuizSession({ sessionId, chapter, questions, onComplete, onActiv
         <div className={styles.pausedBanner} role="status">
           <Icon name="clock" size={18} />
           <div><strong>Quiz paused</strong><span>The timer and all question controls are frozen.</span></div>
-          <Button variant="primary" size="sm" onClick={actions.resume}>Resume quiz</Button>
+          <div className={styles.pausedActions}>
+            <Button variant="primary" size="sm" onClick={actions.resume}>Resume quiz</Button>
+            <Button variant="secondary" size="sm" onClick={() => setSubmitOpen(true)}>Submit current answers</Button>
+          </div>
         </div>
       )}
       {focusInterrupted && !paused && (
@@ -374,15 +414,24 @@ export function QuizSession({ sessionId, chapter, questions, onComplete, onActiv
                   : ` · −${state.settings.focusPenaltyPerLoss} mark penalty`
               )}
             </div>
-            <Button variant="primary" onClick={() => {
-              interruptionOpen.current = false;
-              setFocusInterrupted(false);
-              if (!document.fullscreenElement) {
-                void document.documentElement.requestFullscreen().catch(() => undefined);
-              }
-            }}>
-              Return to quiz
-            </Button>
+            <div className={styles.focusActions}>
+              <Button variant="primary" onClick={() => {
+                interruptionOpen.current = false;
+                setFocusInterrupted(false);
+                if (!document.fullscreenElement) {
+                  void document.documentElement.requestFullscreen().catch(() => undefined);
+                }
+              }}>
+                Return to quiz
+              </Button>
+              <Button variant="secondary" onClick={() => {
+                interruptionOpen.current = false;
+                setFocusInterrupted(false);
+                setSubmitOpen(true);
+              }}>
+                Submit current answers
+              </Button>
+            </div>
           </section>
         </div>
       )}

@@ -83,6 +83,50 @@
   --content-max: 860px;
 }
 
+:root[data-font-scale='90'] {
+  --text-xs: 0.675rem;
+  --text-sm: 0.73125rem;
+  --text-base: 0.84375rem;
+  --text-md: 0.9rem;
+  --text-lg: 1.0125rem;
+  --text-xl: 1.2375rem;
+  --text-2xl: 1.575rem;
+  --text-3xl: 2.025rem;
+}
+
+:root[data-font-scale='110'] {
+  --text-xs: 0.825rem;
+  --text-sm: 0.89375rem;
+  --text-base: 1.03125rem;
+  --text-md: 1.1rem;
+  --text-lg: 1.2375rem;
+  --text-xl: 1.5125rem;
+  --text-2xl: 1.925rem;
+  --text-3xl: 2.475rem;
+}
+
+:root[data-font-scale='120'] {
+  --text-xs: 0.9rem;
+  --text-sm: 0.975rem;
+  --text-base: 1.125rem;
+  --text-md: 1.2rem;
+  --text-lg: 1.35rem;
+  --text-xl: 1.65rem;
+  --text-2xl: 2.1rem;
+  --text-3xl: 2.7rem;
+}
+
+:root[data-font-scale='130'] {
+  --text-xs: 0.975rem;
+  --text-sm: 1.05625rem;
+  --text-base: 1.21875rem;
+  --text-md: 1.3rem;
+  --text-lg: 1.4625rem;
+  --text-xl: 1.7875rem;
+  --text-2xl: 2.275rem;
+  --text-3xl: 2.925rem;
+}
+
 /* ---- Light theme (default) -------------------------------------------- */
 :root,
 :root[data-theme='light'] {

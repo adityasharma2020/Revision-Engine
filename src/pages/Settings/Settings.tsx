@@ -1,6 +1,6 @@
 import { useEffect, useState, useSyncExternalStore, type ReactNode } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
-import { Button, Icon, replayFirstVisitTour, Tabs, ThemeToggle } from '../../components/common';
+import { Button, DisplayQuickSettings, Icon, replayFirstVisitTour, Tabs, ThemeToggle } from '../../components/common';
 import { AccountPanel } from '../../components/auth/AccountPanel';
 import { Page, PageHeader } from '../../components/layout';
 import { useStorage } from '../../context/StorageContext';
@@ -388,6 +388,16 @@ export function Settings() {
                 <p className={styles.rowDesc}>Choose light, dark, or follow your system.</p>
               </div>
               <ThemeToggle />
+            </div>
+          </section>
+
+          <section className={styles.group}>
+            <div className={styles.row}>
+              <div className={styles.rowText}>
+                <h3 className={styles.rowTitle}>Full screen &amp; text size</h3>
+                <p className={styles.rowDesc}>Hide the tablet’s system bars while studying and resize text across every page.</p>
+              </div>
+              <DisplayQuickSettings className={styles.displayQuickSettings} labelled />
             </div>
           </section>
 

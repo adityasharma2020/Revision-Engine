@@ -14,6 +14,10 @@
   grid-template-columns: 80px minmax(0, 1fr);
 }
 
+.fullscreenExit { position: fixed; z-index: var(--z-toast); top: max(var(--space-3), env(safe-area-inset-top)); right: max(var(--space-3), env(safe-area-inset-right)); display: inline-flex; min-height: 38px; align-items: center; gap: var(--space-2); padding: 0 var(--space-3); color: var(--text-primary); background: color-mix(in srgb, var(--surface-elevated) 92%, transparent); border: 1px solid var(--border-strong); border-radius: var(--radius-full); box-shadow: var(--shadow-md); backdrop-filter: blur(12px); }
+.fullscreenExit:hover { color: var(--accent); border-color: var(--accent); }
+.fullscreenExit span { font-size: var(--text-xs); font-weight: var(--weight-medium); }
+
 .guardBackdrop {
   position: fixed;
   inset: 0;

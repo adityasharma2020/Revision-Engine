@@ -12,6 +12,7 @@ export { AsyncBoundary } from './AsyncBoundary';
 export { Tabs } from './Tabs';
 export type { TabItem } from './Tabs';
 export { ThemeToggle } from './ThemeToggle';
+export { DisplayQuickSettings } from './DisplayQuickSettings';
 export { ErrorBoundary } from './ErrorBoundary';
 export { FirstVisitTour, replayFirstVisitTour } from './FirstVisitTour';
 export { UserAvatar } from './UserAvatar';

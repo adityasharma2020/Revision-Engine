@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useReducer } from 'react';
 import type { PrelimsQuestion, QuizAnswerMap, QuizQuestionSet, QuizSettings } from '../types';
+import { listQuizRecoveryKeys, readQuizRecoveryItem, removeQuizRecoveryItem, writeQuizRecoveryItem } from '../services/quiz/QuizRecoveryStorage';
 export type { QuizSettings } from '../types';
 
 export interface QuizSessionState {
@@ -103,31 +104,27 @@ export function findActiveQuizDraft(): {
     questionSet?: QuizQuestionSet;
   } & { startedAt: number }) | null = null;
   try {
-    for (let index = 0; index < sessionStorage.length; index += 1) {
-      const key = sessionStorage.key(index);
-      if (key?.startsWith(QUIZ_DRAFT_PREFIX)) {
-        try {
-          const quizId = key.slice(QUIZ_DRAFT_PREFIX.length);
-          if (!sessionStorage.getItem(`${QUIZ_DEFINITION_PREFIX}${quizId}`)) {
-            sessionStorage.removeItem(key);
-            index -= 1;
-            continue;
-          }
-          const raw = sessionStorage.getItem(key);
-          const draft = raw ? JSON.parse(raw) as StoredQuizDraft : null;
-          if (!draft || !['active', 'paused'].includes(draft.state.status)) continue;
-          const candidate = {
-            quizId,
-            status: draft.state.status as 'active' | 'paused',
-            settings: settingsFromDraft(draft.state),
-            questionIds: draft.questionIds ?? [],
-            questionSet: draft.questionSet,
-            startedAt: draft.state.startedAt ?? 0,
-          };
-          if (!latest || candidate.startedAt > latest.startedAt) latest = candidate;
-        } catch {
-          // Ignore a corrupt/stale entry and continue looking for a valid run.
+    for (const key of listQuizRecoveryKeys(QUIZ_DRAFT_PREFIX)) {
+      try {
+        const quizId = key.slice(QUIZ_DRAFT_PREFIX.length);
+        if (!readQuizRecoveryItem(`${QUIZ_DEFINITION_PREFIX}${quizId}`)) {
+          removeQuizRecoveryItem(key);
+          continue;
         }
+        const raw = readQuizRecoveryItem(key);
+        const draft = raw ? JSON.parse(raw) as StoredQuizDraft : null;
+        if (!draft || !['active', 'paused'].includes(draft.state.status)) continue;
+        const candidate = {
+          quizId,
+          status: draft.state.status as 'active' | 'paused',
+          settings: settingsFromDraft(draft.state),
+          questionIds: draft.questionIds ?? [],
+          questionSet: draft.questionSet,
+          startedAt: draft.state.startedAt ?? 0,
+        };
+        if (!latest || candidate.startedAt > latest.startedAt) latest = candidate;
+      } catch {
+        // Ignore a corrupt/stale entry and continue looking for a valid run.
       }
     }
   } catch {
@@ -146,7 +143,7 @@ export function announceQuizLock(quizId: string | null, locked = false): void {
 
 export function abandonQuizDraft(quizId: string): void {
   try {
-    sessionStorage.removeItem(quizDraftKey(quizId));
+    removeQuizRecoveryItem(quizDraftKey(quizId));
   } finally {
     announceQuizLock(null, false);
   }
@@ -159,7 +156,7 @@ function settingsFromDraft(state?: QuizSessionState & { policy?: 'standard' | 's
 
 function restoreDraft(key: string, questions: readonly PrelimsQuestion[], settings: QuizSettings): QuizSessionState {
   try {
-    const raw = sessionStorage.getItem(key);
+    const raw = readQuizRecoveryItem(key);
     if (!raw) return init(questions.length, settings);
     const draft = JSON.parse(raw) as StoredQuizDraft;
     const ids = questions.map((question) => question.id);
@@ -169,7 +166,7 @@ function restoreDraft(key: string, questions: readonly PrelimsQuestion[], settin
       draft.state.total !== questions.length ||
       draft.questionIds.join('\n') !== ids.join('\n')
     ) {
-      sessionStorage.removeItem(key);
+      removeQuizRecoveryItem(key);
       return init(questions.length, settings);
     }
     return {
@@ -179,19 +176,52 @@ function restoreDraft(key: string, questions: readonly PrelimsQuestion[], settin
       focusInterruptions: draft.state.focusInterruptions ?? [],
     };
   } catch {
-    sessionStorage.removeItem(key);
+    removeQuizRecoveryItem(key);
     return init(questions.length, settings);
   }
 }
 
 export function hasQuizDraft(quizId: string): boolean {
   try {
-    const raw = sessionStorage.getItem(quizDraftKey(quizId));
+    const raw = readQuizRecoveryItem(quizDraftKey(quizId));
     if (!raw) return false;
     const draft = JSON.parse(raw) as StoredQuizDraft;
     return draft.state.status === 'active' || draft.state.status === 'paused';
   } catch {
     return false;
+  }
+}
+
+export function updateQuizDraftSettings(quizId: string, settings: QuizSettings): void {
+  const key = quizDraftKey(quizId);
+  try {
+    const raw = readQuizRecoveryItem(key);
+    if (!raw) return;
+    const draft = JSON.parse(raw) as StoredQuizDraft;
+    writeQuizRecoveryItem(key, JSON.stringify({ ...draft, state: { ...draft.state, settings } }));
+  } catch {
+    // A damaged draft is handled by the normal session recovery path.
+  }
+}
+
+/** Freeze a recoverable standard quiz before its React screen is left. */
+export function pauseQuizDraft(quizId: string): void {
+  const key = quizDraftKey(quizId);
+  try {
+    const raw = readQuizRecoveryItem(key);
+    if (!raw) return;
+    const draft = JSON.parse(raw) as StoredQuizDraft;
+    if (draft.state.status !== 'active' || !settingsFromDraft(draft.state).allowPause) return;
+    writeQuizRecoveryItem(key, JSON.stringify({
+      ...draft,
+      state: {
+        ...draft.state,
+        status: 'paused',
+        pausedAt: Date.now(),
+      },
+    }));
+  } catch {
+    // Leave recovery to the normal validation path if this draft is damaged.
   }
 }
 
@@ -296,7 +326,7 @@ export function useQuizSession(
   useEffect(() => {
     if (!persist) return;
     if (state.status === 'finished') {
-      sessionStorage.removeItem(draftKey);
+      removeQuizRecoveryItem(draftKey);
       return;
     }
     const draft: StoredQuizDraft = {
@@ -305,7 +335,7 @@ export function useQuizSession(
       questionSet,
       state,
     };
-    sessionStorage.setItem(draftKey, JSON.stringify(draft));
+    writeQuizRecoveryItem(draftKey, JSON.stringify(draft));
   }, [draftKey, persist, questionSet, questions, state]);
 
   useEffect(() => {

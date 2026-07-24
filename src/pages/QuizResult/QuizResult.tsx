@@ -43,6 +43,11 @@ export function QuizResultPage() {
 }
 
 function LoadedResult({ result }: { result: QuizResult }) {
+  const resultHome = result.purpose === 'practice' || result.chapterId === 'practice-quiz'
+    ? Routes.practice
+    : result.purpose === 'daily-revision' || result.chapterId === 'daily-revision'
+      ? Routes.revision
+      : Routes.chapter(result.chapterId);
   const chapterSnapshot = useMemo(() => result.questions?.length ? ({
       id: result.chapterId,
       title: result.chapterTitle ?? 'Generated quiz',
@@ -73,14 +78,14 @@ function LoadedResult({ result }: { result: QuizResult }) {
 
   return (
     <>
-      <Link to={result.chapterId === 'daily-revision' ? Routes.revision : Routes.chapter(result.chapterId)} className={styles.back}>
+      <Link to={resultHome} className={styles.back}>
         <Icon name="arrowLeft" size={16} />
         Quiz history
       </Link>
       <AsyncBoundary state={chapterState} loadingLabel="Loading result details…">
         {(chapter) => {
           const reviewedIds = result.perQuestion?.length
-            ? new Set(result.perQuestion.map((question) => question.questionId))
+            ? new Set(result.perQuestion.map((question) => question.sessionQuestionId ?? question.questionId))
             : null;
           const questions = reviewedIds
             ? chapter.prelims.filter((question) => reviewedIds.has(question.id))
@@ -101,6 +106,7 @@ function LoadedResult({ result }: { result: QuizResult }) {
                     {(result.purpose === 'daily-revision' || result.chapterId === 'daily-revision') && (
                       <span>Daily Revision · {new Intl.DateTimeFormat(undefined, { day: 'numeric', month: 'short', year: 'numeric' }).format(result.dailyDateKey ? new Date(`${result.dailyDateKey}T12:00:00`) : result.takenAt)}</span>
                     )}
+                    {(result.purpose === 'practice' || result.chapterId === 'practice-quiz') && <span>Practice Quiz · unlimited session</span>}
                     {result.timedOut && <span>Time expired · automatically submitted</span>}
                     <span>
                       {result.totalQuestions}/{result.questionSet?.sourceQuestionCount ?? result.totalQuestions} questions
@@ -189,15 +195,15 @@ function LoadedResult({ result }: { result: QuizResult }) {
               }}
               questionHistory={questionAttemptStats(quizResults, result.chapterId)}
               onAnalyticsChange={(included) => setQuizResultAnalytics(result.id, included)}
-              onRetry={() => navigate(result.chapterId === 'daily-revision' ? Routes.revision : Routes.chapter(result.chapterId))}
-              onExit={() => navigate(result.chapterId === 'daily-revision' ? Routes.revision : Routes.chapter(result.chapterId))}
+              onRetry={() => navigate(resultHome)}
+              onExit={() => navigate(resultHome)}
               />
               {deleteOpen && <DeleteQuizDialog result={result} onClose={() => setDeleteOpen(false)} onDeleted={() => {
                 if (shareToken) void revokeQuizShare(shareToken);
                 if (assignment?.resultId === result.id) {
                   clearAssignment();
                 }
-                navigate(result.purpose === 'daily-revision' || result.chapterId === 'daily-revision' ? Routes.revision : Routes.chapter(result.chapterId), { replace: true });
+                navigate(resultHome, { replace: true });
               }} />}
             </>
           );

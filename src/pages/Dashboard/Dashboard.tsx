@@ -12,7 +12,7 @@ import { useRevisionPreferences } from '../../hooks/useRevisionPreferences';
 import { useDailyRevisionAssignment } from '../../hooks/useDailyRevisionAssignment';
 import { getQuizPerformance } from '../../utils/quizPerformance';
 import { useSavedQuizSettings } from '../../hooks/useSavedQuizSettings';
-import { quizDraftKey } from '../../hooks/useQuizSession';
+import { hasQuizDraft, updateQuizDraftSettings } from '../../hooks/useQuizSession';
 import { saveQuizDefinition } from '../../services/quiz';
 import type { QuizSettings } from '../../types';
 import { QuizLaunchDialog } from '../../components/quiz/QuizLaunchDialog';
@@ -59,7 +59,7 @@ function HomeContent({ chapters }: { chapters: readonly ChapterSummary[] }) {
     : null;
   const continueChapter = recent[0] ?? chapters[0];
   const activeDraftExists = assignment?.status === 'active'
-    ? sessionStorage.getItem(quizDraftKey(assignment.definition.id)) !== null
+    ? hasQuizDraft(assignment.definition.id)
     : false;
   const openPreflight = () => {
     if (assignment?.status === 'completed') {
@@ -77,16 +77,7 @@ function HomeContent({ chapters }: { chapters: readonly ChapterSummary[] }) {
       if (!activeDraftExists) {
         navigate(Routes.quizSession(definition.id));
       } else {
-        const key = quizDraftKey(definition.id);
-        try {
-          const raw = sessionStorage.getItem(key);
-          if (raw) {
-            const draft = JSON.parse(raw) as { state?: { settings?: QuizSettings } };
-            if (draft.state) sessionStorage.setItem(key, JSON.stringify({ ...draft, state: { ...draft.state, settings: quickSettings } }));
-          }
-        } catch {
-          // A damaged draft is handled by the quiz session recovery path.
-        }
+        updateQuizDraftSettings(definition.id, quickSettings);
         navigate(Routes.quizSession(definition.id));
       }
     } else {

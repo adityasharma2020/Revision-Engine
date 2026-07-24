@@ -32,6 +32,10 @@ export function AppSettingsProvider({ children }: { children: ReactNode }) {
     document.documentElement.toggleAttribute('data-reduce-motion', settings.accessibility.reduceMotion);
   }, [settings.accessibility.reduceMotion]);
 
+  useEffect(() => {
+    document.documentElement.dataset.fontScale = String(settings.accessibility.fontScale);
+  }, [settings.accessibility.fontScale]);
+
   const update = useCallback((next: AppSettings | ((current: AppSettings) => AppSettings)) => {
     setSettings((current) => {
       const value = typeof next === 'function' ? next(current) : next;

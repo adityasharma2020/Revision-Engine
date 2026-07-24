@@ -5,16 +5,17 @@ import { Page, PageHeader } from '../../components/layout';
 import { Routes } from '../../constants/routes';
 import { useServices } from '../../context/ServicesContext';
 import { useUserData } from '../../context/UserDataContext';
-import { STANDARD_QUIZ_SETTINGS } from '../../hooks/useQuizSession';
+import { STANDARD_QUIZ_SETTINGS, STRICT_QUIZ_SETTINGS } from '../../hooks/useQuizSession';
 import { useRevisionPreferences } from '../../hooks/useRevisionPreferences';
 import { useLibrary } from '../../hooks/useChapters';
 import { RevisionEngine } from '../../services/revision';
-import type { ChapterSummary, QuizDefinition, RevisionQueue } from '../../types';
+import type { ChapterSummary, QuizDefinition, RevisionPreferences, RevisionQueue } from '../../types';
 import { DEFAULT_REVISION_PREFERENCES } from '../../types/revision';
 import { createId } from '../../utils/id';
 import { saveQuizDefinition } from '../../services/quiz';
 import { localDateKey, useDailyRevisionAssignment } from '../../hooks/useDailyRevisionAssignment';
 import { getQuizPerformance } from '../../utils/quizPerformance';
+import { RevisionEngineSettings, type RevisionEngineConfiguration } from '../../components/revision/RevisionEngineSettings';
 import styles from './DailyRevision.module.css';
 
 export function DailyRevision() {
@@ -57,7 +58,9 @@ export function DailyRevision() {
     const questions = revisionQueue.recommendations.map((item) => item.question);
     const quizId = createId();
     const dateKey = localDateKey();
-    const sessionSettings = { ...STANDARD_QUIZ_SETTINGS };
+    const sessionSettings = preferences.sessionMode === 'strict'
+      ? { ...STRICT_QUIZ_SETTINGS }
+      : { ...STANDARD_QUIZ_SETTINGS };
     const definition: QuizDefinition = {
       id: quizId,
       chapter: {
@@ -101,7 +104,7 @@ export function DailyRevision() {
       attemptNumber: 1,
     });
     navigate(Routes.quizSession(quizId));
-  }, [assignment, navigate, openAssignment, preferences.examName, quote, saveAssignment]);
+  }, [assignment, navigate, openAssignment, preferences.examName, preferences.sessionMode, quote, saveAssignment]);
 
   useEffect(() => {
     const controller = new AbortController();
@@ -198,7 +201,12 @@ export function DailyRevision() {
 
   return (
     <Page narrow>
-      <PageHeader eyebrow="Your revision command centre" title="Daily Revision" description="A powerful scheduled system that remembers what you know—and what you are likely to forget." />
+      <PageHeader
+        eyebrow="Your revision command centre"
+        title="Daily Revision"
+        description="A powerful scheduled system that remembers what you know—and what you are likely to forget."
+        actions={<Button variant="secondary" onClick={() => navigate(Routes.practice)}><Icon name="flame" size={16} />Practice anytime</Button>}
+      />
       <AsyncBoundary state={library} loadingLabel="Preparing your revision queue…">
         {(chapters) => (
           <div className={styles.layout}>
@@ -254,45 +262,26 @@ export function DailyRevision() {
               </div>
               {preferences.includedChapterIds.length === 0 && <p className={styles.setupHint}>Choose at least one chapter you have studied before generating revision.</p>}
               {generateError && <p className={styles.setupHint} role="alert">{generateError}</p>}
-              <details className={styles.customize}>
-                <summary><span><strong>Customize revision</strong><small>Capacity, new questions, intervals, mistakes and ordering</small></span><em>Optional</em></summary>
-                <div className={styles.customBody}>
-                  <div className={styles.presetGrid}>
-                    <PresetButton title="Balanced" description="10 questions · optimal daily pace" active={preferences.dailyQuestionLimit === 10 && preferences.wrongReturnDays === 1 && preferences.wrongLevelDrop === 2} onClick={() => update({ ...preferences, dailyQuestionLimit: 10, newQuestionPercent: 100, fillDailyCapacity: true, wrongReturnDays: 1, skippedReturnDays: 1, wrongLevelDrop: 2, skippedLevelDrop: 1, balanceSubjects: true, prioritizeBookmarks: true, correctIntervals: [1, 3, 7, 15, 30, 60, 120, 180] })} />
-                    <PresetButton title="Light" description="5 questions · gentle pace" active={preferences.dailyQuestionLimit === 5} onClick={() => update({ ...preferences, dailyQuestionLimit: 5, newQuestionPercent: 100, fillDailyCapacity: true, wrongReturnDays: 2, skippedReturnDays: 2, correctIntervals: [1, 3, 7, 15, 30, 60, 120, 180] })} />
-                    <PresetButton title="Intensive" description="40 questions · faster return" active={preferences.dailyQuestionLimit === 40} onClick={() => update({ ...preferences, dailyQuestionLimit: 40, newQuestionPercent: 25, wrongReturnDays: 1, skippedReturnDays: 1, wrongLevelDrop: 3, skippedLevelDrop: 2, correctIntervals: [1, 2, 5, 10, 21, 45, 90, 150] })} />
-                    <PresetButton title="Exam sprint" description="75 questions · rapid cycles" active={preferences.dailyQuestionLimit === 75} onClick={() => update({ ...preferences, dailyQuestionLimit: 75, newQuestionPercent: 10, wrongReturnDays: 1, skippedReturnDays: 1, wrongLevelDrop: 3, skippedLevelDrop: 2, correctIntervals: [1, 2, 4, 7, 15, 30, 60, 90] })} />
-                  </div>
-                  <div className={styles.customFields}>
-                    <SelectSetting label="Daily capacity" help="The saved target for each daily queue. Due questions come first; unseen questions fill remaining slots." value={preferences.dailyQuestionLimit} options={[5, 10, 15, 20, 25, 30, 40, 50, 75, 100]} suffix="questions" onChange={(value) => update({ ...preferences, dailyQuestionLimit: value })} />
-                    <SelectSetting label="Unseen allowance" help="The largest share of unused queue space that new questions may occupy. Due reviews always take priority." value={preferences.newQuestionPercent} options={[0, 10, 20, 25, 30, 40, 50]} suffix="%" onChange={(value) => update({ ...preferences, newQuestionPercent: value })} />
-                    <SelectSetting label="Wrong returns after" help="A wrong answer becomes eligible again after this many days, regardless of its previous interval." value={preferences.wrongReturnDays} options={[1, 2, 3, 5, 7]} suffix="days" onChange={(value) => update({ ...preferences, wrongReturnDays: value })} />
-                    <SelectSetting label="Skipped returns after" help="A skipped or unanswered question becomes eligible again after this many days." value={preferences.skippedReturnDays} options={[1, 2, 3, 5, 7]} suffix="days" onChange={(value) => update({ ...preferences, skippedReturnDays: value })} />
-                    <SelectSetting label="Wrong progress penalty" help="How many successful-review stages a wrong answer loses. A larger drop makes later correct intervals shorter." value={preferences.wrongLevelDrop} options={[1, 2, 3, 4]} suffix="stages" onChange={(value) => update({ ...preferences, wrongLevelDrop: value })} />
-                    <SelectSetting label="Skipped progress penalty" help="How many successful-review stages a skipped answer loses. Zero keeps its current stage." value={preferences.skippedLevelDrop} options={[0, 1, 2, 3]} suffix="stages" onChange={(value) => update({ ...preferences, skippedLevelDrop: value })} />
-                  </div>
-                  <div className={styles.sessionPicker}>
-                    <div><strong>How should the session run?</strong><small>This choice is saved and used for future daily queues.</small></div>
-                    <div>
-                      <button type="button" className={preferences.sessionMode === 'standard' ? styles.sessionActive : styles.sessionOption} aria-pressed={preferences.sessionMode === 'standard'} onClick={() => update({ ...preferences, sessionMode: 'standard' })}><span className={styles.modeTitle}><i />Standard session</span><strong>Flexible daily study</strong><span>Pause when needed · navigation stays protected · no focus-exit penalties</span></button>
-                      <button type="button" className={preferences.sessionMode === 'strict' ? styles.sessionActive : styles.sessionOption} aria-pressed={preferences.sessionMode === 'strict'} onClick={() => update({ ...preferences, sessionMode: 'strict' })}><span className={styles.modeTitle}><i />Strict exam conditions</span><strong>Focused test environment</strong><span>No pause · fullscreen · tab switching tracked · negative marking enabled</span></button>
-                    </div>
-                  </div>
-                  <div className={styles.intervalEditor}>
-                    <div><strong>Wait after consecutive correct reviews <InfoTip text="Each correct review advances the question one stage. These values decide how many days it stays hidden before becoming due again." /></strong><small>The question remains unavailable until its next due date.</small></div>
-                    <div>{preferences.correctIntervals.slice(1).map((days, index) => <label key={index}><span>After correct #{index + 1}</span><div><input aria-label={`Days after correct review ${index + 1}`} type="number" min="1" max="365" value={days} onChange={(event) => { const next = [...preferences.correctIntervals]; next[index + 1] = Math.max(1, Number(event.target.value)); update({ ...preferences, correctIntervals: next }); }} /><em>days</em></div></label>)}</div>
-                  </div>
-                  <div className={styles.toggleList}>
-                    <ToggleSetting label="Fill the saved daily capacity" description="After due questions, use unseen questions from selected chapters until the daily target is reached." checked={preferences.fillDailyCapacity} onChange={() => update({ ...preferences, fillDailyCapacity: !preferences.fillDailyCapacity })} />
-                    <ToggleSetting label="Balance subjects" description="Rotate between subjects instead of allowing one subject to dominate." checked={preferences.balanceSubjects} onChange={() => update({ ...preferences, balanceSubjects: !preferences.balanceSubjects })} />
-                    <ToggleSetting label="Prioritise bookmarks" description="Move bookmarked questions higher when they become eligible." checked={preferences.prioritizeBookmarks} onChange={() => update({ ...preferences, prioritizeBookmarks: !preferences.prioritizeBookmarks })} />
-                  </div>
-                  <button type="button" className={styles.resetDefaults} onClick={() => update({ ...DEFAULT_REVISION_PREFERENCES, includedChapterIds: preferences.includedChapterIds })}>Reset scheduling to defaults</button>
-                </div>
-              </details>
+              <DailyEngineSettings preferences={preferences} update={update} />
             </section>}
 
-            {!assignment && showChapters && (
+            {assignment && <section className={styles.setup}>
+              <div className={styles.setupHead}>
+                <span className={styles.mark}><Icon name="settings" size={22} /></span>
+                <div><h2>Daily engine settings</h2><p>Today’s saved quiz will not change. Updates here apply to the next Daily Revision.</p></div>
+              </div>
+              <div className={styles.estimate}>
+                <strong>Next daily target: {preferences.dailyQuestionLimit} questions</strong>
+                <span>{preferences.includedChapterIds.length} chapters · independent from Practice Quiz settings</span>
+              </div>
+              <div className={styles.setupActions}>
+                <Button size="lg" variant="secondary" onClick={() => setShowChapters((open) => !open)}>{showChapters ? 'Hide daily chapters' : 'Choose daily chapters'}</Button>
+                <Button size="lg" variant="secondary" onClick={() => navigate(Routes.practice)}><Icon name="flame" size={16} />Open separate Practice engine</Button>
+              </div>
+              <DailyEngineSettings preferences={preferences} update={update} />
+            </section>}
+
+            {showChapters && (
               <section className={styles.chapterPicker}>
                 <div className={styles.chapterPickerHead}><div><h2>Studied chapters</h2><p>Only selected chapters can contribute questions to daily revision.</p></div><span>{preferences.includedChapterIds.length} selected</span></div>
                 <div className={styles.chapterTools}>
@@ -369,18 +358,37 @@ export function DailyRevision() {
   );
 }
 
-function PresetButton({ title, description, active, onClick }: { title: string; description: string; active: boolean; onClick: () => void }) {
-  return <button type="button" className={active ? styles.presetActive : styles.preset} onClick={onClick}><strong>{title}</strong><span>{description}</span></button>;
-}
-
-function SelectSetting({ label, help, value, options, suffix, onChange }: { label: string; help: string; value: number; options: readonly number[]; suffix: string; onChange: (value: number) => void }) {
-  return <label><span>{label} <InfoTip text={help} /></span><select value={value} onChange={(event) => onChange(Number(event.target.value))}>{options.map((option) => <option key={option} value={option}>{option} {suffix}</option>)}</select></label>;
-}
-
-function InfoTip({ text }: { text: string }) {
-  return <span className={styles.infoTip} tabIndex={0} aria-label={text}>?<span role="tooltip">{text}</span></span>;
-}
-
-function ToggleSetting({ label, description, checked, onChange }: { label: string; description: string; checked: boolean; onChange: () => void }) {
-  return <button type="button" className={styles.toggleSetting} role="switch" aria-checked={checked} onClick={onChange}><span><strong>{label}</strong><small>{description}</small></span><span className={checked ? styles.switchOn : styles.switchOff}><span /></span></button>;
+function DailyEngineSettings({ preferences, update }: { preferences: RevisionPreferences; update: (next: RevisionPreferences) => void }) {
+  const value: RevisionEngineConfiguration = {
+    questionLimit: preferences.dailyQuestionLimit,
+    newQuestionPercent: preferences.newQuestionPercent,
+    correctIntervals: preferences.correctIntervals,
+    wrongReturnDays: preferences.wrongReturnDays,
+    skippedReturnDays: preferences.skippedReturnDays,
+    wrongLevelDrop: preferences.wrongLevelDrop,
+    skippedLevelDrop: preferences.skippedLevelDrop,
+    balanceSubjects: preferences.balanceSubjects,
+    prioritizeBookmarks: preferences.prioritizeBookmarks,
+    sessionMode: preferences.sessionMode,
+    fillCapacity: preferences.fillDailyCapacity,
+  };
+  return <RevisionEngineSettings
+    scope="Daily"
+    value={value}
+    onChange={(next) => update({
+      ...preferences,
+      dailyQuestionLimit: next.questionLimit,
+      newQuestionPercent: next.newQuestionPercent,
+      correctIntervals: next.correctIntervals,
+      wrongReturnDays: next.wrongReturnDays,
+      skippedReturnDays: next.skippedReturnDays,
+      wrongLevelDrop: next.wrongLevelDrop,
+      skippedLevelDrop: next.skippedLevelDrop,
+      balanceSubjects: next.balanceSubjects,
+      prioritizeBookmarks: next.prioritizeBookmarks,
+      sessionMode: next.sessionMode,
+      fillDailyCapacity: next.fillCapacity,
+    })}
+    onReset={() => update({ ...DEFAULT_REVISION_PREFERENCES, includedChapterIds: preferences.includedChapterIds })}
+  />;
 }

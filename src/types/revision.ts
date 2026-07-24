@@ -39,6 +39,49 @@ export const DEFAULT_REVISION_PREFERENCES: RevisionPreferences = {
   fillDailyCapacity: true,
 };
 
+/** A separate scheduler configuration for unlimited, user-started practice. */
+export interface PracticePreferences {
+  readonly schemaVersion: 2;
+  readonly questionLimit: number;
+  /** @deprecated Kept for migration from the first Practice release. */
+  readonly selectionMode: 'adaptive' | 'review' | 'new';
+  /** Null means use every available chapter until the user customises sources. */
+  readonly includedChapterIds: readonly string[] | null;
+  readonly newQuestionPercent: number;
+  readonly correctIntervals: readonly number[];
+  readonly wrongReturnDays: number;
+  readonly skippedReturnDays: number;
+  readonly wrongLevelDrop: number;
+  readonly skippedLevelDrop: number;
+  readonly balanceSubjects: boolean;
+  readonly prioritizeBookmarks: boolean;
+  readonly fillPracticeCapacity: boolean;
+  readonly includeScheduled: boolean;
+  readonly excludeTodaysDailyQuestions: boolean;
+  readonly sessionMode: 'standard' | 'strict';
+  readonly examDate: string | null;
+}
+
+export const DEFAULT_PRACTICE_PREFERENCES: PracticePreferences = {
+  schemaVersion: 2,
+  questionLimit: 10,
+  selectionMode: 'adaptive',
+  includedChapterIds: null,
+  newQuestionPercent: 20,
+  correctIntervals: [1, 3, 7, 15, 30, 60, 120, 180],
+  wrongReturnDays: 1,
+  skippedReturnDays: 1,
+  wrongLevelDrop: 2,
+  skippedLevelDrop: 1,
+  balanceSubjects: true,
+  prioritizeBookmarks: true,
+  fillPracticeCapacity: true,
+  includeScheduled: false,
+  excludeTodaysDailyQuestions: true,
+  sessionMode: 'standard',
+  examDate: null,
+};
+
 export interface RevisionCandidate {
   readonly chapter: Chapter;
   readonly question: Chapter['prelims'][number];
@@ -70,6 +113,10 @@ export interface RevisionQuery {
   readonly balanceSubjects: boolean;
   readonly prioritizeBookmarks: boolean;
   readonly fillDailyCapacity: boolean;
+  /** Optional on-demand practice policy. Daily revision keeps the adaptive default. */
+  readonly selectionMode?: 'adaptive' | 'review' | 'new';
+  /** Practice may fill remaining capacity with not-yet-due questions. */
+  readonly includeScheduled?: boolean;
 }
 
 export interface RevisionContext {
@@ -86,6 +133,7 @@ export interface RevisionQueue {
   readonly availableCount: number;
   readonly dueCount: number;
   readonly newCount: number;
+  readonly scheduledCount: number;
   readonly totalDueCount: number;
   readonly enrolledChapterCount: number;
 }

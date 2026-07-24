@@ -9,10 +9,12 @@ import type {
   RevisionPreferences,
   QuizSettings,
   DailyRevisionAssignment,
+  PracticePreferences,
   ActiveFocusSession,
   CompletedFocusSessionList,
 } from '../../types';
 import { DEFAULT_REVISION_PREFERENCES } from '../../types/revision';
+import { DEFAULT_PRACTICE_PREFERENCES } from '../../types/revision';
 import { StorageKeys } from './keys';
 import type { KeyValueStore } from './types';
 
@@ -36,6 +38,8 @@ export interface AppSettings {
   };
   readonly accessibility: {
     readonly reduceMotion: boolean;
+    /** Global text scale, expressed as a percentage from 90–130. */
+    readonly fontScale: number;
   };
   readonly focusTimer: {
     readonly enabled: boolean;
@@ -60,7 +64,7 @@ export const DEFAULT_SETTINGS: AppSettings = {
     weeklySummaryTime: '18:00',
     timezone: 'UTC',
   },
-  accessibility: { reduceMotion: false },
+  accessibility: { reduceMotion: false, fontScale: 100 },
   focusTimer: { enabled: false, defaultMinutes: 30, allowPause: true, midpointNudge: true, opacity: 35, size: 20 },
 };
 
@@ -168,7 +172,11 @@ export class StorageService {
       ...stored,
       dashboard: { ...DEFAULT_SETTINGS.dashboard, ...stored?.dashboard },
       notifications: { ...DEFAULT_SETTINGS.notifications, ...stored?.notifications },
-      accessibility: { ...DEFAULT_SETTINGS.accessibility, ...stored?.accessibility },
+      accessibility: {
+        ...DEFAULT_SETTINGS.accessibility,
+        ...stored?.accessibility,
+        fontScale: Math.min(130, Math.max(90, stored?.accessibility?.fontScale ?? 100)),
+      },
       focusTimer: {
         ...DEFAULT_SETTINGS.focusTimer,
         ...stored?.focusTimer,
@@ -217,6 +225,32 @@ export class StorageService {
 
   async saveRevisionPreferences(preferences: RevisionPreferences): Promise<void> {
     await this.store.set(StorageKeys.revisionPreferences, preferences);
+  }
+
+  async loadPracticePreferences(): Promise<PracticePreferences> {
+    const stored = await this.store.get<Partial<PracticePreferences>>(StorageKeys.practicePreferences);
+    const migrated: PracticePreferences = {
+      ...DEFAULT_PRACTICE_PREFERENCES,
+      ...stored,
+      ...(stored?.schemaVersion !== DEFAULT_PRACTICE_PREFERENCES.schemaVersion
+        ? { selectionMode: 'adaptive' as const, fillPracticeCapacity: true, includeScheduled: false }
+        : {}),
+      correctIntervals: stored?.correctIntervals?.length
+        ? stored.correctIntervals
+        : DEFAULT_PRACTICE_PREFERENCES.correctIntervals,
+      includedChapterIds: stored && 'includedChapterIds' in stored
+        ? stored.includedChapterIds ?? null
+        : DEFAULT_PRACTICE_PREFERENCES.includedChapterIds,
+      schemaVersion: DEFAULT_PRACTICE_PREFERENCES.schemaVersion,
+    };
+    if (stored && stored.schemaVersion !== DEFAULT_PRACTICE_PREFERENCES.schemaVersion) {
+      await this.store.set(StorageKeys.practicePreferences, migrated);
+    }
+    return migrated;
+  }
+
+  async savePracticePreferences(preferences: PracticePreferences): Promise<void> {
+    await this.store.set(StorageKeys.practicePreferences, preferences);
   }
 
   async loadDailyRevisionAssignment(): Promise<DailyRevisionAssignment | null> {

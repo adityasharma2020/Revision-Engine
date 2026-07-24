@@ -15,6 +15,7 @@ export const PRIMARY_NAV: readonly NavItem[] = [
   { to: Routes.dashboard, label: 'Home', icon: 'home', end: true },
   { to: Routes.library, label: 'Library', icon: 'book' },
   { to: Routes.revision, label: 'Daily revision', mobileLabel: 'Revision', icon: 'target' },
+  { to: Routes.practice, label: 'Practice quiz', mobileLabel: 'Practice', icon: 'flame' },
   { to: Routes.nudges, label: 'Memory Nudges', mobileLabel: 'Nudges', icon: 'sparkle', featured: true },
   { to: Routes.search, label: 'Search', icon: 'search' },
   { to: Routes.import, label: 'Import', icon: 'plus' },

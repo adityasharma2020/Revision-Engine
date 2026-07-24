@@ -5,24 +5,23 @@ import { PRIMARY_NAV } from '../../../constants/navigation';
 import { Routes } from '../../../constants/routes';
 import { useAuth } from '../../../context/AuthContext';
 import { Icon } from '../../common/Icon';
-import { ThemeToggle } from '../../common/ThemeToggle';
+import { DisplayQuickSettings } from '../../common/DisplayQuickSettings';
 import { UserAvatar } from '../../common/UserAvatar';
 import { cx } from '../../../utils/cx';
 import styles from './Sidebar.module.css';
 
 interface SidebarProps {
   collapsed: boolean;
-  collapseLocked?: boolean;
   searchOpen?: boolean;
   onToggle: () => void;
 }
 
-export function Sidebar({ collapsed, collapseLocked = false, searchOpen = false, onToggle }: SidebarProps) {
+export function Sidebar({ collapsed, searchOpen = false, onToggle }: SidebarProps) {
   const { status, user } = useAuth();
   const location = useLocation();
   const [moreOpen, setMoreOpen] = useState(false);
   const signedIn = status === 'authenticated' && user;
-  const mobilePrimary = new Set<string>([Routes.dashboard, Routes.library, Routes.revision, Routes.nudges, Routes.search]);
+  const mobilePrimary = new Set<string>([Routes.dashboard, Routes.library, Routes.revision, Routes.practice, Routes.search]);
   const moreItems = PRIMARY_NAV.filter((item) => !mobilePrimary.has(item.to));
   const moreActive = moreItems.some((item) => location.pathname === item.to);
 
@@ -34,9 +33,8 @@ export function Sidebar({ collapsed, collapseLocked = false, searchOpen = false,
         type="button"
         className={styles.collapseToggle}
         onClick={onToggle}
-        disabled={collapseLocked}
         aria-label={collapsed ? 'Expand sidebar' : 'Collapse sidebar'}
-        title={collapseLocked ? 'Sidebar stays compact in full screen' : collapsed ? 'Expand sidebar' : 'Collapse sidebar'}
+        title={collapsed ? 'Expand sidebar' : 'Collapse sidebar'}
       >
         <Icon name={collapsed ? 'panelLeftOpen' : 'panelLeftClose'} size={16} />
       </button>
@@ -97,7 +95,13 @@ export function Sidebar({ collapsed, collapseLocked = false, searchOpen = false,
           <button type="button" className={styles.moreBackdrop} aria-label="Close more navigation" onClick={() => setMoreOpen(false)} />
           <section id="mobile-more-menu" className={styles.moreSheet} aria-label="More pages">
             <div className={styles.moreHandle} />
-            <div className={styles.moreHead}><strong>More</strong><button type="button" onClick={() => setMoreOpen(false)} aria-label="Close"><Icon name="close" size={19} /></button></div>
+            <div className={styles.moreHead}>
+              <strong>More</strong>
+              <div className={styles.moreHeadActions}>
+                <DisplayQuickSettings fullscreenOnly onFullscreenToggle={() => setMoreOpen(false)} />
+                <button type="button" onClick={() => setMoreOpen(false)} aria-label="Close"><Icon name="close" size={19} /></button>
+              </div>
+            </div>
             <div className={styles.moreGrid}>
               {moreItems.map((item) => (
               <Fragment key={item.to}>
@@ -132,7 +136,7 @@ export function Sidebar({ collapsed, collapseLocked = false, searchOpen = false,
             {signedIn ? (user.displayName ?? user.email) : 'Guest — sign in'}
           </span>
         </Link>
-        <ThemeToggle />
+        <DisplayQuickSettings fullscreenOnly labelled />
       </div>
       <span className={styles.version} title={`Revision Engine version ${APP_VERSION}`}>
         v{APP_VERSION}

@@ -1,10 +1,10 @@
 import { useEffect, useState } from 'react';
-import { Outlet, useNavigate } from 'react-router-dom';
+import { Outlet, useLocation, useNavigate } from 'react-router-dom';
 import { Routes } from '../../../constants/routes';
 import { Sidebar } from '../Sidebar';
 import styles from './AppShell.module.css';
 import { cx } from '../../../utils/cx';
-import { abandonQuizDraft, findActiveQuizDraft } from '../../../hooks/useQuizSession';
+import { findActiveQuizDraft } from '../../../hooks/useQuizSession';
 import { Button } from '../../common/Button';
 import { Icon } from '../../common/Icon';
 import { Search } from '../../../pages/Search';
@@ -42,6 +42,7 @@ function armQuizHistoryGuard(): void {
 /** Top-level chrome: persistent sidebar + scrollable routed content. */
 export function AppShell() {
   const navigate = useNavigate();
+  const location = useLocation();
   const pdfWorkspace = usePdfWorkspace();
   const { status: authStatus } = useAuth();
   const { settings: deviceNotifications, ready: deviceNotificationsReady, update: updateDeviceNotifications } = useDeviceNotificationSettings();
@@ -49,6 +50,8 @@ export function AppShell() {
     () => localStorage.getItem(SIDEBAR_KEY) === 'true',
   );
   const [fullscreen, setFullscreen] = useState(Boolean(document.fullscreenElement));
+  const [fullscreenSidebarExpanded, setFullscreenSidebarExpanded] = useState(false);
+  const [appFullscreen, setAppFullscreen] = useState(false);
   const [activeQuizId, setActiveQuizId] = useState(
     () => findActiveQuizDraft()?.quizId ?? null,
   );
@@ -59,7 +62,6 @@ export function AppShell() {
     },
   );
   const [navigationBlocked, setNavigationBlocked] = useState(false);
-  const [blockedDestination, setBlockedDestination] = useState<string | null>(null);
   const [searchOpen, setSearchOpen] = useState(false);
   const [pdfSidebarExpanded, setPdfSidebarExpanded] = useState(false);
 
@@ -100,7 +102,31 @@ export function AppShell() {
   }, []);
 
   useEffect(() => {
-    const update = () => setFullscreen(Boolean(document.fullscreenElement));
+    const syncActiveQuiz = () => {
+      const draft = findActiveQuizDraft();
+      setActiveQuizId(draft?.quizId ?? null);
+      setQuizNavigationLocked(Boolean(draft?.settings.lockNavigation));
+      if (!draft) setNavigationBlocked(false);
+    };
+    window.addEventListener('storage', syncActiveQuiz);
+    window.addEventListener('focus', syncActiveQuiz);
+    return () => {
+      window.removeEventListener('storage', syncActiveQuiz);
+      window.removeEventListener('focus', syncActiveQuiz);
+    };
+  }, []);
+
+  useEffect(() => {
+    const update = () => {
+      const active = Boolean(
+        document.fullscreenElement
+        && document.documentElement.dataset.appFullscreen === 'true',
+      );
+      if (!document.fullscreenElement) delete document.documentElement.dataset.appFullscreen;
+      setFullscreen(Boolean(document.fullscreenElement));
+      setFullscreenSidebarExpanded(false);
+      setAppFullscreen(active);
+    };
     document.addEventListener('fullscreenchange', update);
     return () => document.removeEventListener('fullscreenchange', update);
   }, []);
@@ -129,8 +155,6 @@ export function AppShell() {
       // history.forward() below returns to our sentinel and emits popstate.
       if (isQuizGuardState(event.state)) return;
 
-      const attemptedDestination = `${window.location.pathname}${window.location.search}${window.location.hash}`;
-      setBlockedDestination(attemptedDestination);
       setNavigationBlocked(true);
 
       // popstate itself cannot be cancelled. The sentinel guarantees that the
@@ -148,13 +172,19 @@ export function AppShell() {
   };
 
   const pdfSplitActive = Boolean(pdfWorkspace.document && pdfWorkspace.visible);
-  const collapsed = fullscreen || (pdfSplitActive ? !pdfSidebarExpanded : userCollapsed);
+  const collapsed = fullscreen
+    ? !fullscreenSidebarExpanded
+    : (pdfSplitActive ? !pdfSidebarExpanded : userCollapsed);
 
   useEffect(() => {
     if (pdfSplitActive) setPdfSidebarExpanded(false);
   }, [pdfSplitActive]);
 
   const toggleSidebar = () => {
+    if (fullscreen) {
+      setFullscreenSidebarExpanded((expanded) => !expanded);
+      return;
+    }
     if (pdfSplitActive) {
       setPdfSidebarExpanded((expanded) => !expanded);
       return;
@@ -180,12 +210,23 @@ export function AppShell() {
     const draft = findActiveQuizDraft();
     const quizId = draft?.quizId ?? activeQuizId;
     setNavigationBlocked(false);
-    setBlockedDestination(null);
     if (quizId) {
       navigate(Routes.activeQuiz(quizId), { replace: true });
       window.setTimeout(armQuizHistoryGuard, 0);
     }
   };
+
+  const submitActiveQuiz = () => {
+    const quizId = findActiveQuizDraft()?.quizId ?? activeQuizId;
+    setNavigationBlocked(false);
+    if (quizId) navigate(`${Routes.activeQuiz(quizId)}?submit=1`, { replace: true });
+  };
+
+  const recoveryDraft = findActiveQuizDraft();
+  const recoveryRequired = Boolean(
+    recoveryDraft
+    && location.pathname !== Routes.activeQuiz(recoveryDraft.quizId),
+  );
 
   useEffect(() => {
     const openSearch = (event: KeyboardEvent) => {
@@ -202,7 +243,6 @@ export function AppShell() {
 
       event.preventDefault();
       if (activeQuizId && quizNavigationLocked) {
-        setBlockedDestination(Routes.search);
         setNavigationBlocked(true);
         return;
       }
@@ -225,7 +265,6 @@ export function AppShell() {
           event.preventDefault();
           event.stopPropagation();
           if (activeQuizId && quizNavigationLocked) {
-            setBlockedDestination(href);
             setNavigationBlocked(true);
           } else {
             setSearchOpen(true);
@@ -235,13 +274,11 @@ export function AppShell() {
         if (!activeQuizId || !quizNavigationLocked) return;
         event.preventDefault();
         event.stopPropagation();
-        setBlockedDestination(href);
         setNavigationBlocked(true);
       }}
     >
       <Sidebar
         collapsed={collapsed}
-        collapseLocked={fullscreen}
         searchOpen={searchOpen}
         onToggle={toggleSidebar}
       />
@@ -250,6 +287,7 @@ export function AppShell() {
       </main>
       <StoragePressureNudge />
       <FocusTimerWidget />
+      {appFullscreen && <button type="button" className={styles.fullscreenExit} onClick={() => void document.exitFullscreen()} aria-label="Exit full screen" title="Exit full screen"><Icon name="minimize" size={18} /><span>Exit full screen</span></button>}
       {searchOpen && (
         <div className={styles.searchBackdrop} onMouseDown={() => setSearchOpen(false)}>
           <section
@@ -275,8 +313,8 @@ export function AppShell() {
           </section>
         </div>
       )}
-      {navigationBlocked && (
-        <div className={styles.guardBackdrop} onMouseDown={() => setNavigationBlocked(false)}>
+      {(navigationBlocked || recoveryRequired) && (
+        <div className={styles.guardBackdrop}>
           <section
             className={styles.guardModal}
             role="dialog"
@@ -285,27 +323,14 @@ export function AppShell() {
             onMouseDown={(event) => event.stopPropagation()}
           >
             <span className={styles.guardIcon}><Icon name="clock" size={20} /></span>
-            <h2 id="quiz-navigation-title">Quiz in progress</h2>
+            <h2 id="quiz-navigation-title">Quiz still in progress</h2>
             <p>
-              Submit the active timed quiz before navigating elsewhere. This
-              prevents overlapping attempts and inaccurate timing.
+              Your answers are saved. Resume where you stopped, or submit the
+              current answers now and mark the rest as skipped.
             </p>
             <div className={styles.guardActions}>
-              <Button variant="primary" onClick={resumeActiveQuiz}>Continue quiz</Button>
-              {findActiveQuizDraft()?.settings.allowQuit && activeQuizId && (
-                <Button
-                  variant="secondary"
-                  onClick={() => {
-                    abandonQuizDraft(activeQuizId);
-                    setNavigationBlocked(false);
-                    setActiveQuizId(null);
-                    setQuizNavigationLocked(false);
-                    if (blockedDestination) navigate(blockedDestination);
-                  }}
-                >
-                  Quit quiz and leave
-                </Button>
-              )}
+              <Button variant="primary" onClick={resumeActiveQuiz}>Resume quiz</Button>
+              <Button variant="secondary" onClick={submitActiveQuiz}>Submit current answers</Button>
             </div>
           </section>
         </div>

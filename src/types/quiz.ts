@@ -8,6 +8,8 @@
 
 import type { Chapter, Difficulty, PrelimsQuestion } from './domain';
 
+export type QuizPurpose = 'daily-revision' | 'practice';
+
 export interface QuizSettings {
   allowPause: boolean;
   lockNavigation: boolean;
@@ -45,6 +47,8 @@ export interface QuizQuestionSet {
 /** Per-question outcome + timing within a quiz session — the granular record. */
 export interface QuizQuestionResult {
   readonly questionId: string;
+  /** Session-safe id when a cross-chapter quiz had duplicate source ids. */
+  readonly sessionQuestionId?: string;
   /** Original content chapter, retained when a quiz mixes several chapters. */
   readonly chapterId?: string;
   /** Question text snapshot for durable, cross-device analytics. */
@@ -106,7 +110,7 @@ export interface QuizResult {
   readonly focusPenaltyTotal?: number;
   readonly adjustedScore?: number;
   readonly timedOut?: boolean;
-  readonly purpose?: 'daily-revision';
+  readonly purpose?: QuizPurpose;
   readonly dailyDateKey?: string;
   /** Synced tombstone. Deleted results remain recoverable in storage history. */
   readonly isDeleted?: 1;
@@ -123,9 +127,11 @@ export interface QuizDefinition {
   readonly settings: QuizSettings;
   readonly questionSet: QuizQuestionSet;
   readonly questionChapterIds?: Readonly<Record<string, string>>;
+  /** Original content id by session-safe question id. */
+  readonly questionSourceIds?: Readonly<Record<string, string>>;
   readonly questionRevisionMeta?: Readonly<Record<string, { attempts: number; accuracy: number | null; level: number; reason: string }>>;
   readonly createdAt: number;
-  readonly purpose?: 'daily-revision';
+  readonly purpose?: QuizPurpose;
   readonly dailyDateKey?: string;
   readonly studyQuote?: {
     readonly quote: string;

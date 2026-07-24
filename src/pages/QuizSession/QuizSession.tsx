@@ -1,4 +1,4 @@
-import { useNavigate, useParams } from 'react-router-dom';
+import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import { EmptyState, Button } from '../../components/common';
 import { Page } from '../../components/layout';
 import { QuizSession } from '../../components/quiz/QuizRunner/QuizSession';
@@ -11,6 +11,7 @@ import styles from './QuizSession.module.css';
 export function QuizSessionPage() {
   const { quizId = '' } = useParams();
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const { assignment, ready: assignmentReady, save } = useDailyRevisionAssignment();
   const storedDefinition = loadQuizDefinition(quizId);
   const assignmentDefinition = assignment?.status === 'active' && assignment.definition.id === quizId
@@ -33,10 +34,12 @@ export function QuizSessionPage() {
       settings={definition.settings}
       questionSet={definition.questionSet}
       questionChapterIds={definition.questionChapterIds}
+      questionSourceIds={definition.questionSourceIds}
       questionRevisionMeta={definition.questionRevisionMeta}
       studyQuote={definition.studyQuote}
       purpose={definition.purpose}
       dailyDateKey={definition.dailyDateKey}
+      submitOnMount={searchParams.get('submit') === '1'}
       onComplete={(resultId, score) => {
         if (definition.purpose === 'daily-revision' && definition.dailyDateKey) {
           const dailyAssignment = assignment?.dateKey === definition.dailyDateKey

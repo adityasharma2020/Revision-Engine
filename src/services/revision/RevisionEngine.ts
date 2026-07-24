@@ -38,17 +38,27 @@ export class RevisionEngine {
     const unseen = evaluated
       .filter((item) => item.kind === 'new')
       .sort((a, b) => b.score - a.score || a.question.id.localeCompare(b.question.id));
+    const scheduled = evaluated
+      .filter((item) => item.kind === 'scheduled')
+      .sort((a, b) => b.score - a.score || (a.dueAt ?? Number.MAX_SAFE_INTEGER) - (b.dueAt ?? Number.MAX_SAFE_INTEGER));
 
     // Due work always wins. New material can only occupy the configured share
     // of otherwise-free capacity, so revision backlog is never displaced.
     const select = query.balanceSubjects ? balanceSubjects : takeFirst;
-    const dueSelected = select(due, limit);
+    const mode = query.selectionMode ?? 'adaptive';
+    const dueSelected = mode === 'new' ? [] : select(due, limit);
     const remaining = limit - dueSelected.length;
-    const newCap = query.fillDailyCapacity
-      ? remaining
-      : Math.min(remaining, Math.floor(limit * clamp(query.newQuestionPercent, 0, 100) / 100));
+    const newCap = mode === 'review'
+      ? 0
+      : mode === 'new' || query.fillDailyCapacity
+        ? remaining
+        : Math.min(remaining, Math.floor(limit * clamp(query.newQuestionPercent, 0, 100) / 100));
     const newSelected = select(unseen, newCap);
-    const recommendations = [...dueSelected, ...newSelected];
+    const scheduledCap = query.includeScheduled && mode !== 'new'
+      ? limit - dueSelected.length - newSelected.length
+      : 0;
+    const scheduledSelected = select(scheduled, scheduledCap);
+    const recommendations = [...dueSelected, ...newSelected, ...scheduledSelected];
 
     return {
       recommendations,
@@ -57,6 +67,7 @@ export class RevisionEngine {
       availableCount: evaluated.length,
       dueCount: dueSelected.length,
       newCount: newSelected.length,
+      scheduledCount: scheduledSelected.length,
       totalDueCount: due.length,
       enrolledChapterCount: new Set(enrolled.map((item) => item.chapter.id)).size,
     };

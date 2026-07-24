@@ -19,6 +19,7 @@ export const Routes = {
   bookmarks: '/bookmarks',
   pdfReader: '/pdf-reader',
   revision: '/revision',
+  practice: '/practice',
   import: '/import',
   settings: '/settings',
   nudges: '/nudges',

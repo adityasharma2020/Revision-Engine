@@ -17,6 +17,7 @@ export const StorageKeys = {
   theme: 'theme',
   settings: 'settings',
   revisionPreferences: 'revision-preferences',
+  practicePreferences: 'practice-preferences',
   quizSettings: 'quiz-settings',
   dailyRevisionAssignment: 'daily-revision-assignment',
   deviceNotificationSettings: '__device-notification-settings',

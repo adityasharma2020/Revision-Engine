@@ -15,6 +15,7 @@ import { QuizResultPage } from './pages/QuizResult';
 import { SharedQuizResultPage } from './pages/SharedQuizResult';
 import { Library } from './pages/Library';
 import { DailyRevision } from './pages/DailyRevision';
+import { PracticeQuiz } from './pages/PracticeQuiz';
 import { QuizSessionPage } from './pages/QuizSession';
 import { Nudges } from './pages/Nudges';
 import { PdfReader } from './pages/PdfReader';
@@ -59,6 +60,7 @@ export function App() {
           <Route path={Routes.dashboard} element={<Dashboard />} />
           <Route path={Routes.library} element={<Library />} />
           <Route path={Routes.revision} element={<DailyRevision />} />
+          <Route path={Routes.practice} element={<PracticeQuiz />} />
           <Route path={Routes.quizSession()} element={<QuizSessionPage />} />
           <Route path={Routes.search} element={<Search />} />
           <Route path={Routes.chapter()} element={<Chapter />} />
