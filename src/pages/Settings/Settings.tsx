@@ -409,6 +409,10 @@ export function Settings() {
               <div className={styles.rowText}>
                 <h3 className={styles.rowTitle}>Refresh application</h3>
                 <p className={styles.rowDesc}>Fetch the latest deployed app and chapter files. Your local data, settings and quiz history stay unchanged.</p>
+                <div className={`${styles.buildIdentity} ${styles.refreshIdentity}`}>
+                  <code className={styles.version}>v{APP_VERSION}</code>
+                  <small>Built {new Date(APP_BUILD_TIMESTAMP).toLocaleString()}</small>
+                </div>
               </div>
               <Button variant="secondary" size="sm" disabled={refreshingApp} onClick={() => void refreshApplication()}>
                 <Icon name="sync" size={15} /> {refreshingApp ? 'Refreshing…' : 'Refresh app'}
@@ -505,9 +509,8 @@ export function Settings() {
               <div className={styles.row}>
                 <div className={styles.rowText}>
                   <h3 className={styles.rowTitle}>About</h3>
-                  <p className={styles.rowDesc}>{APP_NAME} application version.</p>
+                  <p className={styles.rowDesc}>Responsible use and project information for {APP_NAME}.</p>
                 </div>
-                <div className={styles.buildIdentity}><code className={styles.version}>v{APP_VERSION}</code><small>Built {new Date(APP_BUILD_TIMESTAMP).toLocaleString()}</small></div>
               </div>
               <div className={styles.responsibleUse} role="note">
                 <p>

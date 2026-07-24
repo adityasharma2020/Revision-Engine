@@ -195,6 +195,7 @@
 }
 .buildIdentity { display: grid; justify-items: end; gap: 5px; flex: none; }
 .buildIdentity small { color: var(--text-tertiary); font-size: var(--text-xs); }
+.refreshIdentity { justify-items: start; margin-top: var(--space-3); }
 
 .about > .row {
   border-bottom: 1px solid var(--border);
