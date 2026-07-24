@@ -1,2 +1,2 @@
-export { ScopeFilter } from './ScopeFilter';
+export { ScopeFilter, ScopeFilterSkeleton } from './ScopeFilter';
 export type { ScopeChapter } from './ScopeFilter';

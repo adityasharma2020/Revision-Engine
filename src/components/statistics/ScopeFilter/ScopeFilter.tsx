@@ -87,3 +87,20 @@ export function ScopeFilter({ chapters, selected, onChange }: ScopeFilterProps) 
     </div>
   );
 }
+
+export function ScopeFilterSkeleton() {
+  return (
+    <div className={styles.filter} role="status" aria-label="Loading chapter filters" aria-busy="true">
+      <div className={styles.skeletonRow} aria-hidden="true">
+        <span className={styles.skeletonChip} />
+        <span className={styles.skeletonChipWide} />
+        <span className={styles.skeletonChip} />
+      </div>
+      <div className={styles.skeletonChapters} aria-hidden="true">
+        <span />
+        <span />
+        <span />
+      </div>
+    </div>
+  );
+}

@@ -442,7 +442,10 @@ export function QuizSession({ sessionId, chapter, questions, onComplete, onActiv
         question={current}
         revisionMeta={questionRevisionMeta?.[current.id]}
         selected={state.answers[current.id] ?? null}
-        onSelect={(optionId) => actions.answer(current.id, optionId)}
+        onSelect={(optionId) => {
+          if (state.answers[current.id] === optionId) actions.clear(current.id);
+          else actions.answer(current.id, optionId);
+        }}
         disabled={paused}
       />
 

@@ -3,7 +3,7 @@ import { Link } from "react-router-dom";
 import { Button, EmptyState, Icon, Tabs } from "../../components/common";
 import { Page, PageHeader } from "../../components/layout";
 import { BarChart } from "../../components/statistics/BarChart";
-import { ScopeFilter } from "../../components/statistics/ScopeFilter";
+import { ScopeFilter, ScopeFilterSkeleton } from "../../components/statistics/ScopeFilter";
 import { StatTile } from "../../components/statistics/StatTile";
 import { subjectStyle } from "../../constants/subjects";
 import { useUserData } from "../../context/UserDataContext";
@@ -514,15 +514,17 @@ export function Statistics() {
               </label>
             </div>
 
-            {analyticsTab !== "nudges" &&
-              analyticsTab !== "focus" &&
-              scopeChapters.length > 0 && (
-                <ScopeFilter
-                  chapters={scopeChapters}
-                  selected={selected}
-                  onChange={setSelected}
-                />
-              )}
+            {analyticsTab !== "nudges" && analyticsTab !== "focus" && (
+              library.status === "loading"
+                ? <ScopeFilterSkeleton />
+                : scopeChapters.length > 0 && (
+                  <ScopeFilter
+                    chapters={scopeChapters}
+                    selected={selected}
+                    onChange={setSelected}
+                  />
+                )
+            )}
           </section>
 
           <div className={styles.analyticsTabs}>

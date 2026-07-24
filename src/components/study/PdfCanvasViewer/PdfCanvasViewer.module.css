@@ -166,7 +166,7 @@
     z-index: 100;
     inset: auto 8px calc(76px + env(safe-area-inset-bottom));
     width: auto;
-    max-height: min(70dvh, calc(100dvh - 92px - env(safe-area-inset-bottom)), 520px);
+    max-height: min(calc(100dvh - 92px - env(safe-area-inset-bottom)), 520px);
     padding: 8px;
     overflow-y: auto;
     border-radius: 14px;

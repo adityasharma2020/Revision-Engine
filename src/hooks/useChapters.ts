@@ -1,9 +1,22 @@
-import { useMemo } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useServices } from '../context/ServicesContext';
 import { useUserData } from '../context/UserDataContext';
 import type { Chapter, ChapterSummary } from '../types';
 import { chapterToSummary } from '../utils/chapters';
 import { useAsync, type AsyncState } from './useAsync';
+
+function combineLibrary(
+  userSummaries: readonly ChapterSummary[],
+  publicChapters: readonly ChapterSummary[],
+): ChapterSummary[] {
+  const privateIds = new Set(userSummaries.map((chapter) => chapter.id));
+  return [
+    ...userSummaries,
+    ...publicChapters
+      .map((chapter): ChapterSummary => ({ ...chapter, origin: 'public' }))
+      .filter((chapter) => !privateIds.has(chapter.id)),
+  ];
+}
 
 /**
  * The combined library: database-backed public chapters plus the user's
@@ -18,15 +31,36 @@ export function useLibrary(): AsyncState<ChapterSummary[]> {
     [userChapters],
   );
 
-  return useAsync<ChapterSummary[]>(async () => {
-    const manifest = await chapters.loadManifest();
-    const publicChapters = manifest.chapters.map(
-      (chapter): ChapterSummary => ({ ...chapter, origin: 'public' }),
-    );
-    const privateIds = new Set(userSummaries.map((chapter) => chapter.id));
-    return [...userSummaries, ...publicChapters.filter((chapter) => !privateIds.has(chapter.id))];
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+  const [state, setState] = useState<AsyncState<ChapterSummary[]>>(() => {
+    const cached = chapters.getCachedManifest();
+    return cached
+      ? { status: 'success', data: combineLibrary(userSummaries, cached.chapters), error: null }
+      : { status: 'loading', data: null, error: null };
+  });
+
+  useEffect(() => {
+    let active = true;
+    const cached = chapters.getCachedManifest();
+    if (cached) {
+      setState({ status: 'success', data: combineLibrary(userSummaries, cached.chapters), error: null });
+      return () => { active = false; };
+    }
+
+    setState({ status: 'loading', data: null, error: null });
+    void chapters.loadManifest().then((manifest) => {
+      if (active) setState({ status: 'success', data: combineLibrary(userSummaries, manifest.chapters), error: null });
+    }, (error: unknown) => {
+      if (active) setState({
+        status: 'error',
+        data: null,
+        error: error instanceof Error ? error : new Error(String(error)),
+      });
+    });
+
+    return () => { active = false; };
   }, [chapters, userSummaries]);
+
+  return state;
 }
 
 /** Load a single chapter by id — user uploads resolve instantly, else static. */

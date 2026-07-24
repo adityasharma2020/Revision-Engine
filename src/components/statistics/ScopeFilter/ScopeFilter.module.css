@@ -80,7 +80,27 @@
   border-color: var(--accent);
 }
 
+.skeletonRow,
+.skeletonChapters {
+  display: flex;
+  gap: var(--space-2);
+}
+.skeletonRow > span,
+.skeletonChapters > span {
+  display: block;
+  background: linear-gradient(90deg, var(--bg-sunken) 20%, var(--surface-hover) 50%, var(--bg-sunken) 80%);
+  background-size: 220% 100%;
+  animation: filterShimmer 1.2s ease-in-out infinite;
+}
+.skeletonRow > span { width: 88px; height: 32px; border-radius: var(--radius-full); }
+.skeletonRow > .skeletonChipWide { width: 126px; }
+.skeletonChapters { padding-top: var(--space-3); border-top: 1px solid var(--border); }
+.skeletonChapters > span { width: 190px; height: 28px; border-radius: var(--radius-sm); }
+.skeletonChapters > span:nth-child(2) { width: 240px; }
+.skeletonChapters > span:nth-child(3) { width: 150px; }
+@keyframes filterShimmer { to { background-position: -220% 0; } }
+
 @media (max-width: 560px) {
-  .quick, .chapters { flex-wrap: nowrap; overflow-x: auto; padding-bottom: var(--space-2); }
-  .chip, .chapterChip { flex-shrink: 0; }
+  .quick, .chapters, .skeletonRow, .skeletonChapters { flex-wrap: nowrap; overflow: hidden; padding-bottom: var(--space-2); }
+  .chip, .chapterChip, .skeletonRow > span, .skeletonChapters > span { flex-shrink: 0; }
 }
