@@ -5,8 +5,7 @@ import { createChapterService, ChapterService } from '../services/parser';
  * Dependency-injection seam for stateless app services.
  *
  * Storage is intentionally NOT here — it depends on auth state and lives in
- * StorageContext. This context holds services that are the same regardless of
- * who is signed in (chapter loading of the static, shipped content).
+ * StorageContext. This context holds the shared public-chapter loader.
  */
 export interface Services {
   readonly chapters: ChapterService;

@@ -56,8 +56,20 @@
 }
 
 .headText {
+  flex: 1;
   min-width: 0;
 }
+
+.editLink {
+  align-self: flex-start;
+  flex: none;
+  padding: 4px 8px;
+  color: var(--accent);
+  font-size: var(--text-xs);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+}
+.editLink:hover { background: var(--accent-subtle); border-color: var(--accent); }
 
 .question {
   font-size: var(--text-md);

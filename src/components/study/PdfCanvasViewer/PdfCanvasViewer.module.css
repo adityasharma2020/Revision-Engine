@@ -151,6 +151,48 @@
 .status a { margin-top: 5px; padding: 8px 13px; color: #fff; background: var(--accent); border-radius: var(--radius-md); }
 .spinner { width: 28px; height: 28px; border: 2px solid rgb(255 255 255 / 18%); border-top-color: var(--accent); border-radius: 50%; animation: spin .8s linear infinite; }
 @keyframes spin { to { transform: rotate(360deg); } }
-@media (max-width: 520px) { .controls { justify-content: space-between; gap: 1px; padding-inline: 4px; } .controls button { flex-basis: 28px; width: 28px; } .controls .divider { margin-inline: 0; } .controls .zoom { min-width: 36px; font-size: 9px; } .viewport { padding: 6px; } .searchPanel label > span, .savedState { display: none; } .inkToolbar { justify-content: space-between; padding-inline: 5px; } .inkToolbar input[type='range'] { width: 56px; } }
+@media (max-width: 520px) {
+  .controls { justify-content: space-between; gap: 1px; padding-inline: 4px; }
+  .controls button { flex-basis: 28px; width: 28px; }
+  .controls .divider { margin-inline: 0; }
+  .controls .zoom { min-width: 36px; font-size: 9px; }
+  .viewport { padding: 6px; }
+  .searchPanel label > span, .savedState { display: none; }
+  .inkToolbar { justify-content: space-between; padding-inline: 5px; }
+  .inkToolbar input[type='range'] { width: 56px; }
+
+  .documentMenu {
+    position: fixed;
+    z-index: 100;
+    inset: auto 8px calc(76px + env(safe-area-inset-bottom));
+    width: auto;
+    max-height: min(70dvh, calc(100dvh - 92px - env(safe-area-inset-bottom)), 520px);
+    padding: 8px;
+    overflow-y: auto;
+    border-radius: 14px;
+    overscroll-behavior: contain;
+    box-shadow: 0 20px 60px rgb(0 0 0 / 70%);
+    scrollbar-gutter: stable;
+  }
+  .controls .documentMenu > button,
+  .controls .documentMenu > a {
+    grid-template-columns: 28px minmax(0, 1fr);
+    width: 100%;
+    min-width: 0;
+    height: auto;
+    min-height: 48px;
+    flex: none;
+    padding: 9px 10px;
+  }
+  .documentMenu > button > span,
+  .documentMenu > a > span {
+    min-width: 0;
+  }
+  .documentMenu strong,
+  .documentMenu small {
+    overflow-wrap: anywhere;
+    white-space: normal;
+  }
+}
 @media (max-width: 390px) { .controls .zoomAdjust { display: none; } .inkToolbar input[type='range'] { width: 48px; } }
 @container (max-width: 720px) { .controlsInHeader .controls { position: static; width: auto; min-height: 42px; background: #18181a; border-bottom: 1px solid rgb(255 255 255 / 9%); transform: none; } .controlsInHeader .inkToolbar { top: 48px; } .controlsInHeader .toolSettings { top: 94px; } }

@@ -4,6 +4,13 @@ export const Routes = {
   library: '/library',
   search: '/search',
   chapter: (chapterId: string = ':chapterId') => `/chapter/${chapterId}`,
+  chapterEdit: (
+    chapterId: string = ':chapterId',
+    type?: 'prelims' | 'mains',
+    questionId?: string,
+  ) => `/chapter/${chapterId}/edit${type && questionId
+    ? `?type=${type}&question=${encodeURIComponent(questionId)}`
+    : ''}`,
   quizSession: (quizId: string = ':quizId') => `/quiz/${quizId}`,
   activeQuiz: (quizId: string) => `/quiz/${quizId}`,
   quizResult: (resultId: string = ':resultId') => `/results/${resultId}`,

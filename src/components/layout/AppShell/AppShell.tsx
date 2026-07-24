@@ -61,6 +61,7 @@ export function AppShell() {
   const [navigationBlocked, setNavigationBlocked] = useState(false);
   const [blockedDestination, setBlockedDestination] = useState<string | null>(null);
   const [searchOpen, setSearchOpen] = useState(false);
+  const [pdfSidebarExpanded, setPdfSidebarExpanded] = useState(false);
 
   useEffect(() => {
     if (!deviceNotificationsReady || authStatus !== 'authenticated' || !deviceNotifications.enabled) return;
@@ -147,7 +148,19 @@ export function AppShell() {
   };
 
   const pdfSplitActive = Boolean(pdfWorkspace.document && pdfWorkspace.visible);
-  const collapsed = userCollapsed || fullscreen || pdfSplitActive;
+  const collapsed = fullscreen || (pdfSplitActive ? !pdfSidebarExpanded : userCollapsed);
+
+  useEffect(() => {
+    if (pdfSplitActive) setPdfSidebarExpanded(false);
+  }, [pdfSplitActive]);
+
+  const toggleSidebar = () => {
+    if (pdfSplitActive) {
+      setPdfSidebarExpanded((expanded) => !expanded);
+      return;
+    }
+    setCollapsed(!userCollapsed);
+  };
 
   useEffect(() => {
     if (!searchOpen) return;
@@ -228,9 +241,9 @@ export function AppShell() {
     >
       <Sidebar
         collapsed={collapsed}
-        collapseLocked={fullscreen || pdfSplitActive}
+        collapseLocked={fullscreen}
         searchOpen={searchOpen}
-        onToggle={() => setCollapsed(!userCollapsed)}
+        onToggle={toggleSidebar}
       />
       <main className={styles.main}>
         <Outlet />

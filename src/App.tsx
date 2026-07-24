@@ -5,6 +5,7 @@ import { AppShell } from './components/layout';
 import { Routes } from './constants/routes';
 import { Bookmarks } from './pages/Bookmarks';
 import { Chapter } from './pages/Chapter';
+import { ChapterEditor } from './pages/ChapterEditor';
 import { Dashboard } from './pages/Dashboard';
 import { Import } from './pages/Import';
 import { NotFound } from './pages/NotFound';
@@ -61,6 +62,7 @@ export function App() {
           <Route path={Routes.quizSession()} element={<QuizSessionPage />} />
           <Route path={Routes.search} element={<Search />} />
           <Route path={Routes.chapter()} element={<Chapter />} />
+          <Route path={Routes.chapterEdit()} element={<ChapterEditor />} />
           <Route path={Routes.quizResult()} element={<QuizResultPage />} />
           <Route path={Routes.sharedQuizResult()} element={<SharedQuizResultPage />} />
           <Route path={Routes.import} element={<Import />} />

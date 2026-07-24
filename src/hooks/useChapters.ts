@@ -6,9 +6,8 @@ import { chapterToSummary } from '../utils/chapters';
 import { useAsync, type AsyncState } from './useAsync';
 
 /**
- * The combined library: static (shipped) chapters from the manifest plus the
- * user's uploaded chapters. Returns summaries; adding an upload updates this
- * live without a reload.
+ * The combined library: database-backed public chapters plus the user's
+ * private uploads. Adding a private upload updates this without a reload.
  */
 export function useLibrary(): AsyncState<ChapterSummary[]> {
   const { chapters } = useServices();
@@ -21,10 +20,11 @@ export function useLibrary(): AsyncState<ChapterSummary[]> {
 
   return useAsync<ChapterSummary[]>(async () => {
     const manifest = await chapters.loadManifest();
-    const builtin = manifest.chapters.map(
-      (c): ChapterSummary => ({ ...c, origin: c.origin ?? 'builtin' }),
+    const publicChapters = manifest.chapters.map(
+      (chapter): ChapterSummary => ({ ...chapter, origin: 'public' }),
     );
-    return [...builtin, ...userSummaries];
+    const privateIds = new Set(userSummaries.map((chapter) => chapter.id));
+    return [...userSummaries, ...publicChapters.filter((chapter) => !privateIds.has(chapter.id))];
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [chapters, userSummaries]);
 }

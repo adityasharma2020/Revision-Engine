@@ -56,11 +56,23 @@
 }
 
 .statement {
+  flex: 1;
   font-size: var(--text-md);
   line-height: var(--leading-normal);
   color: var(--text-primary);
   padding-top: 2px;
 }
+
+.editLink {
+  align-self: flex-start;
+  flex: none;
+  padding: 4px 8px;
+  color: var(--accent);
+  font-size: var(--text-xs);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+}
+.editLink:hover { background: var(--accent-subtle); border-color: var(--accent); }
 
 .options {
   display: flex;

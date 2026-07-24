@@ -1,94 +1,42 @@
 import type { Chapter, ChapterManifest } from '../../types';
+import { chapterToSummary } from '../../utils/chapters';
+import { getSupabase } from '../supabase/client';
+import { loadPublishedChapter, loadPublishedChapters } from '../supabase/communityChapters';
 import { ChapterParseError } from './errors';
-import { parseChapter } from './parseChapter';
 
-const CHAPTERS_DIR = 'chapters';
-const MANIFEST_FILE = 'manifest.json';
-
-/**
- * Loads chapter data from the static `chapters/` directory.
- *
- * The manifest (generated at build time — see scripts/generate-manifest.mjs)
- * is fetched once and cached; full chapter files are fetched lazily and cached
- * on first open. Because discovery is driven entirely by the manifest, adding a
- * new chapter JSON never requires a code change.
- */
+/** Loads the public chapter catalogue from Supabase. */
 export class ChapterService {
-  private manifest: ChapterManifest | null = null;
-  private manifestPromise: Promise<ChapterManifest> | null = null;
-  private readonly chapters = new Map<string, Chapter>();
-  private readonly baseUrl: string;
+  private readonly cache = new Map<string, Chapter>();
 
-  constructor(baseUrl: string = import.meta.env.BASE_URL) {
-    this.baseUrl = baseUrl;
+  async loadManifest(): Promise<ChapterManifest> {
+    const chapters = await this.loadAllChapters();
+    return {
+      generatedAt: new Date().toISOString(),
+      chapters: chapters.map((chapter) => chapterToSummary(chapter, 'public')),
+    };
   }
 
-  private url(...segments: string[]): string {
-    const base = this.baseUrl.endsWith('/') ? this.baseUrl : `${this.baseUrl}/`;
-    return `${base}${CHAPTERS_DIR}/${segments.join('/')}`;
-  }
-
-  private async fetchJson(url: string): Promise<unknown> {
-    let response: Response;
-    try {
-      response = await fetch(url);
-    } catch (cause) {
-      throw new Error(`Network error loading ${url}`, { cause });
-    }
-    if (!response.ok) {
-      throw new Error(`Failed to load ${url} (${response.status})`);
-    }
-    return response.json();
-  }
-
-  /** Fetch (once) and return the chapter index. Concurrent calls share one request. */
-  async loadManifest(force = false): Promise<ChapterManifest> {
-    if (this.manifest && !force) return this.manifest;
-    if (this.manifestPromise && !force) return this.manifestPromise;
-
-    this.manifestPromise = this.fetchJson(this.url(MANIFEST_FILE))
-      .then((raw) => {
-        const manifest = raw as ChapterManifest;
-        this.manifest = manifest;
-        return manifest;
-      })
-      .finally(() => {
-        this.manifestPromise = null;
-      });
-
-    return this.manifestPromise;
-  }
-
-  /** Fetch, validate and cache a single full chapter by id. */
   async loadChapter(id: string): Promise<Chapter> {
-    const cached = this.chapters.get(id);
+    const cached = this.cache.get(id);
     if (cached) return cached;
-
-    const manifest = await this.loadManifest();
-    const entry = manifest.chapters.find((c) => c.id === id);
-    if (!entry || !entry.file) {
-      throw new ChapterParseError(`Unknown chapter "${id}"`, 'id');
-    }
-
-    const raw = await this.fetchJson(this.url(entry.file));
-    const chapter = parseChapter(raw, entry.file);
-    if (chapter.id !== id) {
-      throw new ChapterParseError(
-        `Chapter id "${chapter.id}" does not match manifest id "${id}"`,
-        'id',
-        entry.file,
-      );
-    }
-    this.chapters.set(id, chapter);
+    const client = getSupabase();
+    if (!client) throw new ChapterParseError('Public chapters are unavailable.', 'id');
+    const chapter = await loadPublishedChapter(client, id);
+    if (!chapter) throw new ChapterParseError(`Unknown chapter "${id}"`, 'id');
+    this.cache.set(id, chapter);
     return chapter;
   }
 
-  /** Load every built-in chapter for cross-library features such as search. */
   async loadAllChapters(): Promise<Chapter[]> {
-    const manifest = await this.loadManifest();
-    const loaded = await Promise.allSettled(
-      manifest.chapters.filter((entry) => entry.file).map((entry) => this.loadChapter(entry.id)),
-    );
-    return loaded.flatMap((result) => (result.status === 'fulfilled' ? [result.value] : []));
+    const client = getSupabase();
+    if (!client) return [];
+    const chapters = await loadPublishedChapters(client);
+    chapters.forEach((chapter) => this.cache.set(chapter.id, chapter));
+    return chapters;
+  }
+
+  clearCache(id?: string) {
+    if (id) this.cache.delete(id);
+    else this.cache.clear();
   }
 }

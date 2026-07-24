@@ -144,6 +144,14 @@ function ChapterView({ chapter }: { chapter: ChapterModel }) {
           <Badge hue={hue}>{label}</Badge>
           <span className={styles.chapterNo}>Chapter {chapter.chapterNumber}</span>
           <div className={styles.headTools}>
+            <Link
+              to={Routes.chapterEdit(chapter.id)}
+              className={styles.chapterSearch}
+              title='Edit chapter or change visibility'
+            >
+              <Icon name='pencil' size={15} />
+              <span>Edit chapter</span>
+            </Link>
             <button
               type="button"
               className={includedInRevision ? styles.revisionIncluded : styles.revisionAdd}
@@ -364,13 +372,13 @@ function LearningView({
       {tab === 'prelims' ? (
         <QuestionList empty="No prelims questions in this chapter.">
           {prelims.map((q, i) => (
-            <PrelimsCard key={q.id} elementId={`question-${q.id}`} highlighted={targetElementId === `question-${q.id}`} focusLabel={focusLabel} question={q} index={i + 1} chapterId={chapter.id} />
+            <PrelimsCard key={q.id} elementId={`question-${q.id}`} highlighted={targetElementId === `question-${q.id}`} focusLabel={focusLabel} question={q} index={i + 1} chapterId={chapter.id} editHref={Routes.chapterEdit(chapter.id, 'prelims', q.id)} />
           ))}
         </QuestionList>
       ) : (
         <QuestionList empty="No mains questions in this chapter.">
           {mains.map((q, i) => (
-            <MainsCard key={q.id} elementId={`question-${q.id}`} highlighted={targetElementId === `question-${q.id}`} focusLabel={focusLabel} question={q} index={i + 1} chapterId={chapter.id} />
+            <MainsCard key={q.id} elementId={`question-${q.id}`} highlighted={targetElementId === `question-${q.id}`} focusLabel={focusLabel} question={q} index={i + 1} chapterId={chapter.id} editHref={Routes.chapterEdit(chapter.id, 'mains', q.id)} />
           ))}
         </QuestionList>
       )}

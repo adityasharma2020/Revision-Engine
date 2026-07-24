@@ -14,14 +14,13 @@ Context**. No UI framework, no Redux — everything is designed from scratch.
 
 ```bash
 npm install
-npm run dev        # regenerates the chapter manifest, then starts Vite
+npm run dev
 ```
 
 | Script            | What it does                                             |
 | ----------------- | -------------------------------------------------------- |
-| `npm run dev`     | Generate manifest → start dev server                     |
-| `npm run build`   | Generate manifest → typecheck → production build         |
-| `npm run manifest`| Rebuild `public/chapters/manifest.json` on its own       |
+| `npm run dev`     | Start the development server                              |
+| `npm run build`   | Typecheck and create the production build                 |
 | `npm run typecheck`| Type-only check                                         |
 | `npm run lint`    | oxlint                                                    |
 
@@ -41,12 +40,12 @@ Commit both `package.json` and `package-lock.json` after changing the version.
 
 ---
 
-## Adding a chapter (no code changes)
+## Adding a chapter
 
-1. Drop a JSON file into [`public/chapters/`](public/chapters) — e.g.
-   `geography_ch03.json`.
-2. That's it. The manifest is regenerated automatically on the next
-   `dev`/`build`, and the chapter appears in the library.
+Import JSON from the Import page. Keep it private, or submit it for admin
+approval. Approved chapters are stored in Supabase and appear for everyone.
+Public questions can be edited in the UI: owners submit revisions, other users
+submit suggestions, and administrators can publish directly.
 
 ### Chapter JSON schema
 
@@ -120,10 +119,8 @@ src/
   constants/         routes, navigation, subjects, app
   pages/             Dashboard, Chapter, Statistics, Bookmarks, Settings
   styles/            tokens.css (design tokens), reset.css, global.css
-public/
-  chapters/          *.json + generated manifest.json
-scripts/
-  generate-manifest.mjs
+supabase/
+  migrations/        schema, permissions, and public chapter seed data
 ```
 
 ### Design principles enforced here

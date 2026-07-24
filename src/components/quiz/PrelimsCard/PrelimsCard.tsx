@@ -8,6 +8,7 @@ import { cx } from '../../../utils/cx';
 import { formatQuestionOrigin } from '../../../utils/questionOrigin';
 import styles from './PrelimsCard.module.css';
 import { QuestionStem } from '../QuestionStem';
+import { Link } from 'react-router-dom';
 
 interface PrelimsCardProps {
   question: PrelimsQuestion;
@@ -25,6 +26,7 @@ interface PrelimsCardProps {
   elementId?: string;
   focusLabel?: string;
   highlighted?: boolean;
+  editHref?: string;
 }
 
 /**
@@ -42,6 +44,7 @@ export function PrelimsCard({
   elementId,
   focusLabel = 'Search match',
   highlighted = false,
+  editHref,
 }: PrelimsCardProps) {
   const { recordAttempt } = useUserData();
   const [picked, setPicked] = useState<string | null>(null);
@@ -79,6 +82,7 @@ export function PrelimsCard({
       <div className={styles.head}>
         <span className={styles.index}>{index}</span>
         <QuestionStem question={question} className={styles.statement} />
+        {editHref && <Link className={styles.editLink} to={editHref}>Edit</Link>}
       </div>
 
       <ul className={styles.options}>

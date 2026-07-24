@@ -2,8 +2,8 @@
  * Core domain model for Revision Engine.
  *
  * These types are the single source of truth for the shape of chapter data.
- * Chapter JSON files (public/chapters/*.json) are validated against them at
- * load time, so the UI can trust every field it renders.
+ * Chapter JSON stored in Supabase is validated at load time, so the UI can
+ * trust every field it renders.
  *
  * The UI must NEVER hard-code knowledge of a specific chapter or subject —
  * everything below is generic and driven entirely by the JSON.
@@ -101,11 +101,9 @@ export interface Chapter {
 export type QuestionType = 'prelims' | 'mains';
 
 /**
- * Lightweight chapter metadata, listed in the manifest so the dashboard can
- * render instantly without downloading every full chapter file. The heavy
- * `prelims`/`mains` arrays are fetched lazily only when a chapter is opened.
+ * Lightweight chapter metadata used by library and dashboard cards.
  */
-export type ChapterOrigin = 'builtin' | 'user';
+export type ChapterOrigin = 'public' | 'user';
 
 export interface ChapterSummary {
   readonly id: string;
@@ -115,7 +113,7 @@ export interface ChapterSummary {
   readonly source?: string;
   readonly description?: string;
   readonly tags?: readonly string[];
-  /** Path of the chapter file relative to the chapters directory (builtin only). */
+  /** Legacy optional path; public chapters are now loaded from Supabase. */
   readonly file?: string;
   readonly prelimsCount: number;
   readonly mainsCount: number;
@@ -123,7 +121,7 @@ export interface ChapterSummary {
   readonly origin?: ChapterOrigin;
 }
 
-/** The generated index of all available chapters. */
+/** Public chapter catalogue returned by the chapter service. */
 export interface ChapterManifest {
   readonly generatedAt: string;
   readonly chapters: readonly ChapterSummary[];

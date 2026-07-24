@@ -25,6 +25,12 @@
   margin-bottom: var(--space-1);
 }
 
+.badges {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-1);
+}
+
 .number {
   font-size: var(--text-xs);
   font-weight: var(--weight-medium);

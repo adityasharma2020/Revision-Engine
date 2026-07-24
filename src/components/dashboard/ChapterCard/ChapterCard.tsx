@@ -16,7 +16,11 @@ export function ChapterCard({ chapter }: ChapterCardProps) {
   return (
     <Link to={Routes.chapter(chapter.id)} className={styles.card}>
       <div className={styles.top}>
-        <Badge hue={hue}>{label}</Badge>
+        <div className={styles.badges}>
+          <Badge hue={hue}>{label}</Badge>
+          {chapter.origin === 'public' && <Badge tone='accent'>Public</Badge>}
+          {chapter.origin === 'user' && <Badge tone='neutral'>Private</Badge>}
+        </div>
         <span className={styles.number}>Ch {chapter.chapterNumber}</span>
       </div>
 

@@ -1,13 +1,10 @@
 {
   "name": "engine",
   "private": true,
-  "version": "3.4.18",
+  "version": "3.7.3",
   "type": "module",
   "scripts": {
-    "manifest": "node scripts/generate-manifest.mjs",
-    "predev": "npm run manifest",
     "dev": "vite",
-    "prebuild": "npm run manifest",
     "build": "tsc -b && vite build",
     "lint": "oxlint",
     "typecheck": "tsc -b --noEmit",
