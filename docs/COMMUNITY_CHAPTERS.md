@@ -31,6 +31,12 @@ and every admin mutation is retained in `chapter_admin_audit`. Suggestions are
 bound to the public version they were created from, so stale corrections cannot
 overwrite a newer approved revision.
 
+The admin catalogue joins owner profiles through an admin-only database
+function, displaying the uploader's name and email. The original seed chapters
+carry their creator's email and automatically attach to that profile when the
+matching Google account exists. Other ownerless imports remain clearly labelled
+as system seeds.
+
 Never-submitted private uploads remain in each owner's `user_state`; they are
 not visible to administrators. A user must explicitly submit a private chapter
 before it enters the moderation system.

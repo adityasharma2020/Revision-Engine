@@ -13,6 +13,8 @@ export type CommunityStatus =
 export interface CommunitySubmission {
   id: string;
   ownerId: string | null;
+  ownerEmail: string | null;
+  ownerDisplayName: string | null;
   chapterId: string;
   draft: Chapter;
   published: Chapter | null;
@@ -52,6 +54,8 @@ export interface AdminAuditEntry {
 interface CommunityRow {
   id: string;
   owner_id: string | null;
+  owner_email?: string | null;
+  owner_display_name?: string | null;
   chapter_id: string;
   draft_content: unknown;
   published_content: unknown | null;
@@ -86,6 +90,8 @@ function mapRow(row: CommunityRow): CommunitySubmission {
   return {
     id: row.id,
     ownerId: row.owner_id,
+    ownerEmail: row.owner_email ?? null,
+    ownerDisplayName: row.owner_display_name ?? null,
     chapterId: row.chapter_id,
     draft: parseChapter(row.draft_content),
     published: row.published_content ? parseChapter(row.published_content) : null,

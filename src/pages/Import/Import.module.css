@@ -367,6 +367,218 @@
   font-size: var(--text-sm);
   color: var(--text-secondary);
 }
+
+.adminCatalogue {
+  padding: var(--space-5);
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+}
+.catalogueTools {
+  display: grid;
+  gap: var(--space-3);
+  margin-bottom: var(--space-3);
+}
+.catalogueSearch {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: var(--space-2);
+  min-height: 42px;
+  padding: 0 var(--space-3);
+  color: var(--text-tertiary);
+  background: var(--bg-sunken);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+}
+.catalogueSearch:focus-within {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px var(--accent-subtle);
+}
+.catalogueSearch input {
+  width: 100%;
+  min-width: 0;
+  height: 40px;
+  color: var(--text-primary);
+  background: transparent;
+  border: 0;
+  outline: 0;
+}
+.catalogueSearch > button {
+  display: grid;
+  width: 28px;
+  height: 28px;
+  color: var(--text-tertiary);
+  border-radius: var(--radius-sm);
+  place-items: center;
+}
+.catalogueSearch > button:hover { color: var(--text-primary); background: var(--surface-hover); }
+.catalogueFilters {
+  display: flex;
+  gap: var(--space-2);
+  overflow-x: auto;
+  padding-bottom: 2px;
+  scrollbar-width: thin;
+}
+.catalogueFilters > button {
+  display: inline-flex;
+  min-height: 32px;
+  flex: 0 0 auto;
+  align-items: center;
+  gap: 7px;
+  padding: 0 var(--space-3);
+  color: var(--text-secondary);
+  background: var(--bg-sunken);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-full);
+  font-size: var(--text-xs);
+}
+.catalogueFilters > button:hover { color: var(--text-primary); border-color: var(--border-strong); }
+.catalogueFilters > button > span {
+  display: grid;
+  min-width: 19px;
+  height: 19px;
+  padding: 0 5px;
+  color: var(--text-tertiary);
+  background: var(--surface);
+  border-radius: var(--radius-full);
+  font-size: 9px;
+  place-items: center;
+}
+.catalogueFilters > .catalogueFilterActive {
+  color: var(--accent);
+  background: var(--accent-subtle);
+  border-color: color-mix(in srgb, var(--accent) 50%, var(--border));
+}
+.catalogueFilters > .catalogueFilterActive > span { color: var(--accent); }
+.catalogueResultMeta {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: var(--space-2);
+  color: var(--text-tertiary);
+  font-size: var(--text-xs);
+}
+.catalogueResultMeta button { color: var(--accent); }
+.adminRecordList {
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+}
+.adminRecord {
+  position: relative;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto auto;
+  align-items: center;
+  gap: var(--space-4);
+  min-height: 86px;
+  padding: var(--space-3) var(--space-4);
+  background: color-mix(in srgb, var(--surface) 80%, var(--bg-sunken));
+  border-bottom: 1px solid var(--border);
+}
+.adminRecord:first-child { border-radius: var(--radius-md) var(--radius-md) 0 0; }
+.adminRecord:last-child { border-bottom: 0; border-radius: 0 0 var(--radius-md) var(--radius-md); }
+.adminRecord:only-child { border-radius: var(--radius-md); }
+.adminRecord:hover { background: var(--surface-hover); }
+.adminRecordIdentity {
+  display: grid;
+  grid-template-columns: 38px minmax(0, 1fr);
+  align-items: center;
+  gap: var(--space-3);
+  min-width: 0;
+}
+.adminRecordIcon {
+  display: grid;
+  width: 38px;
+  height: 38px;
+  color: var(--accent);
+  background: var(--accent-subtle);
+  border-radius: var(--radius-md);
+  place-items: center;
+}
+.adminRecordIdentity > div { min-width: 0; }
+.adminRecordIdentity h3 {
+  overflow: hidden;
+  font-size: var(--text-sm);
+  font-weight: var(--weight-semibold);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.adminRecordIdentity p {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0;
+  margin-top: 2px;
+  color: var(--text-secondary);
+  font-size: var(--text-xs);
+}
+.adminRecordIdentity p span + span::before { margin: 0 6px; content: '·'; color: var(--text-tertiary); }
+.adminRecordIdentity small {
+  display: block;
+  margin-top: 3px;
+  overflow: hidden;
+  color: var(--text-tertiary);
+  font-family: var(--font-mono);
+  font-size: 9px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.adminRecordIdentity .adminRecordNote { color: var(--warning); font-family: inherit; }
+.adminRecordIdentity .adminRecordProvenance { color: var(--text-secondary); font-family: inherit; }
+.adminRecordActions { display: flex; align-items: center; gap: var(--space-1); }
+.adminRecordMenu { position: relative; }
+.adminRecordMenu > summary {
+  display: grid;
+  width: 34px;
+  height: 34px;
+  color: var(--text-secondary);
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  list-style: none;
+  place-items: center;
+}
+.adminRecordMenu > summary::-webkit-details-marker { display: none; }
+.adminRecordMenu > summary:hover,
+.adminRecordMenu[open] > summary { color: var(--text-primary); background: var(--bg-sunken); }
+.adminRecordMenu > div {
+  position: absolute;
+  z-index: var(--z-overlay);
+  top: calc(100% + 6px);
+  right: 0;
+  display: grid;
+  width: 210px;
+  padding: var(--space-1);
+  background: var(--surface-elevated);
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-lg);
+}
+.adminRecordMenu > div > button {
+  display: grid;
+  grid-template-columns: 24px minmax(0, 1fr);
+  align-items: center;
+  min-height: 38px;
+  padding: 0 var(--space-2);
+  color: var(--text-secondary);
+  text-align: left;
+  border-radius: var(--radius-sm);
+}
+.adminRecordMenu > div > button:hover { color: var(--text-primary); background: var(--surface-hover); }
+.adminRecordMenu > div > .adminRecordDanger { color: var(--danger); }
+.catalogueMore { margin: var(--space-3) auto 0; }
+.catalogueEmpty {
+  display: grid;
+  min-height: 150px;
+  justify-items: center;
+  align-content: center;
+  gap: var(--space-1);
+  color: var(--text-tertiary);
+  background: var(--bg-sunken);
+  border: 1px dashed var(--border);
+  border-radius: var(--radius-md);
+  text-align: center;
+}
+.catalogueEmpty strong { margin-top: var(--space-1); color: var(--text-primary); font-size: var(--text-sm); }
+.catalogueEmpty span { font-size: var(--text-xs); }
 .reviewList {
   display: grid;
   gap: var(--space-3);
@@ -518,6 +730,20 @@
   grid-column: 1 / -1;
 }
 
+@media (max-width: 720px) {
+  .adminCatalogue { padding: var(--space-4); }
+  .adminRecord {
+    grid-template-columns: minmax(0, 1fr) auto;
+    gap: var(--space-3);
+  }
+  .adminRecordActions {
+    grid-column: 1 / -1;
+    justify-content: flex-end;
+    padding-top: var(--space-2);
+    border-top: 1px solid var(--border);
+  }
+}
+
 @media (max-width: 480px) {
   .importPanel {
     padding: var(--space-4);
@@ -546,6 +772,15 @@
   .adminRecordHead {
     flex-direction: column;
   }
+
+  .adminCatalogue { padding: var(--space-3); }
+  .adminCatalogue .sectionHeading { align-items: flex-start; }
+  .adminRecord { padding: var(--space-3); }
+  .adminRecordIdentity { grid-template-columns: 32px minmax(0, 1fr); gap: var(--space-2); }
+  .adminRecordIcon { width: 32px; height: 32px; }
+  .adminRecordActions > button { flex: 1; }
+  .adminRecordMenu > div { position: fixed; z-index: var(--z-modal); right: var(--space-3); bottom: calc(76px + env(safe-area-inset-bottom)); left: var(--space-3); top: auto; width: auto; padding: var(--space-2); border-radius: var(--radius-lg); }
+  .adminRecordMenu > div > button { min-height: 46px; }
 
   .adminDialogBackdrop {
     align-items: end;

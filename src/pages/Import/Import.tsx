@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Badge, Button, EmptyState, Icon } from "../../components/common";
 import { Page, PageHeader } from "../../components/layout";
@@ -23,6 +23,7 @@ import {
   type CommunitySubmission,
   type EditSuggestion,
   type AdminAuditEntry,
+  type CommunityStatus,
 } from "../../services/supabase/communityChapters";
 import type { Chapter } from "../../types";
 import styles from "./Import.module.css";
@@ -36,6 +37,29 @@ interface AdminAction {
   noteRequired?: boolean;
   danger?: boolean;
   run: (note: string) => Promise<void>;
+}
+
+type AdminStatusFilter = 'all' | CommunityStatus;
+
+const ADMIN_STATUS_FILTERS: ReadonlyArray<{ id: AdminStatusFilter; label: string }> = [
+  { id: 'all', label: 'All' },
+  { id: 'published', label: 'Published' },
+  { id: 'pending', label: 'Pending' },
+  { id: 'private', label: 'Private' },
+  { id: 'unpublished', label: 'Unpublished' },
+  { id: 'changes_requested', label: 'Changes requested' },
+  { id: 'archived', label: 'Archived' },
+];
+
+function communityStatusLabel(status: CommunityStatus): string {
+  return status.replaceAll('_', ' ');
+}
+
+function communityStatusTone(status: CommunityStatus): 'success' | 'danger' | 'warning' | 'neutral' {
+  if (status === 'published') return 'success';
+  if (status === 'archived') return 'danger';
+  if (status === 'pending' || status === 'changes_requested') return 'warning';
+  return 'neutral';
 }
 
 const TEMPLATE = `{
@@ -155,6 +179,10 @@ export function Import() {
   const [adminAction, setAdminAction] = useState<AdminAction | null>(null);
   const [adminConfirmation, setAdminConfirmation] = useState('');
   const [adminNote, setAdminNote] = useState('');
+  const [adminQuery, setAdminQuery] = useState('');
+  const [adminStatusFilter, setAdminStatusFilter] = useState<AdminStatusFilter>('all');
+  const [adminVisibleCount, setAdminVisibleCount] = useState(20);
+  const [adminMenuRecordId, setAdminMenuRecordId] = useState<string | null>(null);
   const [admin, setAdmin] = useState(false);
   const [communityBusy, setCommunityBusy] = useState<string | null>(null);
   const [communityMessage, setCommunityMessage] = useState<string | null>(null);
@@ -193,6 +221,41 @@ export function Import() {
   useEffect(() => {
     void refreshCommunity();
   }, [refreshCommunity]);
+
+  useEffect(() => {
+    if (!adminMenuRecordId) return;
+    const closeOnClickAway = (event: PointerEvent) => {
+      const target = event.target as Element | null;
+      if (!target?.closest('[data-admin-record-menu]')) setAdminMenuRecordId(null);
+    };
+    const closeOnEscape = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') setAdminMenuRecordId(null);
+    };
+    document.addEventListener('pointerdown', closeOnClickAway);
+    document.addEventListener('keydown', closeOnEscape);
+    return () => {
+      document.removeEventListener('pointerdown', closeOnClickAway);
+      document.removeEventListener('keydown', closeOnEscape);
+    };
+  }, [adminMenuRecordId]);
+
+  const adminStatusCounts = useMemo(() => {
+    const counts = new Map<CommunityStatus, number>();
+    for (const record of adminCatalog) counts.set(record.status, (counts.get(record.status) ?? 0) + 1);
+    return counts;
+  }, [adminCatalog]);
+
+  const filteredAdminCatalog = useMemo(() => {
+    const query = adminQuery.trim().toLocaleLowerCase();
+    return adminCatalog.filter((record) => {
+      if (adminStatusFilter !== 'all' && record.status !== adminStatusFilter) return false;
+      if (!query) return true;
+      return [record.draft.title, record.draft.subject, record.chapterId, record.status]
+        .some((value) => value.toLocaleLowerCase().includes(query));
+    });
+  }, [adminCatalog, adminQuery, adminStatusFilter]);
+
+  const visibleAdminCatalog = filteredAdminCatalog.slice(0, adminVisibleCount);
 
   const copyPrompt = async () => {
     try {
@@ -698,41 +761,120 @@ export function Import() {
       </section>
 
       {admin && (
-        <section className={styles.existing}>
+        <section className={`${styles.existing} ${styles.adminCatalogue}`}>
           <div className={styles.sectionHeading}>
             <div>
-              <h2 className={styles.existingTitle}>Platform chapters</h2>
-              <p>Manage every submitted, public, unpublished, and archived chapter.</p>
+              <h2 className={styles.existingTitle}>Chapter administration</h2>
+              <p>Search, review and manage every chapter that has entered the platform workflow.</p>
             </div>
-            <Badge tone='accent'>{adminCatalog.length} records</Badge>
+            <Badge tone='accent'>{adminCatalog.length} total</Badge>
           </div>
-          <ul className={styles.reviewList}>
-            {adminCatalog.map((submission) => (
-              <li key={submission.id} className={styles.reviewItem}>
-                <div className={styles.adminRecordHead}>
-                  <div>
-                    <h3>{submission.draft.title}</h3>
-                    <p>{submission.draft.subject} · {submission.draft.prelims.length} prelims · {submission.draft.mains.length} mains</p>
-                  </div>
-                  <Badge tone={submission.status === 'published' ? 'success' : submission.status === 'archived' ? 'danger' : submission.status === 'pending' ? 'warning' : 'neutral'}>
-                    {submission.status.replace('_', ' ')}
-                  </Badge>
-                </div>
-                <div className={styles.reviewActions}>
-                  <Button size='sm' variant='secondary' onClick={() => beginAdminEdit(submission)}>Edit draft</Button>
-                  {submission.status !== 'published' && submission.status !== 'private' && (
-                    <Button size='sm' variant='primary' onClick={() => changeAdminChapterState(submission, 'publish')}>Publish</Button>
-                  )}
-                  {submission.status === 'published' && (
-                    <Button size='sm' variant='secondary' onClick={() => changeAdminChapterState(submission, 'unpublish')}>Unpublish</Button>
-                  )}
-                  {submission.status !== 'archived' && (
-                    <Button size='sm' variant='danger' onClick={() => changeAdminChapterState(submission, 'archive')}>Archive</Button>
-                  )}
-                </div>
-              </li>
-            ))}
-          </ul>
+
+          <div className={styles.catalogueTools}>
+            <label className={styles.catalogueSearch}>
+              <Icon name='search' size={16} />
+              <input
+                type='search'
+                value={adminQuery}
+                placeholder='Search title, subject or chapter ID'
+                onChange={(event) => {
+                  setAdminQuery(event.target.value);
+                  setAdminVisibleCount(20);
+                }}
+              />
+              {adminQuery && <button type='button' onClick={() => setAdminQuery('')} aria-label='Clear chapter search'><Icon name='close' size={14} /></button>}
+            </label>
+            <div className={styles.catalogueFilters} aria-label='Filter chapters by status'>
+              {ADMIN_STATUS_FILTERS.map((filter) => {
+                const count = filter.id === 'all' ? adminCatalog.length : adminStatusCounts.get(filter.id) ?? 0;
+                return (
+                  <button
+                    key={filter.id}
+                    type='button'
+                    className={adminStatusFilter === filter.id ? styles.catalogueFilterActive : undefined}
+                    aria-pressed={adminStatusFilter === filter.id}
+                    onClick={() => {
+                      setAdminStatusFilter(filter.id);
+                      setAdminVisibleCount(20);
+                    }}
+                  >
+                    {filter.label}<span>{count}</span>
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+
+          <div className={styles.catalogueResultMeta} aria-live='polite'>
+            <span>{filteredAdminCatalog.length} {filteredAdminCatalog.length === 1 ? 'chapter' : 'chapters'}</span>
+            {(adminQuery || adminStatusFilter !== 'all') && <button type='button' onClick={() => { setAdminQuery(''); setAdminStatusFilter('all'); setAdminVisibleCount(20); }}>Clear filters</button>}
+          </div>
+
+          {visibleAdminCatalog.length === 0 ? (
+            <div className={styles.catalogueEmpty}>
+              <Icon name='search' size={20} />
+              <strong>No matching chapters</strong>
+              <span>Try another search or status.</span>
+            </div>
+          ) : (
+            <ul className={styles.adminRecordList}>
+              {visibleAdminCatalog.map((submission) => {
+                const canPublish = submission.status !== 'published'
+                  && (submission.status !== 'private' || submission.ownerId === user?.id);
+                const ownerIdentity = submission.ownerId === user?.id
+                  ? `you${user.email ? ` (${user.email})` : ''}`
+                  : submission.ownerDisplayName
+                    ? `${submission.ownerDisplayName}${submission.ownerEmail ? ` (${submission.ownerEmail})` : ''}`
+                    : submission.ownerEmail ?? submission.ownerId;
+                const provenance = ownerIdentity
+                  ? `Uploaded by ${ownerIdentity}`
+                  : 'System seed · no uploader recorded';
+                return (
+                  <li key={submission.id} className={styles.adminRecord}>
+                    <div className={styles.adminRecordIdentity}>
+                      <span className={styles.adminRecordIcon}><Icon name='book' size={17} /></span>
+                      <div>
+                        <h3>{submission.draft.title}</h3>
+                        <p>
+                          <span>{subjectStyle(submission.draft.subject).label}</span>
+                          <span>{submission.draft.prelims.length} prelims</span>
+                          <span>{submission.draft.mains.length} mains</span>
+                        </p>
+                        <small>{submission.chapterId}</small>
+                        <small className={styles.adminRecordProvenance} title={provenance}>{provenance}</small>
+                        {submission.reviewNote && <small className={styles.adminRecordNote}>Note: {submission.reviewNote}</small>}
+                      </div>
+                    </div>
+                    <Badge tone={communityStatusTone(submission.status)}>{communityStatusLabel(submission.status)}</Badge>
+                    <div className={styles.adminRecordActions}>
+                      <Button size='sm' variant='secondary' onClick={() => beginAdminEdit(submission)}>Edit</Button>
+                      <details className={styles.adminRecordMenu} data-admin-record-menu open={adminMenuRecordId === submission.id}>
+                        <summary
+                          aria-label={`More actions for ${submission.draft.title}`}
+                          aria-expanded={adminMenuRecordId === submission.id}
+                          onClick={(event) => {
+                            event.preventDefault();
+                            setAdminMenuRecordId((current) => current === submission.id ? null : submission.id);
+                          }}
+                        ><Icon name='more' size={17} /></summary>
+                        <div role='menu'>
+                          {canPublish && <button type='button' role='menuitem' onClick={() => { setAdminMenuRecordId(null); changeAdminChapterState(submission, 'publish'); }}><Icon name='share' size={15} />{submission.status === 'archived' ? 'Restore and publish' : 'Publish chapter'}</button>}
+                          {submission.status === 'published' && <button type='button' role='menuitem' onClick={() => { setAdminMenuRecordId(null); changeAdminChapterState(submission, 'unpublish'); }}><Icon name='unlink' size={15} />Unpublish</button>}
+                          {submission.status !== 'archived' && <button type='button' role='menuitem' className={styles.adminRecordDanger} onClick={() => { setAdminMenuRecordId(null); changeAdminChapterState(submission, 'archive'); }}><Icon name='trash' size={15} />Archive</button>}
+                        </div>
+                      </details>
+                    </div>
+                  </li>
+                );
+              })}
+            </ul>
+          )}
+
+          {visibleAdminCatalog.length < filteredAdminCatalog.length && (
+            <Button className={styles.catalogueMore} variant='secondary' onClick={() => setAdminVisibleCount((count) => count + 20)}>
+              Show 20 more
+            </Button>
+          )}
         </section>
       )}
 
